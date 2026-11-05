@@ -296,7 +296,7 @@ Config.Treadmills = {
   {Id="Void",Name="Void",Multiplier=100,Cost=55000000000,Template="TreadmillVoid"},
   {Id="Infinity",Name="Infinity",Multiplier=250,Cost=330000000000,Template="TreadmillVoid"},
   {Id="ShadowScott",Name="Shadow Scott",Multiplier=500,Cost=1500000000000,Template="Shadow Scott"},
-  {Id="Celestial",Name="Celestial",Multiplier=100000,GamePassId=0,ExpectedRobux=4999,Template="TreadmillCelestial"},
+  {Id="Celestial",Name="Celestial",Multiplier=100000,GamePassId=0,Template="TreadmillCelestial"}, -- GamePassId: paste the owner-created pass ID here; the price shown is the live Roblox price
  },
 }
 Config.PlayerData={Store="FootballerProfiles_v1",ReportStore="FootballerReports_v1",AutosaveSeconds=60,
@@ -304,6 +304,14 @@ Config.PlayerData={Store="FootballerProfiles_v1",ReportStore="FootballerReports_
  LockSeconds=180,Retries=3,RetrySeconds=2,StudioMemoryOnly=true,MaxCash=9000000000000000,MaxSpeedPoints=1e15,
  MaxPurchaseHistory=60,ReportCooldown=60,MaxReportsPerDay=5,MaxInboxRecords=1000,
  FeedbackCategories={"Bug","Lost progress","Controls","Balance","Abuse","Exploiting"}}
+
+-- Robux purchases (see Purchases.luau). StudioTestMode only applies inside Studio: passes, prices and ownership are simulated and
+-- Marketplace is never called, so no real purchase can happen. Live servers always use the real Marketplace.
+Config.Purchases={LogStore="FootballerPurchaseLog_v1",LogKeyPrefix="U_",MaxLogEvents=200,LogFlushSeconds=30,LogWriteGapSeconds=6,
+ PromptCooldownSeconds=10,PriceRefreshSeconds=300,MaxReceipts=200,
+ RevokeStrikes=2,RevokeStrikeGapSeconds=3600, -- refund revoke: this many confirmed "not owned" results on separate joins this far apart
+ StudioTestMode=true,TestPassId=1,TestPrice=4999,
+ Products={}} -- developer products: [productId]={Cash=amount}; none exist yet and none may be random/paid-gamble items
 
 -- Economy -------------------------------------------------------------
 Config.CashTickSeconds = 1

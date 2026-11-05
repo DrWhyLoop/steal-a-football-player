@@ -1,13 +1,13 @@
 -- One owned treadmill per assigned plot. Training and cash purchases are server-authoritative.
 local Players=game:GetService("Players")
-local Marketplace=game:GetService("MarketplaceService")
 local Config=require(game.ReplicatedStorage.Shared.Config)
 local Remotes=require(game.ReplicatedStorage.Shared.Remotes)
 local Format=require(game.ReplicatedStorage.Shared.NumberFormat)
 local PlayerData=require(script.Parent.PlayerData)
+local Purchases=require(script.Parent.Purchases)
 local Service={}
 local cfg=Config.Treadmills
-local pads={} local training={} local cooldown={} local passOwned={} local nextGain={}
+local pads={} local training={} local cooldown={} local nextGain={}
 local PlotService,CardService
 local byId={}
 for i,tier in cfg.Catalog do byId[tier.Id]={tier=tier,index=i} end
@@ -74,14 +74,10 @@ local function request(player,action,id)
   player:SetAttribute("CashTreadmillTier",entry.index) player:SetAttribute("TreadmillId",id)
   PlayerData.RecordPurchase(player,id,tier.Cost,"Cash")
  elseif action=="Equip" then
-  if tier.GamePassId then if not passOwned[player] then status(player,"Premium is not configured.") return end
+  if tier.GamePassId then if not Purchases.Owns(player,id) then status(player,"You do not own this treadmill.") return end
   elseif entry.index>(player:GetAttribute("CashTreadmillTier") or 1) then return end
   player:SetAttribute("TreadmillId",id)
- elseif action=="Premium" then
-  if not tier.GamePassId or tier.GamePassId<=0 then status(player,"Premium purchasing is not available yet.") return end
-  local ok,info=pcall(Marketplace.GetProductInfoAsync,Marketplace,tier.GamePassId,Enum.InfoType.GamePass)
-  if not ok or not info.IsForSale or info.PriceInRobux~=tier.ExpectedRobux then status(player,"Premium price is awaiting setup.") return end
-  Marketplace:PromptGamePassPurchase(player,tier.GamePassId) return
+ elseif action=="Premium" then Purchases.RequestPrompt(player,id) return
  else return end
  stop(player) rebuild(player) status(player,"Treadmill ready.") task.spawn(PlayerData.RequestSave,player)
 end
@@ -89,11 +85,6 @@ local function added(player)
  local function ready()
   if player:GetAttribute("DataReady")~=true then return end
   rebuild(player) Service.UpdateSpeed(player)
-  local premium=cfg.Catalog[#cfg.Catalog]
-  if premium.GamePassId>0 then
-   local ok,owns=pcall(Marketplace.UserOwnsGamePassAsync,Marketplace,player.UserId,premium.GamePassId)
-   if ok and owns then passOwned[player]=true player:SetAttribute("PremiumTreadmillOwned",true) end
-  end
  end
  player:GetAttributeChangedSignal("DataReady"):Connect(ready)
  player:GetAttributeChangedSignal("CarriedCard"):Connect(function() Service.UpdateSpeed(player) end)
@@ -121,18 +112,13 @@ function Service.Init(plotService,cardService)
  PlotService.PlotAssigned.Event:Connect(function(_,player) if player:GetAttribute("DataReady") then rebuild(player) end end)
  PlotService.PlotFreed.Event:Connect(function(plot,player) stop(player) local pad=pads[plot] local v=pad:FindFirstChild("Visual") if v then v:Destroy() end local f=pad:FindFirstChild("BeltFooting") if f then f:Destroy() end pad:SetAttribute("OwnerUserId",0) pad.Label.Info.Text="" pad.Label.Enabled=false end)
  Remotes.TreadmillRequest.OnServerEvent:Connect(request)
- Marketplace.PromptGamePassPurchaseFinished:Connect(function(player,id,purchased)
-  local premium=cfg.Catalog[#cfg.Catalog]
-  if not purchased or id~=premium.GamePassId or premium.GamePassId<=0 then return end
-  local ok,owns=pcall(Marketplace.UserOwnsGamePassAsync,Marketplace,player.UserId,id)
-  if ok and owns then
-   passOwned[player]=true player:SetAttribute("PremiumTreadmillOwned",true)
-   PlayerData.RecordPurchase(player,premium.Id,nil,"GamePass entitlement")
-   request(player,"Equip",premium.Id)
-  end
+ Purchases.Granted.Event:Connect(function(player,key) player:SetAttribute("TreadmillId",key) stop(player) rebuild(player) status(player,"Treadmill ready.") end)
+ Purchases.Revoked.Event:Connect(function(player,key)
+  if player:GetAttribute("TreadmillId")~=key then return end
+  player:SetAttribute("TreadmillId",cfg.Catalog[player:GetAttribute("CashTreadmillTier") or 1].Id) stop(player) rebuild(player) status(player,"Treadmill updated.")
  end)
  Players.PlayerAdded:Connect(added)
- Players.PlayerRemoving:Connect(function(player) stop(player) cooldown[player]=nil passOwned[player]=nil end)
+ Players.PlayerRemoving:Connect(function(player) stop(player) cooldown[player]=nil end)
  for _,player in Players:GetPlayers() do added(player) end
  task.spawn(function() while true do task.wait(cfg.SensorSeconds)
   for _,player in Players:GetPlayers() do

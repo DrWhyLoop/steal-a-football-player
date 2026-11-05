@@ -12,7 +12,7 @@ local store
 local session=game.JobId~="" and game.JobId or HttpService:GenerateGUID(false)
 local PlotService,SlotService,CardService
 local function defaults()
- return {Cash=0,SpeedPoints=0,CashTier=1,TreadmillId="Base",Slots={},SafeCargo={},PlaySeconds=0,Visits=0,FirstSeen=os.time(),PurchaseHistory={}}
+ return {Cash=0,SpeedPoints=0,CashTier=1,TreadmillId="Base",Slots={},SafeCargo={},PlaySeconds=0,Visits=0,FirstSeen=os.time(),PurchaseHistory={},Entitlements={},Receipts={}}
 end
 local function finite(n,maximum)
  return type(n)=="number" and n==n and n>=0 and n<=maximum
@@ -27,6 +27,18 @@ local function sanitize(d)
  if type(d.TreadmillId)=="string" then clean.TreadmillId=d.TreadmillId end
  if type(d.Slots)=="table" then clean.Slots=d.Slots end
  if type(d.SafeCargo)=="table" then clean.SafeCargo=d.SafeCargo end
+ if type(d.Entitlements)=="table" then -- paid items: {At,Source,Strikes,LastStrikeAt}
+  for key,v in d.Entitlements do if type(key)=="string" and type(v)=="table" then
+   clean.Entitlements[key]={At=finite(v.At,1e12) and v.At or os.time(),Source=type(v.Source)=="string" and v.Source:sub(1,32) or "Unknown",
+    Strikes=finite(v.Strikes,100) and math.floor(v.Strikes) or 0,LastStrikeAt=finite(v.LastStrikeAt,1e12) and v.LastStrikeAt or nil}
+  end end
+ end
+ if type(d.Receipts)=="table" then -- developer-product receipt IDs already granted: {At}
+  local count=0
+  for id,v in d.Receipts do if count<Config.Purchases.MaxReceipts and type(id)=="string" and type(v)=="table" then
+   clean.Receipts[id]={At=finite(v.At,1e12) and v.At or os.time()} count+=1
+  end end
+ end
  if type(d.PurchaseHistory)=="table" then
   for i=math.max(1,#d.PurchaseHistory-settings.MaxPurchaseHistory+1),#d.PurchaseHistory do table.insert(clean.PurchaseHistory,d.PurchaseHistory[i]) end
  end
@@ -80,16 +92,24 @@ function P.Save(player,releasing)
  else p.lastSaved=os.clock() end
  return success
 end
--- Forced saves (treadmill purchase, steal transfer) merge into one pending save and respect the per-key write limit.
--- Yields until the save covering this request has finished and returns whether it succeeded.
+-- Forced saves (treadmill purchase, steal transfer, receipts) merge into one scheduled save and respect the per-key write limit.
+-- Yields until a save has finished that took its snapshot AFTER this call, and returns whether it succeeded. A request never
+-- joins a save that already took its snapshot (the caller's change could be missing from it): once the scheduled save starts,
+-- p.job is cleared and the next request schedules a new one.
 function P.RequestSave(player)
  local p=profiles[player] if not p then return false end
- if not p.pending then
-  p.pending=true
-  task.delay(math.max(0,settings.SaveCoalesceSeconds-(os.clock()-p.lastStart)),function() p.pendingOk=P.Save(player,false) p.pending=false end)
+ local job=p.job
+ if not job then
+  job={}
+  p.job=job
+  task.delay(math.max(0,settings.SaveCoalesceSeconds-(os.clock()-p.lastStart)),function()
+   p.job=nil
+   job.ok=P.Save(player,false)
+   job.done=true
+  end)
  end
- while p.pending do task.wait() end
- return p.pendingOk
+ while not job.done do task.wait() end
+ return job.ok
 end
 local function load(player)
  player:SetAttribute("DataReady",false)

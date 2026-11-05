@@ -44,15 +44,17 @@ function UI.Init()
   local preview=RS:WaitForChild("TreadmillPreviewTemplates"):FindFirstChild(tier.Id)
   if preview then Viewport.Create(thumb,preview,false) end
   local name=label(row,tier.Name.." | "..Format.Exact(tier.Multiplier).."x Training",UDim2.new(.58,-16,0,44),UDim2.new(.42,4,0,8)) name.TextXAlignment=Enum.TextXAlignment.Left
-  local cost=tier.Cost and (tier.Cost==0 and "Free" or "$"..Format.Compact(tier.Cost)) or ("R$ "..Format.Exact(tier.ExpectedRobux).." | Not available yet")
-  local details=label(row,"+"..Format.Compact(Config.Treadmills.BaseGain*tier.Multiplier).." Speed/sec | "..cost,UDim2.new(.58,-16,0,64),UDim2.new(.42,4,0,50)) details.TextXAlignment=Enum.TextXAlignment.Left details.TextSize=14
+  local base="+"..Format.Compact(Config.Treadmills.BaseGain*tier.Multiplier).." Speed/sec | "
+  local details=label(row,base..(tier.Cost and (tier.Cost==0 and "Free" or "$"..Format.Compact(tier.Cost)) or ""),UDim2.new(.58,-16,0,64),UDim2.new(.42,4,0,50)) details.TextXAlignment=Enum.TextXAlignment.Left details.TextSize=14
   local buy=button(row,"",UDim2.new(1,-16,0,32),UDim2.new(0,8,1,-40))
   buy.Activated:Connect(function()
    local owned=player:GetAttribute("CashTreadmillTier") or 1
-   if tier.GamePassId then if tier.GamePassId<=0 then return end Remotes.TreadmillRequest:FireServer(player:GetAttribute("PremiumTreadmillOwned") and "Equip" or "Premium",tier.Id)
+   if tier.GamePassId then -- a Robux item: only an explicit tap on an owned or priced row does anything
+    if player:GetAttribute("PassOwned_"..tier.Id) then Remotes.TreadmillRequest:FireServer("Equip",tier.Id)
+    elseif (RS:GetAttribute("PassPrice_"..tier.Id) or 0)>0 then Remotes.TreadmillRequest:FireServer("Premium",tier.Id) end
    else Remotes.TreadmillRequest:FireServer(index<=owned and "Equip" or "Buy",tier.Id) end
   end)
-  table.insert(rows,{button=buy,index=index,tier=tier})
+  table.insert(rows,{button=buy,index=index,tier=tier,details=details,base=base})
  end
  label(panel,"Walk onto your treadmill to train. Walk off to stop.",UDim2.new(1,-24,0,32),UDim2.new(0,12,1,-70))
  local message=label(panel,"",UDim2.new(1,-24,0,28),UDim2.new(0,12,1,-34)) message.TextSize=14
@@ -73,8 +75,19 @@ function UI.Init()
   local owned=player:GetAttribute("CashTreadmillTier") or 1
   for _,row in rows do
    local tier=row.tier local selected=player:GetAttribute("TreadmillId")==tier.Id
-   row.button.Text=selected and "Equipped" or tier.GamePassId and (tier.GamePassId<=0 and "Not available" or "Premium") or row.index<=owned and "Equip" or row.index==owned+1 and "Upgrade" or "Locked"
-   row.button.BackgroundColor3=selected and Color3.fromRGB(44,108,74) or Color3.fromRGB(41,93,116)
+   local enabled=true
+   if tier.GamePassId then -- live Roblox price (set by the server): positive = for sale, -1 = off sale/unreachable, 0 = not configured
+    local passOwned=player:GetAttribute("PassOwned_"..tier.Id)
+    local price=RS:GetAttribute("PassPrice_"..tier.Id) or 0
+    local priceText=price>0 and "R$ "..Format.Exact(price) or price<0 and "Price unavailable" or "Not available yet"
+    row.details.Text=row.base..(passOwned and "Owned" or priceText..(price>0 and "\nOpens Roblox's purchase window. Nothing is charged until you confirm there." or ""))
+    row.button.Text=selected and "Equipped" or passOwned and "Equip" or price>0 and "Buy "..priceText or priceText
+    enabled=selected or passOwned or price>0
+   else
+    row.button.Text=selected and "Equipped" or row.index<=owned and "Equip" or row.index==owned+1 and "Upgrade" or "Locked"
+   end
+   row.button.Active=enabled row.button.AutoButtonColor=enabled
+   row.button.BackgroundColor3=selected and Color3.fromRGB(44,108,74) or enabled and Color3.fromRGB(41,93,116) or Color3.fromRGB(70,76,84)
   end
  end
  open.Activated:Connect(function() panel.Visible=not panel.Visible refresh() end)

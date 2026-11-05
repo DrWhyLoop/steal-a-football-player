@@ -29,6 +29,7 @@ CubeService.Init()
 require(script.Parent.WeatherService).Init()
 
 require(script.Parent.PlayerData).Init(PlotService,SlotService,CardService)
+require(script.Parent.Purchases).Init()
 require(script.Parent.TreadmillService).Init(PlotService,CardService)
 require(script.Parent.FeedbackService).Init()
 
