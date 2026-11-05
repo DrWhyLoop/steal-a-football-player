@@ -1,0 +1,87 @@
+[
+  {
+    "syntax": true,
+    "file": "Shared/Config.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Shared/HurtPose.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Shared/RigAnimation.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/PlotAccess.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/EnvironmentBuilder.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/Main.server.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/GuardService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/PickaxeService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/CardService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/CubeService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/TreadmillService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Client/CharacterMotion.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Client/ModelViewport.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Client/TreadmillUI.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Client/RewardEffects.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/PlotService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Client/TreadmillVisibility.luau",
+    "matches": true
+  }
+]

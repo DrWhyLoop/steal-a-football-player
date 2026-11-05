@@ -1,0 +1,34 @@
+{
+  "backingParts": 12,
+  "extraThicknessOutward": 4,
+  "extraThicknessInward": 0,
+  "cornerOverlap": 8,
+  "staticRays": {
+    "passed": 1040,
+    "total": 1040
+  },
+  "playCollisionRays": {
+    "passed": 20,
+    "total": 20
+  },
+  "sourceEquality": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"name\":\"Config\",\"exact\":true}"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"name\":\"EnvironmentBuilder\",\"exact\":true}"
+        }
+      ],
+      "isError": false
+    }
+  ]
+}

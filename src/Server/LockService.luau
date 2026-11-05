@@ -42,12 +42,12 @@ local function setBarrier(plot: Model, active: boolean)
 		wall.CanCollide = active
 		wall.Transparency = active and Config.LockBarrierTransparency or 1
 	end
-	plot.LockStatus.StatusGui.Enabled = active
 end
 
 local function reset(plot: Model)
 	lockEnds[plot], lockReady[plot] = nil, nil
 	setBarrier(plot, false)
+	plot.LockStatus.StatusGui.Enabled = false
 	plot:SetAttribute("LockState", "Ready")
 end
 
@@ -61,7 +61,9 @@ local function expelTrespassers(plot: Model, owner: Player)
 		if root and player ~= owner then
 			local offset = root.Position - base.Position
 			if math.abs(offset.X) <= half.X and math.abs(offset.Z) <= half.Z then
-				local x = math.sign(base.Position.X) * (Config.HallwayWidth / 2 - Config.LockExpelInset)
+				local plaza = Workspace.Greybox.Plaza.PlazaFloor
+				local side = math.sign(base.Position.X - plaza.Position.X)
+				local x = plaza.Position.X + side * (plaza.Size.X / 2 - Config.LockExpelInset)
 				char:PivotTo(CFrame.new(x, root.Position.Y, base.Position.Z))
 			end
 		end
@@ -72,6 +74,8 @@ local function activate(plot: Model, owner: Player)
 	local now = Workspace:GetServerTimeNow()
 	lockEnds[plot] = now + Config.LockDurationSeconds
 	lockReady[plot] = lockEnds[plot] + Config.LockCooldownSeconds
+	plot.LockStatus.StatusGui.Label.Text = ("LOCKED %d"):format(Config.LockDurationSeconds)
+	plot.LockStatus.StatusGui.Enabled = true
 	setBarrier(plot, true)
 	plot:SetAttribute("LockState", "Locked")
 	expelTrespassers(plot, owner)
@@ -88,16 +92,14 @@ end
 local function updateLocks()
 	local now = Workspace:GetServerTimeNow()
 	for plot, endsAt in pairs(lockEnds) do
-		local state = plot:GetAttribute("LockState")
-		if state == "Locked" then
-			if now >= endsAt then
-				setBarrier(plot, false)
-				plot:SetAttribute("LockState", "Cooldown")
-			else
-				plot.LockStatus.StatusGui.Label.Text = ("LOCKED %ds"):format(math.ceil(endsAt - now))
-			end
-		elseif now >= lockReady[plot] then
+		if now >= lockReady[plot] then
 			reset(plot)
+		elseif now >= endsAt then
+			setBarrier(plot, false)
+			plot:SetAttribute("LockState", "Cooldown")
+			plot.LockStatus.StatusGui.Label.Text = ("Lock ready in %ds"):format(math.ceil(lockReady[plot] - now))
+		else
+			plot.LockStatus.StatusGui.Label.Text = ("LOCKED %d"):format(math.ceil(endsAt - now))
 		end
 	end
 end

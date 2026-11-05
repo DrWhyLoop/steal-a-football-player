@@ -7,13 +7,21 @@
 ]]
 
 local CollectionService = game:GetService("CollectionService")
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 
+local Remotes=require(ReplicatedStorage.Shared.Remotes)
+local Reward=require(script.Parent.PlayerReward)
 local CardService = {}
+local safeBoundary
+local safePending = {}
+local dropCooldown={}
+local SlotService
+local function clock() return Workspace:GetServerTimeNow() end
 
 local cardsFolder = Workspace:WaitForChild("Greybox"):WaitForChild("Cards")
 local carried = {} -- [Player] = card part
@@ -30,52 +38,24 @@ local function getHumanoid(player: Player): Humanoid?
 	return char and char:FindFirstChildOfClass("Humanoid")
 end
 
-local function addLine(gui: BillboardGui, text: string, y: number, height: number, color: Color3)
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Position = UDim2.fromScale(0, y)
-	label.Size = UDim2.fromScale(1, height)
-	label.Text = text
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
-	label.TextColor3 = color
-	label.TextStrokeTransparency = 0.2
-	label.Parent = gui
-end
-
-local function makeLabel(card: Part, name: string, tier: string)
-	local info = Config.Tiers[tier]
-	local gui = Instance.new("BillboardGui")
-	gui.Name = "CardLabel"
-	gui.Size = UDim2.fromOffset(170, 66)
-	gui.StudsOffset = Vector3.new(0, 3, 0)
-	gui.MaxDistance = 70
-	gui.Parent = card
-	addLine(gui, name, 0, 0.45, Color3.new(1, 1, 1))
-	addLine(gui, tier, 0.45, 0.28, info.Color)
-	addLine(gui, ("$%d/s"):format(info.CashPerSecond), 0.73, 0.27, Color3.fromRGB(120, 255, 120))
-end
-
 --- Set card state; only World cards can be picked up.
-function CardService.SetState(card: Part, state: string)
-	card:SetAttribute("State", state)
-	card.PickupPrompt.Enabled = (state == "World")
-end
-
-local function scheduleDespawn(card: Part, seconds: number)
-	if seconds <= 0 then return end
-	local token = (card:GetAttribute("DropToken") or 0) + 1
-	card:SetAttribute("DropToken", token)
-	task.delay(seconds, function()
-		if card.Parent and card:GetAttribute("State") == "World" and card:GetAttribute("DropToken") == token then
-			card:Destroy()
-		end
-	end)
+function CardService.SetState(card: Part,state: string)
+ local deadline=card:GetAttribute("WorldExpiresAt")
+ if deadline then card:SetAttribute("RemainingLifetime",math.max(0,deadline-clock())) end
+ card:SetAttribute("WorldExpiresAt",nil)
+ card:SetAttribute("State",state)
+ local remaining=card:GetAttribute("RemainingLifetime")
+ if (state=="World" or state=="Revealing") and not card:GetAttribute("Escaped") and remaining then
+  card:SetAttribute("WorldExpiresAt",clock()+remaining)
+ end
+ local visual=card:FindFirstChild("PlayerVisual") if visual then visual:SetAttribute("Moving",state=="Carried") end
+ local prompt=card:FindFirstChild("PickupPrompt") if prompt then prompt.Enabled=state=="World" or state=="Safe" end
 end
 
 local function setCarryAttributes(player: Player, card: Part?)
 	player:SetAttribute("CarriedCard", card and card:GetAttribute("CardName"))
 	player:SetAttribute("CarriedTier", card and card:GetAttribute("Tier"))
+ player:SetAttribute("CanDropPlayer",card~=nil and not card:GetAttribute("Escaped"))
 end
 
 function CardService.GetCarried(player: Player): Part?
@@ -86,9 +66,18 @@ end
 function CardService.Carry(player: Player, card: Part): boolean
 	local head = player.Character and player.Character:FindFirstChild("Head") :: BasePart?
 	local humanoid = getHumanoid(player)
-	if carried[player] or not head or not humanoid or humanoid.Health <= 0 then return false end
+	if not card:GetAttribute("Escaped") and #CardService.ExportSecured(player)>=Config.DropPlayer.SafeCargoLimit then return false end
+ local deadline=card:GetAttribute("WorldExpiresAt")
+ if deadline and deadline<=clock() then card:Destroy() return false end
+ if card:GetAttribute("PickupOwnerUserId") and card:GetAttribute("PickupOwnerUserId")~=player.UserId then return false end
+ if carried[player] or not head or not humanoid or humanoid.Health <= 0 then return false end
 
 	carried[player] = card
+ player:SetAttribute("DropDisengaged",false)
+ card:SetAttribute("PickupOwnerUserId",nil)
+ safePending[player]=false
+	local root = getRoot(player)
+	lastPos[player] = root and root.Position or head.Position
 	CardService.SetState(card, "Carried")
 	card.Anchored = false
 	card.Massless = true
@@ -110,6 +99,7 @@ function CardService.Release(player: Player): Part?
 	if not card then return nil end
 	carried[player] = nil
 	lastPos[player] = nil
+ safePending[player]=nil
 	card.CarryWeld:Destroy()
 	card.Anchored = true
 	card.Massless = false
@@ -120,27 +110,33 @@ function CardService.Release(player: Player): Part?
 end
 
 local function dropOnGround(card: Part, position: Vector3, lifetime: number)
+ if not card:GetAttribute("RemainingLifetime") then card:SetAttribute("RemainingLifetime",lifetime) end
 	card.CFrame = CFrame.new(position.X, Config.GroundY + card.Size.Y / 2 + Config.CardRestHeight, position.Z)
 	card.Parent = cardsFolder
 	CardService.SetState(card, "World")
-	scheduleDespawn(card, lifetime)
+
 end
 
 local function tryPickup(player: Player, card: Part)
 	local root = getRoot(player)
-	if not root or not card.Parent or card:GetAttribute("State") ~= "World" then return end
+	if player:GetAttribute("DataReady")==false or not root or not card.Parent or (card:GetAttribute("State") ~= "World" and card:GetAttribute("State") ~= "Safe") then return end
 	if (root.Position - card.Position).Magnitude > Config.PickupMaxDistance then return end
-	if CardService.Carry(player, card) then
-		lastPos[player] = root.Position
-	end
+	CardService.Carry(player, card)
 end
 
-local function createCard(name: string, tier: string): Part
+local function createCard(entry, tier: string, position: Vector3): Part
+ local name=entry.Name
 	local info = Config.Tiers[tier]
 	local card = Instance.new("Part")
 	card.Name = "Card_" .. name
 	card.Size = Config.CardSize
+ card.CFrame=CFrame.new(position.X,Config.GroundY+Config.CardSize.Y/2+Config.CardRestHeight,position.Z)
+ card.Parent=cardsFolder
 	card.Color = info.Color
+ card.Transparency=1
+ card.CanQuery=false
+ card:SetAttribute("PlayerId",entry.Id)
+ card:SetAttribute("ItemId",HttpService:GenerateGUID(false))
 	card.Material = Enum.Material.SmoothPlastic
 	card.Anchored = true
 	card.CanCollide = false
@@ -149,7 +145,7 @@ local function createCard(name: string, tier: string): Part
 	card:SetAttribute("Tier", tier)
 	card:SetAttribute("CashPerSecond", info.CashPerSecond)
 	CollectionService:AddTag(card, "Card")
-	makeLabel(card, name, tier)
+ Reward.Attach(card,entry.Id)
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "PickupPrompt"
@@ -157,26 +153,109 @@ local function createCard(name: string, tier: string): Part
 	prompt.ObjectText = name .. " (" .. tier .. ")"
 	prompt.HoldDuration = Config.PickupHoldSeconds
 	prompt.MaxActivationDistance = Config.PickupPromptDistance
-	prompt.RequiresLineOfSight = false
+	prompt.RequiresLineOfSight = true
 	prompt.Parent = card
 	prompt.Triggered:Connect(function(player) tryPickup(player, card) end)
 	return card
 end
 
+function CardService.SetIncome(card: Part, amount: number)
+ card:SetAttribute("CashPerSecond",amount)
+end
+
 --- Called when a cube breaks: drop a random card of `tier` on the floor below `position`.
-function CardService.DropFromCube(tier: string, position: Vector3)
-	dropOnGround(createCard(Config.PickCardName(tier), tier), position, Config.CubeDropLifetime)
+function CardService.DropFromCube(tier: string,position: Vector3,breaker: Player?)
+ local entry=Reward.Pick(tier)
+ local card=createCard(entry,tier,position)
+ card:SetAttribute("EarnedFromEgg",true)
+ card:SetAttribute("RemainingLifetime",Config.CubeDropLifetime)
+ CardService.SetState(card,"Revealing")
+ local final=card.CFrame card.CFrame=final-Vector3.new(0,Config.Reveal.DisplayHeight/2,0)
+ local tween=game:GetService("TweenService"):Create(card,TweenInfo.new(Config.Reveal.WorldRiseSeconds,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{CFrame=final})
+ tween:Play()
+ Remotes.EggReveal:FireAllClients(position,tier,entry.Id)
+ task.delay(Config.Reveal.WorldRiseSeconds,function() if card.Parent and card:GetAttribute("State")=="Revealing" then CardService.SetState(card,"World") end end)
+end
+
+local function itemExists(id)
+ for _,card in CollectionService:GetTagged("Card") do if card:GetAttribute("ItemId")==id then return true end end
+ return false
+end
+function CardService.Record(card)
+ return {PlayerId=card:GetAttribute("PlayerId"),Level=card:GetAttribute("UpgradeLevel") or 0,ItemId=card:GetAttribute("ItemId")}
+end
+-- Only validated server-saved roster records can be restored. A saved ItemId that already exists live is a duplicate and is refused.
+function CardService.RestoreRecord(record,position)
+ if type(record)~="table" then return nil end
+ local entry
+ for _,candidate in Config.PlayerRoster do if candidate.Id==record.PlayerId then entry=candidate break end end
+ if not entry then return nil end
+ local id=record.ItemId
+ local validId=type(id)=="string" and #id>=Config.PlayerData.ItemIdMinLength and #id<=Config.PlayerData.ItemIdMaxLength
+ if validId and itemExists(id) then return nil end
+ local card=createCard(entry,entry.Tier,position)
+ if validId then card:SetAttribute("ItemId",id) end
+ local level=type(record.Level)=="number" and record.Level==record.Level and math.clamp(math.floor(record.Level),0,Config.PlotSlots.MaxLevel) or 0
+ card:SetAttribute("UpgradeLevel",level)
+ card:SetAttribute("BaseCashPerSecond",Config.Tiers[entry.Tier].CashPerSecond)
+ CardService.SetIncome(card,Config.Tiers[entry.Tier].CashPerSecond*Config.PlotSlots.IncomeGrowth^level)
+ return card
 end
 
 -- Death / leave handling -------------------------------------------------
 
---- Drop whatever `player` carries: back to its owner if stolen, otherwise onto the floor.
-function CardService.DropCarried(player: Player, char: Model?)
-	local card = CardService.Release(player)
-	if not card or returnStolen(card) then return end
-	char = char or player.Character
-	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-	dropOnGround(card, root and root.Position or lastPos[player] or Config.FallbackDropPosition, Config.DroppedCardLifetime)
+local function secureAtHome(player,card)
+ card:SetAttribute("Escaped",true) card:SetAttribute("SecuredOwnerUserId",player.UserId)
+ card:SetAttribute("WorldExpiresAt",nil) card:SetAttribute("RemainingLifetime",nil)
+ if SlotService and SlotService.PlaceSecured(player,card) then return end
+ local spawn=player.RespawnLocation
+ card.CFrame=CFrame.new(spawn and spawn.Position+Vector3.new(0,Config.CardSize.Y/2,0) or Config.FallbackDropPosition)
+ card:SetAttribute("PickupOwnerUserId",player.UserId)
+ CardService.SetState(card,"Safe")
+end
+function CardService.DropCarried(player: Player,char: Model?)
+ char=char or player.Character
+ local root=char and char:FindFirstChild("HumanoidRootPart")
+ local position=root and root.Position or lastPos[player] or Config.FallbackDropPosition
+ local card=CardService.Release(player)
+ if not card then return end
+ player:SetAttribute("DropDisengaged",true)
+ local stolen=card:GetAttribute("OriginalOwnerUserId")~=nil
+ if returnStolen(card) then return end
+ if card:GetAttribute("Escaped") and not stolen then secureAtHome(player,card) return end
+ if stolen then card:SetAttribute("Escaped",nil) card:SetAttribute("RemainingLifetime",Config.DroppedCardLifetime) end
+ dropOnGround(card,position,Config.DroppedCardLifetime)
+end
+function CardService.ExportSecured(player)
+ local records={}
+ for _,card in CollectionService:GetTagged("Card") do
+  if card.Parent and not card:GetAttribute("OriginalOwnerUserId") and card:GetAttribute("Escaped") and (carried[player]==card or card:GetAttribute("PickupOwnerUserId")==player.UserId) then
+   table.insert(records,CardService.Record(card))
+  end
+ end
+ return records
+end
+function CardService.RestoreSecured(player,records)
+ for index,record in records do if index>Config.DropPlayer.SafeCargoLimit then break end local card=CardService.RestoreRecord(record,Config.FallbackDropPosition) if card then secureAtHome(player,card) end end
+end
+local function currentStage(position)
+ for _,zone in CollectionService:GetTagged("StageZone") do
+  local p=zone.CFrame:PointToObjectSpace(position)
+  if math.abs(p.X)<=zone.Size.X/2 and math.abs(p.Z)<=zone.Size.Z/2 then return zone end
+ end
+end
+local function manualDrop(player)
+ if (dropCooldown[player] or 0)>clock() then return end
+ dropCooldown[player]=clock()+Config.DropPlayer.RequestCooldown
+ local card=carried[player] local root=getRoot(player) local h=getHumanoid(player)
+ if not card or not root or not h or h.Health<=0 or card:GetAttribute("Escaped") then return end
+ local zone=currentStage(root.Position) if not zone then return end
+ local point=zone.CFrame:PointToObjectSpace(root.Position+root.CFrame.LookVector*Config.DropPlayer.Forward)
+ point=Vector3.new(math.clamp(point.X,-zone.Size.X/2+3,zone.Size.X/2-3),point.Y,math.clamp(point.Z,-zone.Size.Z/2+3,zone.Size.Z/2-3))
+ lastPos[player]=zone.CFrame*point
+ local position=lastPos[player] or root.Position
+ local released=CardService.Release(player) player:SetAttribute("DropDisengaged",true)
+ if released then dropOnGround(released,position,Config.DroppedCardLifetime) end
 end
 
 local function onCharacterAdded(player: Player, char: Model)
@@ -193,8 +272,13 @@ local function onPlayerAdded(player: Player)
 	end
 end
 
-function CardService.Init(returnStolenFn)
+function CardService.Init(returnStolenFn,slotService)
+ SlotService=slotService
+ Remotes.DropPlayer.OnServerEvent:Connect(manualDrop)
 	returnStolen = returnStolenFn
+ for _,zone in CollectionService:GetTagged("StageZone") do
+  if zone:GetAttribute("Stage")==1 then safeBoundary=zone.Position.Z-zone.Size.Z/2 end
+ end
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	for _, player in ipairs(Players:GetPlayers()) do
 		onPlayerAdded(player)
@@ -202,15 +286,32 @@ function CardService.Init(returnStolenFn)
 	Players.PlayerRemoving:Connect(function(player)
 		CardService.DropCarried(player)
 		lastPos[player] = nil
+  dropCooldown[player]=nil
+  for _,card in CollectionService:GetTagged("Card") do if card:GetAttribute("PickupOwnerUserId")==player.UserId then card:Destroy() end end
 	end)
 
 	-- Track last known position of carriers (fallback if the character is already gone)
 	task.spawn(function()
 		while true do
 			task.wait(Config.CarryTrackSeconds)
-			for player in pairs(carried) do
+   for _,card in CollectionService:GetTagged("Card") do local deadline=card:GetAttribute("WorldExpiresAt") if deadline and deadline<=clock() and (card:GetAttribute("State")=="World" or card:GetAttribute("State")=="Revealing") then card:Destroy() end end
+   for player in pairs(carried) do
 				local root = getRoot(player)
-				if root then lastPos[player] = root.Position end
+				if root then
+     lastPos[player] = root.Position
+     local card=carried[player]
+     if card:GetAttribute("EarnedFromEgg") and not card:GetAttribute("Escaped") then
+      if safeBoundary and root.Position.Z>=safeBoundary then safePending[player]=true end
+      if safePending[player] and root.Position.Z<safeBoundary-Config.Reveal.SafeMargin then
+       card:SetAttribute("Escaped",true)
+       card:SetAttribute("SecuredOwnerUserId",player.UserId)
+       card:SetAttribute("RemainingLifetime",nil) card:SetAttribute("WorldExpiresAt",nil)
+       player:SetAttribute("CanDropPlayer",false)
+       safePending[player]=nil
+       Remotes.SafeReturn:FireClient(player,card:GetAttribute("CardName"))
+      end
+     end
+    end
 			end
 		end
 	end)

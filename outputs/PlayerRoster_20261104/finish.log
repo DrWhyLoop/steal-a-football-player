@@ -1,0 +1,145 @@
+00:02.484  blend            | Read blend: "C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\prepared_geometry.blend"
+C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\finish_roster.py:8: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world.use_nodes=True;bg=next(n for n in scene.world.node_tree.nodes if n.type=='BACKGROUND');bg.inputs[0].default_value=(.8,.8,.8,1);bg.inputs[1].default_value=.6
+C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\finish_roster.py:18: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat=bpy.data.materials.new(rec['id']+'_ReferenceColor');mat.use_nodes=True
+00:04.781  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_02_front.png'
+BlenderMCP addon registered
+Reloading external rigs...
+Reloading external metarigs...
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+08:19:12 | INFO: Starting glTF 2.0 export
+08:19:12 | INFO: Extracting primitive: Player_02
+08:19:12 | INFO: Primitives created: 1
+08:19:12 | INFO: Finished glTF 2.0 export in 0.21874141693115234 s
+
+EXPORTED Player_02
+00:07.218  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_03_front.png'
+08:19:14 | INFO: Starting glTF 2.0 export
+08:19:14 | INFO: Extracting primitive: Player_03
+08:19:14 | INFO: Primitives created: 1
+08:19:14 | INFO: Finished glTF 2.0 export in 0.260589599609375 s
+
+EXPORTED Player_03
+00:09.484  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_04_front.png'
+08:19:16 | INFO: Starting glTF 2.0 export
+08:19:16 | INFO: Extracting primitive: Player_04
+08:19:16 | INFO: Primitives created: 1
+08:19:16 | INFO: Finished glTF 2.0 export in 0.3081531524658203 s
+
+EXPORTED Player_04
+00:11.937  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_05_front.png'
+08:19:19 | INFO: Starting glTF 2.0 export
+08:19:19 | INFO: Extracting primitive: Player_05
+08:19:19 | INFO: Primitives created: 1
+08:19:19 | INFO: Finished glTF 2.0 export in 0.2602548599243164 s
+
+EXPORTED Player_05
+00:14.453  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_06_front.png'
+08:19:21 | INFO: Starting glTF 2.0 export
+08:19:21 | INFO: Extracting primitive: Player_06
+08:19:21 | INFO: Primitives created: 1
+08:19:21 | INFO: Finished glTF 2.0 export in 0.35228610038757324 s
+
+EXPORTED Player_06
+00:16.921  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_07_front.png'
+08:19:24 | INFO: Starting glTF 2.0 export
+08:19:24 | INFO: Extracting primitive: Player_07
+08:19:24 | INFO: Primitives created: 1
+08:19:24 | INFO: Finished glTF 2.0 export in 0.29891300201416016 s
+
+EXPORTED Player_07
+00:19.218  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_08_front.png'
+08:19:26 | INFO: Starting glTF 2.0 export
+08:19:26 | INFO: Extracting primitive: Player_08
+08:19:26 | INFO: Primitives created: 1
+08:19:26 | INFO: Finished glTF 2.0 export in 0.2089214324951172 s
+
+EXPORTED Player_08
+00:21.406  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_09_front.png'
+08:19:28 | INFO: Starting glTF 2.0 export
+08:19:28 | INFO: Extracting primitive: Player_09
+08:19:28 | INFO: Primitives created: 1
+08:19:28 | INFO: Finished glTF 2.0 export in 0.26564598083496094 s
+
+EXPORTED Player_09
+00:23.609  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_10_front.png'
+08:19:30 | INFO: Starting glTF 2.0 export
+08:19:30 | INFO: Extracting primitive: Player_10
+08:19:30 | INFO: Primitives created: 1
+08:19:30 | INFO: Finished glTF 2.0 export in 0.24807071685791016 s
+
+EXPORTED Player_10
+00:25.890  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_11_front.png'
+08:19:33 | INFO: Starting glTF 2.0 export
+08:19:33 | INFO: Extracting primitive: Player_11
+08:19:33 | INFO: Primitives created: 1
+08:19:33 | INFO: Finished glTF 2.0 export in 0.2075662612915039 s
+
+EXPORTED Player_11
+00:28.046  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_12_front.png'
+08:19:35 | INFO: Starting glTF 2.0 export
+08:19:35 | INFO: Extracting primitive: Player_12
+08:19:35 | INFO: Primitives created: 1
+08:19:35 | INFO: Finished glTF 2.0 export in 0.24971914291381836 s
+
+EXPORTED Player_12
+00:30.312  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_13_front.png'
+08:19:37 | INFO: Starting glTF 2.0 export
+08:19:37 | INFO: Extracting primitive: Player_13
+08:19:37 | INFO: Primitives created: 1
+08:19:37 | INFO: Finished glTF 2.0 export in 0.30792737007141113 s
+
+EXPORTED Player_13
+00:32.828  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerRoster_20261104\REVIEW\Player_14_front.png'
+08:19:39 | INFO: Starting glTF 2.0 export
+08:19:40 | INFO: Extracting primitive: Player_14
+08:19:40 | INFO: Primitives created: 1
+08:19:40 | INFO: Finished glTF 2.0 export in 0.2764246463775635 s
+
+EXPORTED Player_14
+08:19:40 | INFO: Starting glTF 2.0 export
+08:19:40 | INFO: Extracting primitive: Player_02
+08:19:40 | INFO: Primitives created: 1
+08:19:40 | INFO: Extracting primitive: Player_03
+08:19:40 | INFO: Primitives created: 1
+08:19:40 | INFO: Extracting primitive: Player_04
+08:19:40 | INFO: Primitives created: 1
+08:19:40 | INFO: Extracting primitive: Player_05
+08:19:40 | INFO: Primitives created: 1
+08:19:40 | INFO: Extracting primitive: Player_06
+08:19:41 | INFO: Primitives created: 1
+08:19:41 | INFO: Extracting primitive: Player_07
+08:19:41 | INFO: Primitives created: 1
+08:19:41 | INFO: Extracting primitive: Player_08
+08:19:41 | INFO: Primitives created: 1
+08:19:41 | INFO: Extracting primitive: Player_09
+08:19:41 | INFO: Primitives created: 1
+08:19:41 | INFO: Extracting primitive: Player_10
+08:19:41 | INFO: Primitives created: 1
+08:19:41 | INFO: Extracting primitive: Player_11
+08:19:41 | INFO: Primitives created: 1
+08:19:41 | INFO: Extracting primitive: Player_12
+08:19:41 | INFO: Primitives created: 1
+08:19:41 | INFO: Extracting primitive: Player_13
+08:19:41 | INFO: Primitives created: 1
+08:19:41 | INFO: Extracting primitive: Player_14
+08:19:41 | INFO: Primitives created: 1
+08:19:42 | INFO: Finished glTF 2.0 export in 1.7728526592254639 s
+
+Info: Saved as "textured_roster.blend"
+ROSTER_READY
+[0]:done
+[1]:done
+[2]:done
+[3]:done
+[4]:done
+[5]:done
+[6]:done
+[7]:done
+[8]:done
+[9]:done
+BlenderMCP addon unregistered
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

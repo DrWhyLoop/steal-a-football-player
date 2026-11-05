@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 
 local CashService = {}
+local remainder = {}
 
 local PlotService, SlotService -- injected in Init
 
@@ -28,7 +29,7 @@ function CashService.AddCash(player: Player, amount: number)
 	local stats = player:FindFirstChild("leaderstats")
 	local cash = stats and stats:FindFirstChild("Cash") :: IntValue?
 	if cash then
-		cash.Value += amount
+		cash.Value = math.clamp(cash.Value+amount,0,Config.PlayerData.MaxCash)
 	end
 end
 
@@ -37,6 +38,7 @@ function CashService.Init(plotService, slotService)
 	SlotService = slotService
 
 	Players.PlayerAdded:Connect(setup)
+ Players.PlayerRemoving:Connect(function(player) remainder[player]=nil end)
 	for _, p in ipairs(Players:GetPlayers()) do
 		setup(p)
 	end
@@ -46,10 +48,13 @@ function CashService.Init(plotService, slotService)
 			task.wait(Config.CashTickSeconds)
 			for _, player in ipairs(Players:GetPlayers()) do
 				local plot = PlotService.GetPlot(player)
-				if plot then
+				if plot and player:GetAttribute("DataReady")~=false then
 					local income = SlotService.GetPlotIncome(plot) * Config.CashTickSeconds
 					if income > 0 then
-						CashService.AddCash(player, income)
+						local pending=(remainder[player] or 0)+income
+      local whole=math.floor(pending)
+      remainder[player]=pending-whole
+      CashService.AddCash(player, whole)
 					end
 				end
 			end

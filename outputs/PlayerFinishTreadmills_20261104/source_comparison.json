@@ -1,0 +1,72 @@
+[
+  {
+    "syntax": true,
+    "file": "Shared/Config.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Shared/Remotes.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Shared/NumberFormat.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/PlayerData.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/TreadmillService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/FeedbackService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/CardService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/SlotService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/CashService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/PlotService.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Server/Main.server.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Client/TreadmillUI.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Client/TreadmillVisibility.luau",
+    "matches": true
+  },
+  {
+    "syntax": true,
+    "file": "Client/Main.client.luau",
+    "matches": true
+  }
+]

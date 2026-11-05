@@ -1,0 +1,15 @@
+[
+ {"id":"Player_02","model":"cristiano_ronaldo.glb","reference":"Cristiano Ronaldo.jpeg","height":7.35,"shirt":[165,22,29],"shorts":[31,105,65],"socks":[223,227,224],"boots":[72,29,28],"skin":[177,128,102],"hair":[31,25,20],"hair_back":0.92},
+ {"id":"Player_03","model":"diego_maradona.glb","reference":"Diego Maradona.jpeg","height":6.75,"shirt":[98,172,203],"shorts":[24,25,24],"socks":[221,224,220],"boots":[30,42,57],"skin":[181,131,104],"hair":[23,21,19],"hair_back":0.88,"stripes":true},
+ {"id":"Player_04","model":"haaland.glb","reference":"Erling Haaland.jpeg","height":7.7,"shirt":[169,29,37],"shorts":[27,39,65],"socks":[220,224,223],"boots":[26,28,28],"skin":[211,173,145],"hair":[166,146,98],"hair_back":0.94},
+ {"id":"Player_05","model":"iniesta.glb","reference":"Iniesta.jpeg","height":6.95,"shirt":[164,25,36],"shorts":[27,34,45],"socks":[27,31,36],"boots":[20,22,25],"skin":[199,157,133],"hair":[55,42,31],"hair_back":0.95,"sock_top":0.105},
+ {"id":"Player_06","model":"johan_cryuff. .glb","reference":"Johan Cruyff.jpeg","height":7.25,"shirt":[229,90,22],"shorts":[217,220,216],"socks":[219,224,219],"boots":[25,28,26],"skin":[190,146,119],"hair":[67,48,30],"hair_back":0.875},
+ {"id":"Player_07","model":"kylian_mbappe.glb","reference":"Kylian Mbappe.jpeg","height":7.2,"shirt":[31,65,120],"shorts":[219,220,214],"socks":[216,220,215],"boots":[29,43,65],"skin":[139,96,70],"hair":[26,22,19],"hair_back":0.94},
+ {"id":"Player_08","model":"neymar_jr.glb","reference":"Neymar Jr..jpeg","height":7.1,"shirt":[229,196,41],"shorts":[30,78,143],"socks":[220,224,219],"boots":[28,32,35],"skin":[167,117,88],"hair":[35,29,21],"hair_back":0.94},
+ {"id":"Player_09","model":"pele.glb","reference":"Pele.jpeg","height":7.05,"shirt":[230,192,34],"shorts":[30,77,132],"socks":[220,224,217],"boots":[27,30,28],"skin":[113,76,53],"hair":[22,20,17],"hair_back":0.93},
+ {"id":"Player_10","model":"ronaldhino.glb","reference":"Ronaldinho.jpeg","height":7.2,"shirt":[229,192,37],"shorts":[33,76,135],"socks":[220,223,217],"boots":[30,39,48],"skin":[135,88,60],"hair":[24,21,17],"hair_back":0.87},
+ {"id":"Player_11","model":"ronaldo_nazario.glb","reference":"Ronaldo Nazario.jpeg","height":7.25,"shirt":[232,195,38],"shorts":[32,76,133],"socks":[222,224,219],"boots":[29,32,29],"skin":[163,113,84],"hair":[31,25,19],"hair_back":0.97,"bald":true},
+ {"id":"Player_12","model":"thiery_henry.glb","reference":"Thiery Henry.jpeg","height":7.5,"shirt":[28,67,110],"shorts":[218,220,216],"socks":[219,224,219],"boots":[27,30,28],"skin":[130,88,62],"hair":[36,28,21],"hair_back":0.97,"bald":true},
+ {"id":"Player_13","model":"zinedine_zidane.glb","reference":"Zinedine Zidane.jpeg","height":7.5,"shirt":[30,65,119],"shorts":[218,220,215],"socks":[220,225,219],"boots":[27,30,29],"skin":[193,150,123],"hair":[58,45,32],"hair_back":0.97,"bald":true},
+ {"id":"Player_14","model":"zlatan_ibrahamovic.glb","reference":"Zlatan Ibrahimovic.jpeg","height":7.7,"shirt":[229,194,37],"shorts":[32,78,140],"socks":[220,224,218],"boots":[29,32,28],"skin":[188,143,112],"hair":[38,29,21],"hair_back":0.94}
+]

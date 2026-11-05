@@ -1,0 +1,34 @@
+{
+  "original_sha256": "b2630def8c8a995baa4948b1d5c9052b6aa9b070083a7d56fac1001db3b4d32f",
+  "original_triangles": 317398,
+  "bones": 52,
+  "optimized_triangles": 19500,
+  "optimized_vertices": 26856,
+  "vertices_trimmed_to_four_weights": 414,
+  "maximum_influences": 4,
+  "pose_test": {
+    "moved_vertices": 10665,
+    "maximum_displacement_m": 0.17538491502808623,
+    "all_positions_finite": true
+  },
+  "original_unchanged": true,
+  "studio_test": {
+    "model": "Workspace.ImportedFootballer_Test",
+    "mesh_parts": 1,
+    "bones": 52,
+    "height_studs": 7,
+    "edit_hand_motion_studs": 1.1340805292129517,
+    "edit_foot_motion_studs": 0.2775198817253113,
+    "play_hand_motion_studs": 0.9332929253578186,
+    "fake_popup": false,
+    "new_gameplay_scripts": 0,
+    "mode_on_finish": "Edit",
+    "limitations": [
+      "No textures supplied",
+      "No idle/walk animation or R15 retarget tested",
+      "Generated mesh has visible surface imperfections; visual cleanup remains",
+      "No mobile hardware benchmark",
+      "Existing unrelated imported animation/audio errors remain"
+    ]
+  }
+}

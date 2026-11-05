@@ -1,0 +1,93 @@
+[
+  {
+    "id": "Player_02",
+    "height": 7.349999904632568,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 19500
+  },
+  {
+    "id": "Player_03",
+    "height": 6.750000953674316,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 18000
+  },
+  {
+    "id": "Player_04",
+    "height": 7.6999993324279785,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 18000
+  },
+  {
+    "id": "Player_05",
+    "height": 6.949999809265137,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 18000
+  },
+  {
+    "id": "Player_06",
+    "height": 7.249999046325684,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 18000
+  },
+  {
+    "id": "Player_07",
+    "height": 7.200000286102295,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 16000
+  },
+  {
+    "id": "Player_08",
+    "height": 7.100000381469727,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 16000
+  },
+  {
+    "id": "Player_09",
+    "height": 7.049998760223389,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 20000
+  },
+  {
+    "id": "Player_10",
+    "height": 7.2000017166137695,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 18000
+  },
+  {
+    "id": "Player_11",
+    "height": 7.250000476837158,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 18000
+  },
+  {
+    "id": "Player_12",
+    "height": 7.499999046325684,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 18000
+  },
+  {
+    "id": "Player_13",
+    "height": 7.499998569488525,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 18000
+  },
+  {
+    "id": "Player_14",
+    "height": 7.699997901916504,
+    "bones": 52,
+    "textures": 1,
+    "triangles": 18000
+  }
+]

@@ -1,0 +1,134 @@
+{
+  "bosses": [
+    {
+      "lights": 0,
+      "name": "Robot Tower",
+      "particleRate": 0,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 1,
+      "parts": 25
+    },
+    {
+      "lights": 0,
+      "name": "Long-Throw Launcher",
+      "particleRate": 0,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 2,
+      "parts": 39
+    },
+    {
+      "lights": 0,
+      "name": "Lion Mane",
+      "particleRate": 0,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 3,
+      "parts": 32
+    },
+    {
+      "lights": 0,
+      "name": "Wing Spark",
+      "particleRate": 6,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 4,
+      "parts": 25
+    },
+    {
+      "lights": 0,
+      "name": "Bicycle Bulldog",
+      "particleRate": 0,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 5,
+      "parts": 26
+    },
+    {
+      "lights": 0,
+      "name": "Final Header",
+      "particleRate": 0,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 6,
+      "parts": 20
+    },
+    {
+      "lights": 1,
+      "name": "Pocket Storm",
+      "particleRate": 6,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 12,
+      "parts": 32
+    },
+    {
+      "lights": 0,
+      "name": "Granite Glove",
+      "particleRate": 0,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 8,
+      "parts": 25
+    },
+    {
+      "lights": 0,
+      "name": "Viking Engine",
+      "particleRate": 4,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 9,
+      "parts": 37
+    },
+    {
+      "lights": 1,
+      "name": "Meteor Nine",
+      "particleRate": 6,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 10,
+      "parts": 25
+    },
+    {
+      "lights": 0,
+      "name": "Samba Grin",
+      "particleRate": 3,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 11,
+      "parts": 39
+    },
+    {
+      "lights": 0,
+      "name": "Bun Rocket",
+      "particleRate": 6,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 7,
+      "parts": 27
+    },
+    {
+      "lights": 1,
+      "name": "Crimson Demon",
+      "particleRate": 6,
+      "rigAttachments": 30,
+      "joints": 15,
+      "stage": 12,
+      "parts": 33
+    }
+  ],
+  "exactSources": [
+    "Shared/Bosses.luau",
+    "Server/BossFactory.luau",
+    "Shared/Config.luau",
+    "Server/GuardService.luau"
+  ],
+  "guardServiceUnchanged": true,
+  "step2Pending": {
+    "effectActivationDistance": 80,
+    "maxGuardsStages1to11": 3,
+    "stage12Count": 2
+  },
+  "effectsPlaytested": false
+}

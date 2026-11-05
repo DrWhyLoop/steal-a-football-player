@@ -12,9 +12,10 @@ local LockService = require(script.Parent.LockService)
 local GuardService = require(script.Parent.GuardService)
 local CashService = require(script.Parent.CashService)
 
+require(script.Parent.PlotAccess).Init()
 PlotService.Init()
 LockService.Init(PlotService)
-CardService.Init(SlotService.ReturnStolen)
+CardService.Init(SlotService.ReturnStolen,SlotService)
 SlotService.Init(PlotService, CardService, LockService)
 CashService.Init(PlotService, SlotService)
 PickaxeService.Init(CubeService, CardService)
@@ -24,3 +25,11 @@ GuardService.Init(CardService)
 CubeService.OnBroken(CardService.DropFromCube)
 
 CubeService.Init()
+
+require(script.Parent.WeatherService).Init()
+
+require(script.Parent.PlayerData).Init(PlotService,SlotService,CardService)
+require(script.Parent.TreadmillService).Init(PlotService,CardService)
+require(script.Parent.FeedbackService).Init()
+
+require(script.Parent.TorchMount).Apply()

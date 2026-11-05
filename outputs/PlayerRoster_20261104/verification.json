@@ -1,0 +1,31 @@
+{
+  "bundle": "C:\\Users\\User\\steal_a_football_goat\\outputs\\PlayerRoster_20261104\\READY_TO_IMPORT\\Players_02_to_14.glb",
+  "bytes": 28343276,
+  "meshes": 13,
+  "skins": 13,
+  "embedded_textures": 13,
+  "triangles": 233500,
+  "bone_counts": [
+    52,
+    52,
+    52,
+    52,
+    52,
+    52,
+    52,
+    52,
+    52,
+    52,
+    52,
+    52,
+    52
+  ],
+  "all_pose_tests_passed": true,
+  "all_sources_and_references_unchanged": true,
+  "studio_import": "Complete; independent rigs repaired through MCP",
+  "studio_playtest": "Passed all 28 player asset fetches and 14 pose checks; screenshots inspected",
+  "gameplay_scripts_changed": [],
+  "preview_models": 14,
+  "studio_bones": 726,
+  "restored_to_edit": true
+}

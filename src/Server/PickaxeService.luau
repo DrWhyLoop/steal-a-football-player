@@ -5,16 +5,16 @@
 	  1. enforce a per-player cooldown,
 	  2. find the nearest target in range and in front: a cube, or another player carrying a card,
 	  3. damage the cube / make the player drop their card,
-	  4. play the swing animation (default Animate script reads a "toolanim" StringValue) and a hit/miss sound.
+	  4. cue the overhead strike, then validate the target again at impact.
 	No client raycasts and no remotes are involved.
 ]]
 
 local CollectionService = game:GetService("CollectionService")
-local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local LineOfSight = require(script.Parent.LineOfSight)
 
 local PickaxeService = {}
 
@@ -42,7 +42,7 @@ local function findTarget(player: Player, root: BasePart): (Part?, Player?)
 	for _, inst in ipairs(CollectionService:GetTagged("Cube")) do
 		if inst.Parent and not inst:GetAttribute("Dead") then
 			local distance = reachDistance(root, (inst :: Part).Position)
-			if distance and distance < bestDistance then
+			if distance and distance < bestDistance and LineOfSight.IsClear(root.Parent, inst, inst.Position) then
 				bestDistance, cube, victim = distance, inst :: Part, nil
 			end
 		end
@@ -51,7 +51,7 @@ local function findTarget(player: Player, root: BasePart): (Part?, Player?)
 		local otherRoot = other ~= player and CardService.GetCarried(other) and other.Character
 			and other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		local distance = otherRoot and reachDistance(root, otherRoot.Position)
-		if distance and distance < bestDistance then
+		if distance and distance < bestDistance and LineOfSight.IsClear(root.Parent, other.Character, otherRoot.Position) then
 			bestDistance, cube, victim = distance, nil, other
 		end
 	end
@@ -69,18 +69,18 @@ local function onSwing(player: Player, tool: Tool)
 	if not humanoid or humanoid.Health <= 0 or not root then return end
 	lastSwing[player] = now
 
-	local animation = Instance.new("StringValue")
-	animation.Name = "toolanim"
-	animation.Value = "Slash"
-	animation.Parent = tool
-	Debris:AddItem(animation, Config.SwingCooldown) -- the client's Animate script has already read it
-	local cube, victim = findTarget(player, root)
-	if cube then
-		CubeService.Damage(cube, Config.PickaxeDamage, player)
-	elseif victim then
-		CardService.DropCarried(victim)
-	end
-	tool.Handle[(cube or victim) and "HitSound" or "MissSound"]:Play()
+	tool:SetAttribute('SwingStart',workspace:GetServerTimeNow())
+	task.delay(Config.Axes.ImpactTime,function()
+		if not char.Parent or tool.Parent~=char or humanoid.Health<=0 or not root.Parent then return end
+		local cube,victim=findTarget(player,root)
+		if cube then CubeService.Damage(cube,Config.PickaxeDamage,player)
+		elseif victim then
+   if victim.Character then victim.Character:SetAttribute("HurtStart",workspace:GetServerTimeNow()) end
+   CardService.DropCarried(victim) end
+		local handle=tool:FindFirstChild('Handle')
+		local sound=handle and handle:FindFirstChild((cube or victim) and 'HitSound' or 'MissSound')
+		if sound then sound:Play() end
+	end)
 end
 
 local function hookTool(player: Player, tool: Instance)

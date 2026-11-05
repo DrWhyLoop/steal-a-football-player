@@ -26,6 +26,10 @@ local function setSign(plot, text)
 	end
 end
 
+function PlotService.GetPlots()
+ return table.clone(plots)
+end
+
 function PlotService.GetPlot(player: Player): Model?
 	return plotOfPlayer[player]
 end
@@ -73,6 +77,7 @@ end
 local function release(player: Player)
 	local plot = plotOfPlayer[player]
 	if not plot then return end
+	if PlotService.BeforeRelease then PlotService.BeforeRelease(player) end
 	PlotService.PlotFreed:Fire(plot, player) -- listeners clear placed cards
 	ownerOfPlot[plot] = nil
 	plotOfPlayer[player] = nil
@@ -82,7 +87,7 @@ end
 
 function PlotService.Init()
 	for _, plot in ipairs(CollectionService:GetTagged("Plot")) do
-		table.insert(plots, plot)
+		if plot:IsDescendantOf(workspace.Greybox.Plots) then table.insert(plots, plot) end
 	end
 	table.sort(plots, function(a, b)
 		return (a:GetAttribute("PlotIndex") or 0) < (b:GetAttribute("PlotIndex") or 0)

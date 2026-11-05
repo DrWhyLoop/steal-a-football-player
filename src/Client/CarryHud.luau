@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 
+local Remotes=require(ReplicatedStorage.Shared.Remotes)
 local CarryHud = {}
 
 function CarryHud.Init()
@@ -34,8 +35,11 @@ function CarryHud.Init()
 	corner.CornerRadius = UDim.new(0, 8)
 	corner.Parent = label
 
-	local function refresh()
-		local name = player:GetAttribute("CarriedCard")
+	local drop=Instance.new("TextButton") drop.Name="Drop" drop.AnchorPoint=Vector2.new(.5,1) drop.Position=UDim2.new(.5,0,1,-140) drop.Size=UDim2.fromOffset(130,42) drop.BackgroundColor3=Color3.fromRGB(170,72,48) drop.Text="Drop" drop.TextColor3=Color3.new(1,1,1) drop.Font=Enum.Font.GothamBold drop.TextSize=20 drop.Visible=false drop.Parent=gui
+ drop.Activated:Connect(function() Remotes.DropPlayer:FireServer() end)
+ local function refresh()
+		drop.Visible=player:GetAttribute("CanDropPlayer")==true
+  local name = player:GetAttribute("CarriedCard")
 		local tier = player:GetAttribute("CarriedTier")
 		if name and tier then
 			label.Text = ("Carrying: %s [%s]"):format(name, tier)
@@ -48,6 +52,7 @@ function CarryHud.Init()
 
 	player:GetAttributeChangedSignal("CarriedCard"):Connect(refresh)
 	player:GetAttributeChangedSignal("CarriedTier"):Connect(refresh)
+ player:GetAttributeChangedSignal("CanDropPlayer"):Connect(refresh)
 	refresh()
 end
 

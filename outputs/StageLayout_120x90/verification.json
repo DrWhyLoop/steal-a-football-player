@@ -1,0 +1,192 @@
+{
+  "applied": {
+    "stages": [
+      {
+        "centerZ": -804.2275390625,
+        "markers": 6,
+        "length": 120,
+        "stage": 1,
+        "width": 90
+      },
+      {
+        "centerZ": -684.2275390625,
+        "markers": 6,
+        "length": 120,
+        "stage": 2,
+        "width": 90
+      },
+      {
+        "centerZ": -564.2275390625,
+        "markers": 7,
+        "length": 120,
+        "stage": 3,
+        "width": 90
+      },
+      {
+        "centerZ": -444.2275390625,
+        "markers": 7,
+        "length": 120,
+        "stage": 4,
+        "width": 90
+      },
+      {
+        "centerZ": -324.2275390625,
+        "markers": 8,
+        "length": 120,
+        "stage": 5,
+        "width": 90
+      },
+      {
+        "centerZ": -204.2275390625,
+        "markers": 8,
+        "length": 120,
+        "stage": 6,
+        "width": 90
+      },
+      {
+        "centerZ": -84.2275390625,
+        "markers": 9,
+        "length": 120,
+        "stage": 7,
+        "width": 90
+      },
+      {
+        "centerZ": 35.7724609375,
+        "markers": 6,
+        "length": 120,
+        "stage": 8,
+        "width": 90
+      },
+      {
+        "centerZ": 155.7724609375,
+        "markers": 10,
+        "length": 120,
+        "stage": 9,
+        "width": 90
+      },
+      {
+        "centerZ": 275.7724609375,
+        "markers": 7,
+        "length": 120,
+        "stage": 10,
+        "width": 90
+      },
+      {
+        "centerZ": 395.7724609375,
+        "markers": 12,
+        "length": 120,
+        "stage": 11,
+        "width": 90
+      },
+      {
+        "centerZ": 515.7724609375,
+        "markers": 1,
+        "length": 120,
+        "stage": 12,
+        "width": 90
+      }
+    ],
+    "totalLength": 1440,
+    "endZ": 575.7724609375,
+    "markers": 87,
+    "startZ": -864.2275390625
+  },
+  "play": {
+    "stages": [
+      {
+        "cubes": 6,
+        "length": 120,
+        "stage": 1,
+        "width": 90
+      },
+      {
+        "cubes": 6,
+        "length": 120,
+        "stage": 2,
+        "width": 90
+      },
+      {
+        "cubes": 7,
+        "length": 120,
+        "stage": 3,
+        "width": 90
+      },
+      {
+        "cubes": 7,
+        "length": 120,
+        "stage": 4,
+        "width": 90
+      },
+      {
+        "cubes": 8,
+        "length": 120,
+        "stage": 5,
+        "width": 90
+      },
+      {
+        "cubes": 8,
+        "length": 120,
+        "stage": 6,
+        "width": 90
+      },
+      {
+        "cubes": 9,
+        "length": 120,
+        "stage": 7,
+        "width": 90
+      },
+      {
+        "cubes": 6,
+        "length": 120,
+        "stage": 8,
+        "width": 90
+      },
+      {
+        "cubes": 10,
+        "length": 120,
+        "stage": 9,
+        "width": 90
+      },
+      {
+        "cubes": 7,
+        "length": 120,
+        "stage": 10,
+        "width": 90
+      },
+      {
+        "cubes": 12,
+        "length": 120,
+        "stage": 11,
+        "width": 90
+      },
+      {
+        "cubes": 1,
+        "length": 120,
+        "stage": 12,
+        "width": 90
+      }
+    ],
+    "errors": [
+      "XSCREAM is not a valid member of Part \"Workspace.Fella.Torso\"",
+      "SimplePath is not a valid member of ServerStorage \"ServerStorage\"",
+      "Failed to load sound rbxassetid://295186616: User is not authorized to access Asset.",
+      "Failed to load sound rbxassetid://295186616: User is not authorized to access Asset.",
+      "Failed to load sound rbxassetid://137473066: Requested asset is archived",
+      "The experience doesn't have access permission to use asset id 295186616. Click to share access",
+      "Failed to load sound rbxassetid://137473066: Requested asset is archived",
+      "Failed to load animation with sanitized ID rbxassetid://9072151110: Animation failed to load, assetId: https://assetdelivery.roblox.com/v1/asset?id=9072151110&serverplaceid=0",
+      "Failed to load animation with sanitized ID rbxassetid://8141648698: Animation failed to load, assetId: https://assetdelivery.roblox.com/v1/asset?id=8141648698&serverplaceid=0",
+      "Failed to load animation with sanitized ID rbxassetid://8141648698: Animation failed to load, assetId: https://assetdelivery.roblox.com/v1/asset?id=8141648698&serverplaceid=0",
+      "Failed to load animation with sanitized ID rbxassetid://9072151110: Animation failed to load, assetId: https://assetdelivery.roblox.com/v1/asset?id=9072151110&serverplaceid=0",
+      "The experience doesn't have access permission to use asset id 9072151110. Click to share access",
+      "The experience doesn't have access permission to use asset id 8141648698. Click to share access",
+      "The experience doesn't have access permission to use asset id 295186616. Click to share access",
+      "The experience doesn't have access permission to use asset id 9072151110. Click to share access"
+    ],
+    "cubes": 87,
+    "markers": 87,
+    "entranceConnected": true
+  },
+  "configMatches": true,
+  "unrelatedModelsAndBasesUnchanged": true
+}

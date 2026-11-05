@@ -120,7 +120,7 @@ for n = 1, Config.StageCount do
 		end
 		local marker = part("CubeSpawn_" .. i, Vector3.new(6, 0.2, 6), Vector3.new(x, 1.1, zm), Config.Tiers[tier].Color, markers)
 		marker.Material = Enum.Material.Neon
-		marker.Transparency = 0.6
+		marker.Transparency = Config.CubeSpawnMarkerTransparency
 		marker.CanCollide = false
 		marker.CanTouch = false
 		marker:SetAttribute("Stage", n)

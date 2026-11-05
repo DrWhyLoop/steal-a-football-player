@@ -11,43 +11,121 @@
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Format = require(ReplicatedStorage.Shared.NumberFormat)
+local LineOfSight = require(script.Parent.LineOfSight)
+local PlayerData = require(script.Parent.PlayerData)
 
 local SlotService = {}
 
 local PlotService, CardService, LockService -- injected in Init
 local slotCards = {} -- [slotPart] = card part
-local homeSlot = setmetatable({}, { __mode = "k" }) -- [card] = slot it was stolen from
+local homeSlot = {} -- [stolen card] = reserved original slot
+local reserved = {} -- [slot] = stolen card
+local upgradeUntil = {} -- [slot] = next purchase time
+local messageUntil = setmetatable({}, {__mode = "k"}) -- [player] = next feedback message time
+
+local function upgradeCost(card)
+ local level=card:GetAttribute("UpgradeLevel") or 0
+ return math.ceil(card:GetAttribute("BaseCashPerSecond")*Config.PlotSlots.FirstCostSeconds*Config.PlotSlots.CostGrowth^level)
+end
 
 local function refreshSlot(slot: BasePart, card: Part?)
 	local name = card and card:GetAttribute("CardName")
+	local beingStolen = reserved[slot] ~= nil
+	slot:SetAttribute("Reserved", beingStolen)
+	slot.ReservationGui.Enabled = beingStolen
 	slot:SetAttribute("CardName", name)
-	slot.SlotPrompt.ActionText = card and "Pick up" or "Place card"
-	slot.SlotPrompt.ObjectText = name or "Slot " .. slot:GetAttribute("SlotIndex")
-	slot.StealPrompt.ObjectText = name or "Slot " .. slot:GetAttribute("SlotIndex")
+	slot.SlotPrompt.ActionText = card and "Pick up" or "Place player"
+	slot.SlotPrompt.ObjectText = beingStolen and "BEING STOLEN" or name or Config.PlotSlots.EmptyText
+	slot.StealPrompt.ObjectText = name or Config.PlotSlots.EmptyText
+ slot.EarningsPanel.Value.InfoGui.Label.Text=beingStolen and "BEING STOLEN" or card and ("$%s/s"):format(Format.Money(card:GetAttribute("CashPerSecond"))) or Config.PlotSlots.EmptyText
+ local upgrade=slot.UpgradePanel.Value
+ local level=card and card:GetAttribute("UpgradeLevel") or 0
+ local cost=card and level<Config.PlotSlots.MaxLevel and upgradeCost(card) or nil
+ -- The client renders the brown box from these (cost turns red from the viewer's own cash).
+ slot:SetAttribute("UpgradeLevel",level)
+ slot:SetAttribute("UpgradeCost",cost)
+ slot:SetAttribute("NextIncome",cost and card:GetAttribute("CashPerSecond")*Config.PlotSlots.IncomeGrowth or nil)
+ upgrade.UpgradePrompt.ObjectText=card and ("Level %d"):format(level) or Config.PlotSlots.EmptyText
+ upgrade.UpgradePrompt.ActionText=cost and ("Upgrade ($%s)"):format(Format.Money(cost)) or "Upgrade"
+end
+
+local function clearStolen(card: Part)
+	local home = homeSlot[card]
+	homeSlot[card] = nil
+	card:SetAttribute("OriginalOwnerUserId", nil)
+	if home and reserved[home] == card then
+		reserved[home] = nil
+		refreshSlot(home, slotCards[home])
+	end
 end
 
 local function occupy(slot: BasePart, card: Part)
-	card.CFrame = slot.CFrame * CFrame.new(0, (slot.Size.Y + card.Size.Y) / 2 + 0.1, 0)
-	CardService.SetState(card, "Placed")
+ if card:GetAttribute("UpgradeLevel")==nil then card:SetAttribute("UpgradeLevel",0) card:SetAttribute("BaseCashPerSecond",card:GetAttribute("CashPerSecond")) end
+	card.CFrame = slot.CFrame * CFrame.new(0, (slot.Size.Y + card.Size.Y) / 2 + Config.PlotSlots.DisplayClearance, 0)
+	card:SetAttribute("Escaped",true)
+ local owner=PlotService.GetOwner(PlotService.GetPlotOfInstance(slot))
+ local victimId=card:GetAttribute("OriginalOwnerUserId")
+ card:SetAttribute("SecuredOwnerUserId",owner and owner.UserId)
+ CardService.SetState(card, "Placed")
 	slotCards[slot] = card
-	homeSlot[card] = nil
+	clearStolen(card)
 	refreshSlot(slot, card)
+ if victimId and owner then -- ownership transfer: persist the victim's loss before the thief's gain
+  task.spawn(function()
+   local victim=Players:GetPlayerByUserId(victimId)
+   if victim and not PlayerData.RequestSave(victim) then
+    warn("[SlotService] Victim save failed after a steal transfer; the thief is left to the normal autosave. Victim "..victimId)
+    return
+   end
+   PlayerData.RequestSave(owner)
+  end)
+ end
 end
 
 local function isAliveAndNear(player: Player, slot: BasePart): boolean
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-	return root ~= nil and humanoid ~= nil and humanoid.Health > 0
-		and (root.Position - slot.Position).Magnitude <= Config.InteractMaxDistance
+	return player:GetAttribute("DataReady")~=false and root ~= nil and humanoid ~= nil and humanoid.Health > 0
+		and (root.Position - slot.Position).Magnitude <= Config.PlotSlots.InteractDistance
+end
+
+local function reject(player: Player,reason: string) -- short feedback for the clicking player only
+ if os.clock()<(messageUntil[player] or 0) then return end
+ messageUntil[player]=os.clock()+Config.PlotSlots.MessageGap
+ Remotes.UpgradeResult:FireClient(player,reason)
+end
+
+local function onUpgrade(player: Player,slot: BasePart)
+ local plot=PlotService.GetPlotOfInstance(slot)
+ local card=slotCards[slot]
+ if not plot or reserved[slot] or not card then return end
+ if PlotService.GetOwner(plot)~=player then reject(player,"NotOwner") return end
+ local level=card:GetAttribute("UpgradeLevel") or 0
+ local stats=player:FindFirstChild("leaderstats")
+ local cash=stats and stats:FindFirstChild("Cash")
+ local cost=upgradeCost(card)
+ local reason
+ if not isAliveAndNear(player,slot) then reason="Far"
+ elseif level>=Config.PlotSlots.MaxLevel then reason="Max"
+ elseif os.clock()<(upgradeUntil[slot] or 0) then reason="Cooldown"
+ elseif not cash or cash.Value<cost then reason="Cash" end
+ if reason then reject(player,reason) return end
+ upgradeUntil[slot]=os.clock()+Config.PlotSlots.UpgradeCooldown
+ cash.Value-=cost
+ card:SetAttribute("UpgradeLevel",level+1)
+ CardService.SetIncome(card,card:GetAttribute("BaseCashPerSecond")*Config.PlotSlots.IncomeGrowth^(level+1))
+ refreshSlot(slot,card)
 end
 
 local function onOwnerTriggered(player: Player, slot: BasePart)
 	local plot = PlotService.GetPlotOfInstance(slot)
-	if not plot or PlotService.GetOwner(plot) ~= player or not isAliveAndNear(player, slot) then return end
+	if not plot or PlotService.GetOwner(plot) ~= player or reserved[slot] or not isAliveAndNear(player, slot) then return end
 
 	local placed = slotCards[slot]
 	if placed then
@@ -67,30 +145,28 @@ local function onStealTriggered(thief: Player, slot: BasePart)
 	local owner = plot and PlotService.GetOwner(plot)
 	local card = slotCards[slot]
 	if not owner or owner == thief or not card or LockService.IsLocked(plot) or not isAliveAndNear(thief, slot) then return end
+	if not LineOfSight.IsClear(thief.Character, slot, slot.Position) then return end
 	if not CardService.Carry(thief, card) then return end
 
 	slotCards[slot] = nil
 	homeSlot[card] = slot
+	reserved[slot] = card
+	card:SetAttribute("OriginalOwnerUserId", owner.UserId)
 	refreshSlot(slot, nil)
 	Remotes.Announcement:FireClient(owner, Config.StealAlert:format(thief.DisplayName, card:GetAttribute("CardName")))
 end
 
-local function firstEmptySlot(plot: Model): BasePart?
-	for _, slot in ipairs(plot.Slots:GetChildren()) do
-		if not slotCards[slot] then return slot end
-	end
-	return nil
-end
-
---- Put a dropped stolen card back into its owner's plot. Returns false if it should stay on the floor.
+--- Recover only to the reserved slot while the original owner still owns the plot.
 function SlotService.ReturnStolen(card: Part): boolean
 	local home = homeSlot[card]
-	homeSlot[card] = nil
+	local userId = card:GetAttribute("OriginalOwnerUserId")
+	local owner = userId and Players:GetPlayerByUserId(userId)
 	local plot = home and PlotService.GetPlotOfInstance(home)
-	if not plot or not PlotService.GetOwner(plot) then return false end
-	local target = slotCards[home] and firstEmptySlot(plot) or home
-	if not target then return false end
-	occupy(target, card)
+	local canReturn = owner and plot and PlotService.GetOwner(plot) == owner
+		and reserved[home] == card and not slotCards[home]
+	clearStolen(card)
+	if not canReturn then return false end
+	occupy(home, card)
 	return true
 end
 
@@ -107,6 +183,7 @@ end
 --- Remove all placed cards from a plot (used when the owner leaves).
 local function clearPlot(plot: Model)
 	for _, slot in ipairs(plot.Slots:GetChildren()) do
+		if reserved[slot] then clearStolen(reserved[slot]) end
 		local card = slotCards[slot]
 		if card then
 			slotCards[slot] = nil
@@ -116,13 +193,62 @@ local function clearPlot(plot: Model)
 	end
 end
 
+function SlotService.PlaceSecured(player,card)
+ local plot=PlotService.GetPlot(player) if not plot then return false end
+ for _,slot in plot.Slots:GetChildren() do if not slotCards[slot] and not reserved[slot] then occupy(slot,card) return true end end
+ return false
+end
+-- A card being stolen is still the victim's until placed, except when the victim is leaving: the thief keeps it.
+function SlotService.Export(plot,leaving)
+ local records={}
+ for _,slot in plot.Slots:GetChildren() do
+  local card=slotCards[slot] or (not leaving and reserved[slot] or nil)
+  if card and card.Parent then
+   local record=CardService.Record(card) record.Slot=slot.Name
+   table.insert(records,record)
+  end
+ end
+ return records
+end
+function SlotService.Restore(plot,records)
+ for i=1,math.min(#records,Config.SlotsPerPlot) do
+  local record=records[i]
+  local slot=type(record)=="table" and type(record.Slot)=="string" and plot.Slots:FindFirstChild(record.Slot)
+  if slot and not slotCards[slot] and not reserved[slot] then
+   local card=CardService.RestoreRecord(record,slot.Position)
+   if card then occupy(slot,card) end
+  end
+ end
+end
+
 function SlotService.Init(plotService, cardService, lockService)
 	PlotService = plotService
 	CardService = cardService
 	LockService = lockService
 
 	for _, slot in ipairs(CollectionService:GetTagged("Slot")) do
+		local gui = Instance.new("BillboardGui")
+		gui.Name = "ReservationGui"
+		gui.Size = UDim2.fromOffset(Config.ReservationLabelSize.X, Config.ReservationLabelSize.Y)
+		gui.StudsOffset = Config.ReservationLabelOffset
+		gui.MaxDistance = Config.ReservationLabelMaxDistance
+		gui.Enabled = false
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.fromScale(1, 1)
+		label.BackgroundTransparency = 1
+		label.Text = "BEING STOLEN"
+		label.TextScaled = true
+		label.Font = Enum.Font.GothamBold
+		label.TextColor3 = Config.Tiers.GOAT.Color
+		label.Parent = gui
+		gui.Parent = slot
+		refreshSlot(slot, slotCards[slot])
+		slot.StealPrompt.RequiresLineOfSight = true
 		slot.SlotPrompt.Triggered:Connect(function(player) onOwnerTriggered(player, slot) end)
+  local panel=slot.UpgradePanel.Value
+  local click=Instance.new("ClickDetector") click.MaxActivationDistance=Config.PlotSlots.InteractDistance click.Parent=panel
+  click.MouseClick:Connect(function(player) onUpgrade(player,slot) end)
+  panel.UpgradePrompt.Triggered:Connect(function(player) onUpgrade(player,slot) end)
 		slot.StealPrompt.HoldDuration = Config.StealHoldSeconds
 		slot.StealPrompt.Triggered:Connect(function(player) onStealTriggered(player, slot) end)
 	end

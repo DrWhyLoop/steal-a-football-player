@@ -1,0 +1,92 @@
+[
+  {
+    "file": "Shared/Config.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Shared/Remotes.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Server/PlotAccess.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Server/CardService.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Server/SlotService.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Server/PlayerData.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Server/Main.server.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Server/GuardService.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Server/CubeService.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Server/TreadmillService.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Server/TorchMount.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Server/EnvironmentBuilder.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Client/RewardEffects.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Client/CarryHud.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Client/PlayerLabels.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Client/WeatherController.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Client/TreadmillUI.luau",
+    "compiled": true,
+    "matches": true
+  },
+  {
+    "file": "Client/Main.client.luau",
+    "compiled": true,
+    "matches": true
+  }
+]

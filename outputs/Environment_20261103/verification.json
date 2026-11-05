@@ -1,0 +1,123 @@
+{
+  "static": {
+    "mainWalls": [
+      {
+        "descendants": 30,
+        "name": "MainWall",
+        "pivot": "-36.6918488, 15.9976578, -733.728088, 0, 0, -1, -1, 0, 0, 0, 1, 0"
+      },
+      {
+        "descendants": 30,
+        "name": "MainWall",
+        "pivot": "92.9454041, 15.9227047, -734.191162, 0, 0, -1, -1, 0, 0, 0, 1, 0"
+      }
+    ],
+    "grassPatches": 144,
+    "stages": 12,
+    "scripts": 0,
+    "plots": [
+      {
+        "plot": 1,
+        "barrierHeight": 36,
+        "slots": 10,
+        "parts": 527
+      },
+      {
+        "plot": 2,
+        "barrierHeight": 36,
+        "slots": 10,
+        "parts": 527
+      },
+      {
+        "plot": 3,
+        "barrierHeight": 36,
+        "slots": 10,
+        "parts": 527
+      },
+      {
+        "plot": 4,
+        "barrierHeight": 36,
+        "slots": 10,
+        "parts": 527
+      },
+      {
+        "plot": 5,
+        "barrierHeight": 36,
+        "slots": 10,
+        "parts": 527
+      },
+      {
+        "plot": 6,
+        "barrierHeight": 36,
+        "slots": 10,
+        "parts": 527
+      }
+    ],
+    "signs": 24,
+    "collidableDecor": 0,
+    "parts": 5288
+  },
+  "plotInteraction": {
+    "assignment": true,
+    "placement": true,
+    "income": true,
+    "pickup": true,
+    "ownerSign": true,
+    "lockActivation": true,
+    "ownerCollisionExemption": true,
+    "barrierCoversStructure": true
+  },
+  "checks": {
+    "Done": true,
+    "Cubes": 87,
+    "LeftEjectionPassed": true,
+    "WallSightPassed": true
+  },
+  "walk": {
+    "probe": "server-owned R15 humanoid",
+    "aboveFloor": true,
+    "walkedStuds": 23.2415771484375
+  },
+  "runtime": {
+    "newScriptErrors": [],
+    "popup": false,
+    "farGrassHidden": 132
+  },
+  "reinfectionCleanup": {
+    "removed": [
+      {
+        "objects": 408,
+        "path": "Workspace.Press.Part.Mesh.Runtime",
+        "scripts": 2
+      },
+      {
+        "objects": 408,
+        "path": "Workspace.Press.Part.Mesh.Runtime",
+        "scripts": 2
+      },
+      {
+        "objects": 408,
+        "path": "Workspace.Model.Part.Runtime",
+        "scripts": 2
+      },
+      {
+        "objects": 408,
+        "path": "Workspace.Model.Model.Union.Runtime",
+        "scripts": 2
+      }
+    ],
+    "quarantine": "ServerStorage._Quarantine_FakeStudioPopup_Environment_20261103"
+  },
+  "mainWallsUnchanged": true,
+  "upperFloorsDecorative": true,
+  "multiplayerStealingPlaytested": false,
+  "mobileDevicePerformanceTested": false,
+  "sourceAssets": 10,
+  "exactSources": [
+    "Shared/Config.luau",
+    "Server/EnvironmentBuilder.luau",
+    "Client/EnvironmentVisibility.luau",
+    "Server/LockService.luau",
+    "Client/Main.client.luau"
+  ]
+}

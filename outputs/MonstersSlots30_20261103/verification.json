@@ -1,0 +1,62 @@
+{
+  "final": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"guards\":28,\"farEffects\":0,\"stageCounts\":{\"1\":1,\"3\":2,\"2\":1,\"5\":2,\"4\":2,\"7\":3,\"6\":3,\"9\":3,\"8\":3,\"12\":2,\"11\":3,\"10\":3},\"scripts\":0,\"maxLights\":1,\"slots\":180,\"badBounds\":0}"
+      }
+    ],
+    "isError": false
+  },
+  "fractionalIncome": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"cashAdded\":5,\"expectedFourTicks\":5,\"rate\":1.25}"
+      }
+    ],
+    "isError": false
+  },
+  "regressionChecks": {
+    "reserved": true,
+    "ownerPlacementBlocked": true,
+    "returned": true,
+    "exactDisplay": true,
+    "absentOwnerRejected": true,
+    "reservationCleared": true,
+    "transferClearsReservation": true,
+    "upgradeChargedOnce": true,
+    "cooldown": true,
+    "nonOwnerRejected": true
+  },
+  "liveChecks": {
+    "placedOnFloors": [
+      1,
+      2,
+      3
+    ],
+    "upgradeCashBefore": 1000,
+    "upgradeCashAfter": 940,
+    "rateBefore": 1,
+    "rateAfter": 1.25,
+    "insufficientFundsRejected": true,
+    "upgradePreservedAfterPickup": true,
+    "all180DisplaysMapped": true,
+    "incorrectNumericLabels": 0,
+    "repeatedBuildStable": true,
+    "guardDormantMovement": 0,
+    "guardChaseMovement": 14,
+    "guardHitDroppedCard": true,
+    "knockbackReceived": [
+      0,
+      25,
+      55
+    ],
+    "farEnabledEffects": 0
+  },
+  "limits": {
+    "genuineMultiplayer": false,
+    "mobileHardware": false,
+    "characterModelsDeferred": true
+  }
+}

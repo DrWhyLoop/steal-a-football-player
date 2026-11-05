@@ -1,0 +1,64 @@
+{
+  "static": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"plotsUnchanged\":true,\"stages\":[{\"finish\":-614.5833740234375,\"start\":-734.5833740234375,\"length\":120,\"stage\":1,\"width\":120},{\"finish\":-494.5833740234375,\"start\":-614.5833740234375,\"length\":120,\"stage\":2,\"width\":120},{\"finish\":-374.5833740234375,\"start\":-494.5833740234375,\"length\":120,\"stage\":3,\"width\":120},{\"finish\":-254.5833740234375,\"start\":-374.5833740234375,\"length\":120,\"stage\":4,\"width\":120},{\"finish\":-134.5833740234375,\"start\":-254.5833740234375,\"length\":120,\"stage\":5,\"width\":120},{\"finish\":-14.5833740234375,\"start\":-134.5833740234375,\"length\":120,\"stage\":6,\"width\":120},{\"finish\":105.4166259765625,\"start\":-14.5833740234375,\"length\":120,\"stage\":7,\"width\":120},{\"finish\":225.4166259765625,\"start\":105.4166259765625,\"length\":120,\"stage\":8,\"width\":120},{\"finish\":375.4166259765625,\"start\":225.4166259765625,\"length\":150,\"stage\":9,\"width\":120},{\"finish\":525.4166259765625,\"start\":375.4166259765625,\"length\":150,\"stage\":10,\"width\":120},{\"finish\":705.4166259765625,\"start\":525.4166259765625,\"length\":180,\"stage\":11,\"width\":120},{\"finish\":945.4166259765625,\"start\":705.4166259765625,\"length\":240,\"stage\":12,\"width\":120}],\"centerLaneHits\":\"Clear\",\"rearWall\":[],\"markers\":87,\"stageGaps\":0}"
+      }
+    ],
+    "isError": false
+  },
+  "play": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"cubesOutside\":0,\"dimensions\":true,\"guardCount\":36,\"stage12Cube\":1,\"guardsOutside\":0,\"cubeCount\":87}"
+      }
+    ],
+    "isError": false
+  },
+  "stage12Walk": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"start\":\"28.214324951171875, 5, 720.4166259765625\",\"horizontalDistance\":38.2559814453125,\"health\":100,\"finish\":\"28.21484375, 4.8828125, 758.672607421875\"}"
+      }
+    ],
+    "isError": false
+  },
+  "entranceWalk": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"horizontalDistance\":30.488037109375,\"health\":100,\"finish\":\"28.21484375, 4.8828125, -714.511962890625\"}"
+      }
+    ],
+    "isError": false
+  },
+  "sourceEquality": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"exact\":true,\"path\":\"src/Shared/Config.luau\"}"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"exact\":true,\"path\":\"src/Server/EnvironmentBuilder.luau\"}"
+        }
+      ],
+      "isError": false
+    }
+  ],
+  "wallChecks": {
+    "side": 2,
+    "rear": 5
+  },
+  "outerWallClearance": 70.5833740234375,
+  "noGit": true
+}

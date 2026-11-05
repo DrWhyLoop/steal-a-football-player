@@ -1,0 +1,170 @@
+[
+  {
+    "id": "Player_03",
+    "reference": "Diego Maradona.jpeg",
+    "image_bounds": [
+      352,
+      21,
+      1055,
+      752
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2721606,
+    "overlap_texels": 15,
+    "back": "Estimated matching colors"
+  },
+  {
+    "id": "Player_04",
+    "reference": "Erling Haaland.jpeg",
+    "image_bounds": [
+      342,
+      28,
+      1066,
+      754
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2657780,
+    "overlap_texels": 23,
+    "back": "Estimated matching colors"
+  },
+  {
+    "id": "Player_05",
+    "reference": "Iniesta.jpeg",
+    "image_bounds": [
+      347,
+      28,
+      1060,
+      753
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2759786,
+    "overlap_texels": 13,
+    "back": "Estimated matching colors"
+  },
+  {
+    "id": "Player_06",
+    "reference": "Johan Cruyff.jpeg",
+    "image_bounds": [
+      346,
+      23,
+      1060,
+      753
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2841537,
+    "overlap_texels": 17,
+    "back": "Estimated matching colors"
+  },
+  {
+    "id": "Player_07",
+    "reference": "Kylian Mbappe.jpeg",
+    "image_bounds": [
+      346,
+      32,
+      1061,
+      753
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2627819,
+    "overlap_texels": 17,
+    "back": "Estimated matching colors"
+  },
+  {
+    "id": "Player_08",
+    "reference": "Neymar Jr..jpeg",
+    "image_bounds": [
+      346,
+      24,
+      1061,
+      754
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2766201,
+    "overlap_texels": 20,
+    "back": "Estimated matching colors"
+  },
+  {
+    "id": "Player_09",
+    "reference": "Pele.jpeg",
+    "image_bounds": [
+      357,
+      27,
+      1051,
+      752
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2700526,
+    "overlap_texels": 19,
+    "back": "Estimated matching colors"
+  },
+  {
+    "id": "Player_10",
+    "reference": "Ronaldinho.jpeg",
+    "image_bounds": [
+      346,
+      22,
+      1060,
+      753
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2688275,
+    "overlap_texels": 12,
+    "back": "Estimated matching colors"
+  },
+  {
+    "id": "Player_11",
+    "reference": "Ronaldo Nazario.jpeg",
+    "image_bounds": [
+      340,
+      30,
+      1068,
+      753
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2778756,
+    "overlap_texels": 21,
+    "back": "Estimated matching colors"
+  },
+  {
+    "id": "Player_12",
+    "reference": "Thiery Henry.jpeg",
+    "image_bounds": [
+      349,
+      36,
+      1058,
+      754
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2733586,
+    "overlap_texels": 19,
+    "back": "Estimated matching colors"
+  },
+  {
+    "id": "Player_13",
+    "reference": "Zinedine Zidane.jpeg",
+    "image_bounds": [
+      346,
+      33,
+      1060,
+      753
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2759734,
+    "overlap_texels": 12,
+    "back": "Estimated matching colors"
+  },
+  {
+    "id": "Player_14",
+    "reference": "Zlatan Ibrahimovic.jpeg",
+    "image_bounds": [
+      342,
+      27,
+      1065,
+      754
+    ],
+    "texture_size": 2048,
+    "occupied_texels": 2668304,
+    "overlap_texels": 12,
+    "back": "Estimated matching colors"
+  }
+]

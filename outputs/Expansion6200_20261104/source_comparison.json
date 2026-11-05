@@ -1,0 +1,4 @@
+{
+  "Config": true,
+  "OnlyChangedGameplayScript": "src/Shared/Config.luau"
+}

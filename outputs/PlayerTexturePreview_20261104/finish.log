@@ -1,0 +1,36 @@
+00:02.343  blend            | Read blend: "C:\Users\User\steal_a_football_goat\outputs\PlayerTexturePreview_20261104\working.blend"
+C:\Users\User\steal_a_football_goat\outputs\PlayerTexturePreview_20261104\finish_preview.py:7: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat=bpy.data.materials.new('Player_01_ReferenceColor');mat.use_nodes=True
+00:08.593  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerTexturePreview_20261104\textured_front.png'
+00:14.187  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerTexturePreview_20261104\textured_threequarter.png'
+00:19.578  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerTexturePreview_20261104\textured_back.png'
+00:25.234  render           | Saved: 'C:\Users\User\steal_a_football_goat\outputs\PlayerTexturePreview_20261104\textured_pose.png'
+BlenderMCP addon registered
+Reloading external rigs...
+Reloading external metarigs...
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.0\5.0\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+08:00:43 | INFO: Starting glTF 2.0 export
+08:00:43 | INFO: Extracting primitive: model
+08:00:43 | INFO: Primitives created: 1
+08:00:43 | INFO: Finished glTF 2.0 export in 0.2375326156616211 s
+
+
+FBX export starting... 'C:\\Users\\User\\steal_a_football_goat\\outputs\\PlayerTexturePreview_20261104\\player_01_textured.fbx'
+(bpy.data.armatures['Armature'], 'POSE')
+export finished in 0.1288 sec.
+Info: Saved as "player_01_textured.blend"
+VERIFICATION {"triangles": 20000, "bones": 52, "vertices": 16945, "trimmed_weight_vertices": 687, "max_influences": 4, "pose_test": {"moved_vertices": 6681, "maximum_displacement": 0.06497012554445666, "finite": true}}
+[0]:done
+[1]:done
+[2]:done
+[3]:done
+[4]:done
+[5]:done
+[6]:done
+[7]:done
+[8]:done
+[9]:done
+BlenderMCP addon unregistered
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

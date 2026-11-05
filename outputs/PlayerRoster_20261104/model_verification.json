@@ -1,0 +1,145 @@
+[
+  {
+    "id": "Player_02",
+    "height_studs": 7.35,
+    "pose_test": {
+      "moved_vertices": 8970,
+      "max_displacement_source_units": 0.6168225705669294,
+      "finite": true
+    },
+    "texture": "Player_02_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_02.glb"
+  },
+  {
+    "id": "Player_03",
+    "height_studs": 6.75,
+    "pose_test": {
+      "moved_vertices": 4593,
+      "max_displacement_source_units": 0.5977559836235775,
+      "finite": true
+    },
+    "texture": "Player_03_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_03.glb"
+  },
+  {
+    "id": "Player_04",
+    "height_studs": 7.7,
+    "pose_test": {
+      "moved_vertices": 6973,
+      "max_displacement_source_units": 0.59735980543454,
+      "finite": true
+    },
+    "texture": "Player_04_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_04.glb"
+  },
+  {
+    "id": "Player_05",
+    "height_studs": 6.95,
+    "pose_test": {
+      "moved_vertices": 6798,
+      "max_displacement_source_units": 0.579542791831653,
+      "finite": true
+    },
+    "texture": "Player_05_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_05.glb"
+  },
+  {
+    "id": "Player_06",
+    "height_studs": 7.25,
+    "pose_test": {
+      "moved_vertices": 5822,
+      "max_displacement_source_units": 0.6097449586082965,
+      "finite": true
+    },
+    "texture": "Player_06_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_06.glb"
+  },
+  {
+    "id": "Player_07",
+    "height_studs": 7.2,
+    "pose_test": {
+      "moved_vertices": 6042,
+      "max_displacement_source_units": 0.6400948495506229,
+      "finite": true
+    },
+    "texture": "Player_07_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_07.glb"
+  },
+  {
+    "id": "Player_08",
+    "height_studs": 7.1,
+    "pose_test": {
+      "moved_vertices": 5665,
+      "max_displacement_source_units": 0.5916662413306195,
+      "finite": true
+    },
+    "texture": "Player_08_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_08.glb"
+  },
+  {
+    "id": "Player_09",
+    "height_studs": 7.05,
+    "pose_test": {
+      "moved_vertices": 7318,
+      "max_displacement_source_units": 0.5697191815479301,
+      "finite": true
+    },
+    "texture": "Player_09_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_09.glb"
+  },
+  {
+    "id": "Player_10",
+    "height_studs": 7.2,
+    "pose_test": {
+      "moved_vertices": 6057,
+      "max_displacement_source_units": 0.5652129888566724,
+      "finite": true
+    },
+    "texture": "Player_10_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_10.glb"
+  },
+  {
+    "id": "Player_11",
+    "height_studs": 7.25,
+    "pose_test": {
+      "moved_vertices": 6465,
+      "max_displacement_source_units": 0.5934094977876754,
+      "finite": true
+    },
+    "texture": "Player_11_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_11.glb"
+  },
+  {
+    "id": "Player_12",
+    "height_studs": 7.5,
+    "pose_test": {
+      "moved_vertices": 6384,
+      "max_displacement_source_units": 0.625715020239546,
+      "finite": true
+    },
+    "texture": "Player_12_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_12.glb"
+  },
+  {
+    "id": "Player_13",
+    "height_studs": 7.5,
+    "pose_test": {
+      "moved_vertices": 6866,
+      "max_displacement_source_units": 0.5881268379806179,
+      "finite": true
+    },
+    "texture": "Player_13_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_13.glb"
+  },
+  {
+    "id": "Player_14",
+    "height_studs": 7.7,
+    "pose_test": {
+      "moved_vertices": 6285,
+      "max_displacement_source_units": 0.614563907194876,
+      "finite": true
+    },
+    "texture": "Player_14_basecolor.png",
+    "file": "READY_TO_IMPORT/Player_14.glb"
+  }
+]

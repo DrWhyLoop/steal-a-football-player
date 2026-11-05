@@ -10,6 +10,7 @@
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 
+local Config = require(game:GetService("ReplicatedStorage").Shared.Config)
 local PromptFilter = {}
 
 local player = Players.LocalPlayer
@@ -20,8 +21,10 @@ local function refreshSlot(slot: BasePart)
 	local isOwner = ownerId == player.UserId
 	local filled = slot:GetAttribute("CardName") ~= nil
 	local carrying = player:GetAttribute("CarriedCard") ~= nil
-	slot.SlotPrompt.Enabled = isOwner and filled ~= carrying
-	slot.StealPrompt.Enabled = ownerId ~= 0 and not isOwner and filled and not carrying
+	local reserved = slot:GetAttribute("Reserved") == true
+	slot.UpgradePanel.Value.UpgradePrompt.Enabled = isOwner and filled and not reserved and (slot:GetAttribute("UpgradeLevel") or 0)<Config.PlotSlots.MaxLevel
+ slot.SlotPrompt.Enabled = isOwner and not reserved and filled ~= carrying
+	slot.StealPrompt.Enabled = ownerId ~= 0 and not isOwner and filled and not carrying and not reserved
 		and plot:GetAttribute("LockState") ~= "Locked"
 end
 
@@ -40,7 +43,9 @@ function PromptFilter.Init()
 			plot:GetAttributeChangedSignal(attribute):Connect(function() refreshPlot(plot) end)
 		end
 		for _, slot in ipairs(plot.Slots:GetChildren()) do
-			slot:GetAttributeChangedSignal("CardName"):Connect(function() refreshSlot(slot) end)
+			for _, attribute in ipairs({ "CardName", "Reserved", "UpgradeLevel" }) do
+				slot:GetAttributeChangedSignal(attribute):Connect(function() refreshSlot(slot) end)
+			end
 		end
 		refreshPlot(plot)
 	end

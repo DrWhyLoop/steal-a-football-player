@@ -16,6 +16,7 @@ local Workspace = game:GetService("Workspace")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 
+local MonsterFactory = require(script.Parent.MonsterFactory)
 local GuardService = {}
 
 local CardService -- injected in Init
@@ -27,8 +28,8 @@ local active = {}   -- [stage] = true while a player is near
 local hitUntil = {} -- [Player] = os.clock() until which the player is immune
 local heartbeat: RBXScriptConnection?
 
-local function pointIn(zone: Part): Vector3
-	local reach = zone.Size / 2 - Vector3.one * Config.GuardZoneMargin
+local function pointIn(zone: Part, margin: number?): Vector3
+	local reach = zone.Size / 2 - Vector3.one * (margin or Config.GuardZoneMargin)
 	return Vector3.new(
 		zone.Position.X + rng:NextNumber(-reach.X, reach.X),
 		Config.GroundY + Config.GuardSize.Y / 2,
@@ -36,8 +37,8 @@ local function pointIn(zone: Part): Vector3
 	)
 end
 
-local function clampToZone(position: Vector3, zone: Part): Vector3
-	local reach = zone.Size / 2 - Vector3.one * Config.GuardZoneMargin
+local function clampToZone(position: Vector3, zone: Part, margin: number?): Vector3
+	local reach = zone.Size / 2 - Vector3.one * (margin or Config.GuardZoneMargin)
 	return Vector3.new(
 		math.clamp(position.X, zone.Position.X - reach.X, zone.Position.X + reach.X),
 		position.Y,
@@ -45,30 +46,19 @@ local function clampToZone(position: Vector3, zone: Part): Vector3
 	)
 end
 
-local function createGuard(stage: number)
-	local zone = zones[stage]
-	local position = pointIn(zone)
-	local model = Instance.new("Model")
-	model.Name = "Guard_Stage" .. stage
-
-	local function block(name: string, size: Vector3, color: Color3, center: Vector3)
-		local p = Instance.new("Part")
-		p.Name = name
-		p.Size = size
-		p.Color = color
-		p.Anchored = true
-		p.CanCollide = false
-		p.Position = center
-		p.Parent = model
-		return p
-	end
-	model.PrimaryPart = block("Body", Config.GuardSize, Config.GuardColor, position)
-	block("Head", Vector3.one * Config.GuardHeadSize, Config.GuardColor:Lerp(Color3.new(1, 1, 1), 0.3),
-		position + Vector3.new(0, (Config.GuardSize.Y + Config.GuardHeadSize) / 2, 0))
-
-	CollectionService:AddTag(model, "Guard")
-	model.Parent = guardsFolder
-	table.insert(guards[stage], { model = model, stage = stage, waypoint = pointIn(zone), stunUntil = 0 })
+local function createGuard(stage: number,index: number)
+ local zone=zones[stage]
+ local list=Config.MonsterGuards.Stages[stage]
+ local design=list[(index-1)%#list+1]
+ local model,view=MonsterFactory.Build(design,pointIn(zone))
+ local margin=Config.GuardZoneMargin+math.max(view.width,view.depth)/2
+ model:PivotTo(CFrame.new(pointIn(zone,margin)))
+ MonsterFactory.Pose(view,model.PrimaryPart,false,0)
+ model.Name="Guard_Stage"..stage.."_"..index
+ model:SetAttribute("Stage",stage)
+ CollectionService:AddTag(model,"Guard")
+ model.Parent=guardsFolder
+ table.insert(guards[stage],{model=model,view=view,stage=stage,waypoint=pointIn(zone,margin),margin=margin,stunUntil=0})
 end
 
 local function livingTargets(): { { player: Player, root: BasePart } }
@@ -90,16 +80,17 @@ local function hit(guard, target, now: number)
 	local away = target.root.Position - guard.model.PrimaryPart.Position
 	local flat = Vector3.new(away.X, 0, away.Z)
 	local direction = flat.Magnitude > 0 and flat.Unit or Vector3.zAxis
+	if target.player.Character then target.player.Character:SetAttribute("HurtStart",workspace:GetServerTimeNow()) end
 	Remotes.Knockback:FireClient(target.player, direction * Config.GuardKnockbackSpeed + Vector3.new(0, Config.GuardKnockbackUp, 0))
 	CardService.DropCarried(target.player)
 end
 
 local function updateGuard(guard, targets, dt: number, now: number)
-	if now < guard.stunUntil then return end
+	if now < guard.stunUntil then MonsterFactory.Pose(guard.view,guard.model.PrimaryPart,false,now) return end
 	local stage, zone = guard.stage, zones[guard.stage]
 	local position = guard.model.PrimaryPart.Position
 
-	local nearest, nearestDistance
+	local nearest, nearestDistance, bestPriority
 	for _, target in ipairs(targets) do
 		local offset = target.root.Position - position
 		if offset.Magnitude <= Config.GuardHitRadius and (hitUntil[target.player] or 0) <= now then
@@ -107,25 +98,32 @@ local function updateGuard(guard, targets, dt: number, now: number)
 			return
 		end
 		local flat = Vector3.new(offset.X, 0, offset.Z).Magnitude
-		if flat <= Config.GuardChaseRange[stage] and (not nearestDistance or flat < nearestDistance) then
-			nearest, nearestDistance = target, flat
+		local card=CardService.GetCarried(target.player)
+		local localPoint=zone.CFrame:PointToObjectSpace(target.root.Position)
+		local carrierInside=card and math.abs(localPoint.X)<=zone.Size.X/2 and math.abs(localPoint.Z)<=zone.Size.Z/2
+		local priority=card and (card:GetAttribute('OriginalOwnerUserId') and 2 or 1) or 0
+		if (card or not target.player:GetAttribute("DropDisengaged")) and (carrierInside or flat<=Config.GuardChaseRange[stage]) and (not nearest or priority>bestPriority or priority==bestPriority and flat<nearestDistance) then
+			nearest,nearestDistance,bestPriority=target,flat,priority
 		end
 	end
 
 	local destination, speed
 	if nearest then
 		destination, speed = nearest.root.Position, Config.GuardChaseSpeed[stage]
+		guard.model:SetAttribute('ChasePlayerUserId',nearest.player.UserId)
 	else
+		guard.model:SetAttribute('ChasePlayerUserId',nil)
 		if Vector3.new(guard.waypoint.X - position.X, 0, guard.waypoint.Z - position.Z).Magnitude <= Config.GuardWaypointReach then
-			guard.waypoint = pointIn(zone)
+			guard.waypoint = pointIn(zone,guard.margin)
 		end
 		destination, speed = guard.waypoint, Config.GuardChaseSpeed[stage] * Config.GuardPatrolSpeedFactor
 	end
 
 	local delta = Vector3.new(destination.X - position.X, 0, destination.Z - position.Z)
-	if delta.Magnitude < 0.01 then return end
-	local nextPosition = clampToZone(position + delta.Unit * math.min(speed * dt, delta.Magnitude), zone)
+	if delta.Magnitude < 0.01 then MonsterFactory.Pose(guard.view,guard.model.PrimaryPart,false,now) return end
+	local nextPosition = clampToZone(position + delta.Unit * math.min(speed * dt, delta.Magnitude), zone,guard.margin)
 	guard.model:PivotTo(CFrame.lookAt(nextPosition, nextPosition + delta.Unit))
+ MonsterFactory.Pose(guard.view,guard.model.PrimaryPart,true,now)
 end
 
 local function step(dt: number)
@@ -148,14 +146,26 @@ end
 --- Work out which stages have a player nearby; only those are simulated.
 local function refreshActive()
 	table.clear(active)
-	for _, target in ipairs(livingTargets()) do
+	local targets=livingTargets()
+	for _, target in ipairs(targets) do
 		for stage, zone in pairs(zones) do
 			if distanceToZone(target.root.Position, zone) <= Config.GuardActivationDistance then
 				active[stage] = true
 			end
 		end
 	end
-	local anyActive = next(active) ~= nil
+	for _,list in guards do for _,guard in list do
+  local near=false
+  for _,target in targets do if (target.root.Position-guard.model.PrimaryPart.Position).Magnitude<=Config.MonsterGuards.EffectsDistance then near=true break end end
+  MonsterFactory.SetEffects(guard.view,near)
+  local enabled=active[guard.stage]==true
+  if guard.model:GetAttribute('Active')~=enabled then
+   if not enabled then MonsterFactory.Pose(guard.view,guard.model.PrimaryPart,false,os.clock()) end
+   guard.model:SetAttribute('Active',enabled)
+  end
+  if not enabled then guard.model:SetAttribute('ChasePlayerUserId',nil) end
+ end end
+ local anyActive = next(active) ~= nil
 	if anyActive and not heartbeat then
 		heartbeat = RunService.Heartbeat:Connect(step)
 	elseif not anyActive and heartbeat then
@@ -171,8 +181,8 @@ function GuardService.Init(cardService)
 	end
 	for stage in pairs(zones) do
 		guards[stage] = {}
-		for _ = 1, Config.GuardCountPerStage[stage] do
-			createGuard(stage)
+		for index = 1, Config.GuardCountPerStage[stage] do
+			createGuard(stage,index)
 		end
 	end
 	Players.PlayerRemoving:Connect(function(player) hitUntil[player] = nil end)

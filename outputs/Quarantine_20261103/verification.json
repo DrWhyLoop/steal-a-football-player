@@ -1,0 +1,36 @@
+{
+  "cleanup": {
+    "rigUnchanged": true,
+    "monsterParts": 17,
+    "removedFrom": "Workspace.Monster.HumanoidRootPart.Lowerback.Runtime",
+    "backupObjects": 408,
+    "disabledScripts": 2,
+    "quarantine": "ServerStorage._Quarantine_FakeStudioPopup_20261103",
+    "monsterJoints": 13
+  },
+  "scan": {
+    "remainingInstallers": [],
+    "httpEnabled": false,
+    "quarantineEnabledScripts": 0,
+    "otherSuspiciousSources": []
+  },
+  "playtest": {
+    "errors": [
+      "The experience doesn't have access permission to use asset id 295186616. Click to share access",
+      "Failed to load animation with sanitized ID rbxassetid://8141648698: Animation failed to load, assetId: https://assetdelivery.roblox.com/v1/asset?id=8141648698&serverplaceid=0",
+      "Failed to load animation with sanitized ID rbxassetid://9072151110: Animation failed to load, assetId: https://assetdelivery.roblox.com/v1/asset?id=9072151110&serverplaceid=0",
+      "Failed to load animation with sanitized ID rbxassetid://9072151110: Animation failed to load, assetId: https://assetdelivery.roblox.com/v1/asset?id=9072151110&serverplaceid=0",
+      "Failed to load animation with sanitized ID rbxassetid://8141648698: Animation failed to load, assetId: https://assetdelivery.roblox.com/v1/asset?id=8141648698&serverplaceid=0",
+      "The experience doesn't have access permission to use asset id 8141648698. Click to share access",
+      "The experience doesn't have access permission to use asset id 9072151110. Click to share access",
+      "Failed to load sound rbxassetid://295186616: User is not authorized to access Asset.",
+      "Failed to load sound rbxassetid://295186616: User is not authorized to access Asset.",
+      "Failed to load sound rbxassetid://137473066: Requested asset is archived",
+      "Failed to load sound rbxassetid://137473066: Requested asset is archived",
+      "The experience doesn't have access permission to use asset id 295186616. Click to share access"
+    ],
+    "localPlayer": "drwhyloop",
+    "injectedOverlays": [],
+    "popupMatches": []
+  }
+}

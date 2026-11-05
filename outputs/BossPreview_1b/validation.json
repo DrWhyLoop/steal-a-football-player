@@ -1,0 +1,171 @@
+{
+  "bosses": [
+    {
+      "lights": 0,
+      "particleRate": 0,
+      "scale": 1,
+      "joints": 15,
+      "beams": 0,
+      "name": "Robot Tower",
+      "height": 6.814041614532471,
+      "stage": 1,
+      "parts": 37
+    },
+    {
+      "lights": 0,
+      "particleRate": 0,
+      "scale": 1.0545454025268555,
+      "joints": 15,
+      "beams": 0,
+      "name": "Long-Throw Launcher",
+      "height": 5.7337799072265625,
+      "stage": 2,
+      "parts": 51
+    },
+    {
+      "lights": 0,
+      "particleRate": 0,
+      "scale": 1.1090909242630005,
+      "joints": 15,
+      "beams": 0,
+      "name": "Lion Mane",
+      "height": 7.880329608917236,
+      "stage": 3,
+      "parts": 44
+    },
+    {
+      "lights": 0,
+      "particleRate": 8,
+      "scale": 1.163636326789856,
+      "joints": 15,
+      "beams": 6,
+      "name": "Wing Spark",
+      "height": 8.062234878540039,
+      "stage": 4,
+      "parts": 37
+    },
+    {
+      "lights": 0,
+      "particleRate": 0,
+      "scale": 1.218181848526001,
+      "joints": 15,
+      "beams": 0,
+      "name": "Bicycle Bulldog",
+      "height": 6.9483208656311035,
+      "stage": 5,
+      "parts": 38
+    },
+    {
+      "lights": 0,
+      "particleRate": 0,
+      "scale": 1.2727272510528564,
+      "joints": 15,
+      "beams": 0,
+      "name": "Final Header",
+      "height": 8.470551490783691,
+      "stage": 6,
+      "parts": 32
+    },
+    {
+      "lights": 0,
+      "particleRate": 8,
+      "scale": 1.3272727727890015,
+      "joints": 15,
+      "beams": 0,
+      "name": "Bun Rocket",
+      "height": 9.580759048461914,
+      "stage": 7,
+      "parts": 39
+    },
+    {
+      "lights": 0,
+      "particleRate": 0,
+      "scale": 1.381818175315857,
+      "joints": 15,
+      "beams": 0,
+      "name": "Granite Glove",
+      "height": 7.783596992492676,
+      "stage": 8,
+      "parts": 37
+    },
+    {
+      "lights": 0,
+      "particleRate": 6,
+      "scale": 1.4363635778427124,
+      "joints": 15,
+      "beams": 0,
+      "name": "Viking Engine",
+      "height": 10.111732482910156,
+      "stage": 9,
+      "parts": 49
+    },
+    {
+      "lights": 1,
+      "particleRate": 8,
+      "scale": 1.4909090995788574,
+      "joints": 15,
+      "beams": 0,
+      "name": "Meteor Nine",
+      "height": 9.676898956298828,
+      "stage": 10,
+      "parts": 37
+    },
+    {
+      "lights": 0,
+      "particleRate": 4,
+      "scale": 1.545454502105713,
+      "joints": 15,
+      "beams": 0,
+      "name": "Samba Grin",
+      "height": 9.578925132751465,
+      "stage": 11,
+      "parts": 51
+    },
+    {
+      "lights": 1,
+      "particleRate": 8,
+      "scale": 1.600000023841858,
+      "joints": 15,
+      "beams": 8,
+      "name": "Crimson Demon",
+      "height": 13.27099609375,
+      "stage": 12,
+      "parts": 45
+    },
+    {
+      "lights": 1,
+      "particleRate": 8,
+      "scale": 1.600000023841858,
+      "joints": 15,
+      "beams": 6,
+      "name": "Pocket Storm",
+      "height": 12.286252975463867,
+      "stage": 12,
+      "parts": 37
+    }
+  ],
+  "stage12Heights": [
+    13.27099609375,
+    12.286252975463867
+  ],
+  "maxEarlierHeight": 10.111732482910156,
+  "exactSources": [
+    "Shared/Bosses.luau",
+    "Server/GuardService.luau",
+    "Shared/Config.luau",
+    "Server/BossFactory.luau"
+  ],
+  "guardServiceUnchanged": true,
+  "previewKept": true,
+  "catalogIDsProvided": false,
+  "effectsCapturedInPlayMode": true,
+  "existingAssetErrors": [
+    "8141648698 access denied",
+    "203785492 asset-type mismatch"
+  ],
+  "screenshots": [
+    "preview_1.jpg",
+    "preview_2.jpg",
+    "preview_3.jpg"
+  ]
+}

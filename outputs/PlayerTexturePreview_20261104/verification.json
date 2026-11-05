@@ -1,0 +1,35 @@
+{
+  "source_models_unchanged": {
+    "cristiano_ronaldo.glb": true,
+    "diego_maradona.glb": true,
+    "haaland.glb": true,
+    "iniesta.glb": true,
+    "johan_cryuff. .glb": true,
+    "kylian_mbappe.glb": true,
+    "lionel_messi.glb": true,
+    "neymar_jr.glb": true,
+    "pele.glb": true,
+    "ronaldhino.glb": true,
+    "ronaldo_nazario.glb": true,
+    "thiery_henry.glb": true,
+    "zinedine_zidane.glb": true,
+    "zlatan_ibrahamovic.glb": true
+  },
+  "all_source_models_unchanged": true,
+  "studio": {
+    "model": "Workspace.PlayerPreview_20261104.Player_01",
+    "mesh_id": "75553258310132",
+    "texture_id": "127928426587909",
+    "height_studs": 7,
+    "bones": 52,
+    "parts": 1,
+    "scripts": 0,
+    "hand_pose_displacement_studs": 1.0500892400741577,
+    "foot_pose_displacement_studs": 1.0288965702056885,
+    "restored_bones_in_edit": 52
+  },
+  "persistent_gameplay_scripts_changed": [],
+  "remaining_13_models": "Not processed; awaiting preview review",
+  "treadmills": "Planning only; not implemented",
+  "stages": "Unchanged"
+}

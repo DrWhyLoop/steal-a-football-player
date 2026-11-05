@@ -10,6 +10,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local NAMES = {
+ "DropPlayer",
+ "TreadmillRequest",
+ "TreadmillStatus",
+ "FeedbackRequest",
+ "FeedbackStatus",
+ "EggReveal", -- cosmetic only; reward is selected on the server
+ "SafeReturn",
+ "UpgradeResult", -- server -> clicking client: (reason key, see Config.PlotSlots.Messages)
 	"Announcement", -- server -> one/all clients: (text: string)
 	"Knockback",    -- server -> hit client: (velocity: Vector3), client applies it locally
 }
