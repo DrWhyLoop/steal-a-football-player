@@ -313,6 +313,15 @@ Config.Purchases={LogStore="FootballerPurchaseLog_v1",LogKeyPrefix="U_",MaxLogEv
  StudioTestMode=true,TestPassId=1,TestPrice=4999,
  Products={}} -- developer products: [productId]={Cash=amount}; none exist yet and none may be random/paid-gamble items
 
+-- Collection features (Phase 5). The roster entry fields Id/Name/Tier are required; PortraitImage (an "rbxassetid://..." string) is optional:
+-- the Index uses it when present and falls back to a model preview. VariantOrder lists the paid-for-by-luck materials in a FIXED order
+-- (only ever append): every character has two bits per material (normal and Giant), so saved bitmasks stay valid.
+Config.Index={PerPage=8,VariantOrder={"Gold","Diamond"},
+ TierRewards={Common=500,Rare=2500,Epic=12500,Legendary=60000,Mythic=300000,GOAT=2000000}} -- provisional, one-time per tier
+Config.Daily={BaseCash=500,StepCash=250,CapDays=7,ClaimCooldownSeconds=2,RefreshSeconds=60} -- reward = Base + Step*(min(streak,CapDays)-1)
+Config.Announce={Tiers={Mythic=true,GOAT=true},Variants={Diamond=true},Giant=true, -- what counts as a rare hatch
+ GlobalGapSeconds=3,MaxPerMinute=6,PlayerGapSeconds=10}
+
 -- Economy -------------------------------------------------------------
 Config.CashTickSeconds = 1
 

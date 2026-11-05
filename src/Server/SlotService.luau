@@ -18,6 +18,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Format = require(ReplicatedStorage.Shared.NumberFormat)
 local LineOfSight = require(script.Parent.LineOfSight)
 local PlayerData = require(script.Parent.PlayerData)
+local IndexService = require(script.Parent.IndexService)
 
 local SlotService = {}
 
@@ -71,6 +72,7 @@ local function occupy(slot: BasePart, card: Part)
  local owner=PlotService.GetOwner(PlotService.GetPlotOfInstance(slot))
  local victimId=card:GetAttribute("OriginalOwnerUserId")
  card:SetAttribute("SecuredOwnerUserId",owner and owner.UserId)
+ if owner then IndexService.Record(owner,card) end
  CardService.SetState(card, "Placed")
 	slotCards[slot] = card
 	clearStolen(card)

@@ -18,6 +18,10 @@ local NAMES = {
  "EggReveal", -- cosmetic only; reward is selected on the server
  "SafeReturn",
  "UpgradeResult", -- server -> clicking client: (reason key, see Config.PlotSlots.Messages)
+ "IndexRequest",  -- client -> server: ask for the index and daily-reward state (rate limited)
+ "IndexSync",     -- server -> client: (index {id=bitmask}, claimed {tier=true}); full on request/join, deltas afterwards
+ "DailyClaim",    -- client -> server: claim today's reward (validated by day on the server)
+ "DailyStatus",   -- server -> client: {Ready, Streak, Reward}
 	"Announcement", -- server -> one/all clients: (text: string)
 	"Knockback",    -- server -> hit client: (velocity: Vector3), client applies it locally
 }

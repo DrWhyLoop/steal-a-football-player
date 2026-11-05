@@ -1,6 +1,6 @@
--- Static, brightly lit model portraits for shop cards and the hatch result.
+-- Static, brightly lit model portraits for shop cards and the hatch result. `silhouette` draws the model solid black.
 local View={}
-function View.Create(parent,template,fromFront)
+function View.Create(parent,template,fromFront,silhouette)
  local frame=Instance.new("ViewportFrame") frame.Name="ModelPreview" frame.BackgroundTransparency=1
  frame.Size=UDim2.fromScale(1,1) frame.Ambient=Color3.fromRGB(210,220,235) frame.LightColor=Color3.new(1,1,1)
  frame.LightDirection=Vector3.new(-1,-1,-1) frame.Parent=parent
@@ -8,7 +8,10 @@ function View.Create(parent,template,fromFront)
  local copy=template:Clone() local model
  if copy:IsA("Model") then model=copy else model=Instance.new("Model") copy.Parent=model end
  for _,v in model:GetDescendants() do
-  if v:IsA("BasePart") then v.Anchored=true v.CanCollide=false v.CastShadow=false
+  if v:IsA("BasePart") then
+   v.Anchored=true v.CanCollide=false v.CastShadow=false
+   if silhouette then v.Color=Color3.new(0,0,0) if v:IsA("MeshPart") then v.TextureID="" end end
+  elseif silhouette and v:IsA("SurfaceAppearance") then v:Destroy()
   elseif v:IsA("ParticleEmitter") or v:IsA("Light") or v:IsA("Beam") or v:IsA("Trail") then v.Enabled=false end
  end
  local cf,size=model:GetBoundingBox() model:PivotTo(CFrame.new(-cf.Position)*model:GetPivot()) model.Parent=world

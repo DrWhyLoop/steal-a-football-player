@@ -16,6 +16,8 @@ local Config = require(ReplicatedStorage.Shared.Config)
 
 local Remotes=require(ReplicatedStorage.Shared.Remotes)
 local Reward=require(script.Parent.PlayerReward)
+local IndexService=require(script.Parent.IndexService)
+local Announcer=require(script.Parent.Announcer)
 local CardService = {}
 local safeBoundary
 local safePending = {}
@@ -184,6 +186,7 @@ function CardService.DropFromCube(tier: string,position: Vector3,breaker: Player
  if breaker then
   card:SetAttribute("BreakerUserId",breaker.UserId)
   card:SetAttribute("PriorityUntil",clock()+Config.Reveal.BreakerPrioritySeconds)
+  Announcer.Hatched(breaker,entry,tier,variant,giant)
  end
  CardService.SetState(card,"Revealing")
  task.delay(Config.Reveal.RiseSeconds,function() if card.Parent and card:GetAttribute("State")=="Revealing" then CardService.SetState(card,"World") end end)
@@ -223,6 +226,7 @@ end
 local function secureAtHome(player,card)
  card:SetAttribute("Escaped",true) card:SetAttribute("SecuredOwnerUserId",player.UserId)
  card:SetAttribute("WorldExpiresAt",nil) card:SetAttribute("RemainingLifetime",nil)
+ IndexService.Record(player,card)
  if SlotService and SlotService.PlaceSecured(player,card) then return end
  local spawn=player.RespawnLocation
  card.CFrame=CFrame.new(spawn and spawn.Position+Vector3.new(0,Config.CardSize.Y/2,0) or Config.FallbackDropPosition)
@@ -321,6 +325,7 @@ function CardService.Init(returnStolenFn,slotService)
       if safePending[player] and root.Position.Z<safeBoundary-Config.Reveal.SafeMargin then
        card:SetAttribute("Escaped",true)
        card:SetAttribute("SecuredOwnerUserId",player.UserId)
+       IndexService.Record(player,card)
        card:SetAttribute("RemainingLifetime",nil) card:SetAttribute("WorldExpiresAt",nil)
        player:SetAttribute("CanDropPlayer",false)
        safePending[player]=nil

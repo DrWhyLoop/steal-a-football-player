@@ -4,6 +4,7 @@ local DSS=game:GetService("DataStoreService")
 local RunService=game:GetService("RunService")
 local HttpService=game:GetService("HttpService")
 local Config=require(game.ReplicatedStorage.Shared.Config)
+local Keys=require(game.ReplicatedStorage.Shared.IndexKeys)
 local P={}
 local settings=Config.PlayerData
 local profiles={}
@@ -12,7 +13,7 @@ local store
 local session=game.JobId~="" and game.JobId or HttpService:GenerateGUID(false)
 local PlotService,SlotService,CardService
 local function defaults()
- return {Cash=0,SpeedPoints=0,CashTier=1,TreadmillId="Base",Slots={},SafeCargo={},PlaySeconds=0,Visits=0,FirstSeen=os.time(),PurchaseHistory={},Entitlements={},Receipts={}}
+ return {Cash=0,SpeedPoints=0,CashTier=1,TreadmillId="Base",Slots={},SafeCargo={},PlaySeconds=0,Visits=0,FirstSeen=os.time(),PurchaseHistory={},Entitlements={},Receipts={},Index={},IndexClaimed={},Daily={LastDay=0,Streak=0}}
 end
 local function finite(n,maximum)
  return type(n)=="number" and n==n and n>=0 and n<=maximum
@@ -38,6 +39,13 @@ local function sanitize(d)
   for id,v in d.Receipts do if count<Config.Purchases.MaxReceipts and type(id)=="string" and type(v)=="table" then
    clean.Receipts[id]={At=finite(v.At,1e12) and v.At or os.time()} count+=1
   end end
+ end
+ if type(d.Index)=="table" then -- {characterId = bitmask of collected variant combinations}; ids no longer in the roster are dropped
+  for id,mask in d.Index do if Keys.ById[id] and finite(mask,2^32-1) then clean.Index[id]=math.floor(mask) end end
+ end
+ if type(d.IndexClaimed)=="table" then for tier,claimed in d.IndexClaimed do if Config.Tiers[tier] and claimed==true then clean.IndexClaimed[tier]=true end end end
+ if type(d.Daily)=="table" then
+  clean.Daily={LastDay=finite(d.Daily.LastDay,1e7) and math.floor(d.Daily.LastDay) or 0,Streak=finite(d.Daily.Streak,1e5) and math.floor(d.Daily.Streak) or 0}
  end
  if type(d.PurchaseHistory)=="table" then
   for i=math.max(1,#d.PurchaseHistory-settings.MaxPurchaseHistory+1),#d.PurchaseHistory do table.insert(clean.PurchaseHistory,d.PurchaseHistory[i]) end

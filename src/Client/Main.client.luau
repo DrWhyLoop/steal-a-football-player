@@ -18,6 +18,7 @@ require(script.Parent.CharacterMotion).Init()
 
 require(script.Parent.RewardEffects).Init()
 require(script.Parent.LuckyOdds).Init()
+require(script.Parent.IndexUI).Init()
 
 require(script.Parent.TreadmillUI).Init()
 
