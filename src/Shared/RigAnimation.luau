@@ -55,14 +55,6 @@ local function frame(binding,item,clip,time,scale)
     local axis=item.basis:Inverse()*base.Rotation
     return axis*pose*axis:Inverse()
 end
-function Rig.PoseParts(binding,clipName,time,scale,moving)
-    local clip=Clips[clipName] or Clips.RunR6
-    local t=time%clip.Duration
-    for _,j in binding.joints do
-        local f=j.animated and moving and frame(binding,j,clip,t,scale) or CFrame.identity
-        j.part1.CFrame=j.part0.CFrame*j.c0*f*j.c1:Inverse()
-    end
-end
 function Rig.PoseBones(binding,clipName,time,moving,scale)
     local clip=Clips[clipName] or Clips.RunR6
     local t=time%clip.Duration

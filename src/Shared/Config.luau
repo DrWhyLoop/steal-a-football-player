@@ -163,7 +163,7 @@ Config.LockExpelInset = 10            -- trespassers are moved this far inside t
 Config.GuardCountPerStage = { 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 2 }
 Config.GuardChaseSpeed    = { 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 15 }
 Config.GuardChaseRange    = { 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24 }
-Config.GuardPatrolSpeedFactor = 0.5   -- patrol speed = chase speed * factor
+Config.GuardPatrolSpeedFactor = 0.7   -- patrol speed = chase speed * factor
 Config.GuardSize = Vector3.new(3, 6, 2)
 Config.GuardHeadSize = 2
 Config.GuardColor = Color3.fromRGB(200, 40, 40)
@@ -175,8 +175,12 @@ Config.GuardKnockbackUp = 25
 Config.KnockbackStunSeconds = 0.4     -- hit client is ragdolled this long so the impulse is not cancelled by the Humanoid
 Config.GuardZoneMargin = 4            -- guards stay this far from the hallway walls
 Config.GuardWaypointReach = 2
-Config.GuardActivationDistance = 60   -- guards only update when a player is this close to their stage
-Config.GuardActivationCheckSeconds = 0.5
+Config.GuardNearDistance = 60         -- guards with a player this close are driven every frame (chase/hit); all others patrol only
+Config.GuardFarUpdatesPerSecond = 4   -- patrol re-evaluations per second for guards with no player near
+Config.GuardNearCheckSeconds = 0.25   -- how often near/far and animation distance are re-evaluated
+-- Guards are unanchored, server-owned and moved by an AlignPosition (speed-limited, so far guards glide between 4 Hz targets)
+-- plus an upright AlignOrientation; they never collide with players.
+Config.GuardAlign = { MaxForce=1e7, MaxTorque=1e7, Responsiveness=200, TurnSpeed=6, HoldVelocity=5, MinMove=0.3 }
 
 -- Boss construction and preview (guard integration is a separate approval).
 Config.BossMaxParts = 59
@@ -249,13 +253,22 @@ Config.MonsterGuards = {
  EffectsDistance = 80, ParticleRate = 2,
  LightBrightness = 1, LightRange = 6,
  BodyGlowDesigns = { Noob=true, BigGuy=true }, BodyGlowTransparency = 0.88,
- BodyGlowColor = Color3.fromRGB(255,235,170), WalkBob = 0.1, WalkFrequency = 7,
+ BodyGlowColor = Color3.fromRGB(255,235,170),
+ -- Stages 4, 8 and 11 temporarily use animated designs; their original bone-driven designs (no usable animation yet)
+ -- are kept in OriginalStages: put them back into Stages once walk animations are authored and added to AnimationSets.
  Stages = {
-  { "Noob" }, { "Monster" }, { "Teddy" }, { "Realistic" }, { "RiggedNew" },
-  { "RiggedNew" }, { "Backrooms" }, { "Paranormica" }, { "Backrooms" }, { "Teddy" },
-  { "White" }, { "LongArm", "Soul" },
+  { "Noob" }, { "Monster" }, { "Teddy" }, { "Backrooms" }, { "RiggedNew" },
+  { "RiggedNew" }, { "Backrooms" }, { "Teddy" }, { "Backrooms" }, { "Teddy" },
+  { "LongArm" }, { "LongArm", "Soul" },
  },
- Animations = { LongArm="LongArmRun", White="WhiteRun", Backrooms="BackroomsRun", Jessie="JessieRun" },
+ OriginalStages = { [4] = { "Realistic" }, [8] = { "Paranormica" }, [11] = { "White" } },
+ -- Bone-driven designs keep the client-side bone clips. Rigs with standard R6/R15 joint names use a real Animator with Roblox-made animations.
+ Animations = { White="WhiteRun", Jessie="JessieRun" },
+ AnimationSets = { R6={Idle="rbxassetid://180435571",Walk="rbxassetid://180426354"}, R15={Idle="rbxassetid://507766388",Walk="rbxassetid://507777826"} },
+ AnimationDesigns = { Noob="R6", Monster="R6", Teddy="R6", LongArm="R6", RiggedNew="R15", Backrooms="R15" },
+ -- Walk playback speed = ground speed / (AnimWalkRefSpeed * height / AnimRefHeight): a 5-stud R6/R15 rig walks 16 studs/s at
+ -- speed 1, and stride length grows with height, so big guards take slow heavy strides; AnimSpeedMin keeps them from looking like slow motion (chasing scales it up by chase speed / patrol speed).
+ AnimWalkRefSpeed = 16, AnimRefHeight = 5, AnimSpeedMin = 0.35, AnimFadeSeconds = 0.2,
  BoneAliases = {
  Realistic = {["upper_arm.L"]="Left Arm",["upper_arm.R"]="Right Arm",["thigh.L"]="Left Leg",["thigh.R"]="Right Leg",["spine.002"]="Torso"},
  },
