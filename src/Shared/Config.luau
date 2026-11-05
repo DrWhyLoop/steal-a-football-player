@@ -22,11 +22,11 @@ Config.TierOrder = { "Common", "Rare", "Epic", "Legendary", "Mythic", "GOAT" }
 
 Config.Tiers = {
 	Common    = { CashPerSecond = 1,    WalkSpeed = 16, Color = Color3.fromRGB(163, 162, 165) },
-	Rare      = { CashPerSecond = 5,    WalkSpeed = 15, Color = Color3.fromRGB(60, 120, 255) },
-	Epic      = { CashPerSecond = 25,   WalkSpeed = 14, Color = Color3.fromRGB(170, 60, 255) },
-	Legendary = { CashPerSecond = 100,  WalkSpeed = 13, Color = Color3.fromRGB(255, 150, 30) },
-	Mythic    = { CashPerSecond = 500,  WalkSpeed = 12, Color = Color3.fromRGB(255, 50, 120) },
-	GOAT      = { CashPerSecond = 2500, WalkSpeed = 11, Color = Color3.fromRGB(255, 215, 0) },
+	Rare      = { CashPerSecond = 8,    WalkSpeed = 15, Color = Color3.fromRGB(60, 120, 255) },
+	Epic      = { CashPerSecond = 75,   WalkSpeed = 14, Color = Color3.fromRGB(170, 60, 255) },
+	Legendary = { CashPerSecond = 700,  WalkSpeed = 13, Color = Color3.fromRGB(255, 150, 30) },
+	Mythic    = { CashPerSecond = 6800,  WalkSpeed = 12, Color = Color3.fromRGB(255, 50, 120) },
+	GOAT      = { CashPerSecond = 65000, WalkSpeed = 11, Color = Color3.fromRGB(255, 215, 0) },
 }
 
 -- Tier dropped by each stage (index = stage number)
@@ -85,14 +85,27 @@ Config.CubeSize = 6
 Config.CubeSpawnMarkerTransparency = 1
 Config.CubeRespawnSeconds = 15
 Config.CubeFlashSeconds = 0.08
-Config.CubeHP = { 3, 5, 8, 12, 18, 25, 35, 50, 70, 100, 140, 300 }       -- per stage
-Config.CubeCountPerStage = { 6, 6, 7, 7, 8, 8, 9, 10, 10, 11, 12, 1 }    -- per stage
+Config.EggHP = { Base = 10, Growth = 3.7 } -- normal egg HP = Base * Growth^(stage-1), so each stage needs a better pickaxe
+Config.CubeHP = {}                                        -- per stage, derived from EggHP
+for stage = 1, 12 do Config.CubeHP[stage] = math.floor(Config.EggHP.Base * Config.EggHP.Growth ^ (stage - 1) + 0.5) end
+Config.Onboarding = { Eggs = 5, Hits = 3 } -- a new player's first Eggs Stage 1 eggs break in Hits hits
+Config.CubeCountPerStage = { 6, 6, 7, 7, 8, 8, 9, 10, 10, 11, 12, 4 }    -- per stage
+-- Stage theme and the recommended movement speed (studs/s) shown on entry: distance to the middle of the stage / TravelSeconds, at least
+-- the normal walk speed (see tools/economy). Speed 64 is reached around Stage 12 in the economy model.
+Config.StageBanner = { Seconds = 3.5, CheckSeconds = 0.25, TravelSeconds = 90 }
+Config.StageInfo = {
+ { Name = "Training Grounds", Speed = 16 }, { Name = "Clover Park", Speed = 16 }, { Name = "Sandlot Yard", Speed = 16 },
+ { Name = "Stone Quarry", Speed = 17 }, { Name = "Lantern Alley", Speed = 22 }, { Name = "Mossy Ruins", Speed = 27 },
+ { Name = "Rust Harbor", Speed = 32 }, { Name = "Ember Works", Speed = 37 }, { Name = "Frost Terrace", Speed = 42 },
+ { Name = "Neon Arcade", Speed = 49 }, { Name = "Storm Dome", Speed = 55 }, { Name = "Golden Colosseum", Speed = 64 },
+}
 Config.CubeColumnX = { -72, 72, -40, 40 } -- spawn columns (fill order); centre lane stays free
 
 -- GOAT event cube: the only source of GOAT cards. One cube per interval + announcement.
 Config.GoatStage = 12
 Config.GoatSpawnIntervalSeconds = 120 -- TESTING VALUE. Set to 1200 (20 minutes) for live.
 Config.GoatAnnouncement = "A GOAT EGG has appeared in STAGE 12!"
+Config.GoatEvent = { MinVariant = "Gold" } -- timed event egg: always the Huge size and a Gold-or-better variant; Stage 12 also has regular GOAT eggs
 
 -- Golden Cube event: one at a random point of a random stage in [Min, Max]
 Config.GoldenIntervalSeconds = 300
@@ -100,6 +113,20 @@ Config.GoldenInitialDelaySeconds = 300
 Config.GoldenMinStage = 4
 Config.GoldenMaxStage = 11
 Config.GoldenHPMultiplier = 3
+
+-- Egg sizes, rolled per egg by Weight. HP multiplies the egg's HP, Odds multiplies the variant odds, Scale sizes the egg and the
+-- character inside. Secret is never rolled by weight (see SecretEgg); Huge is also the timed GOAT event egg.
+Config.EggSizes = {
+ { Id="Small",  Label="SMALL",  Weight=30, HP=0.5, Odds=1,   Scale=0.85 },
+ { Id="Normal",                 Weight=55, HP=1,   Odds=1,   Scale=1 },
+ { Id="Big",    Label="BIG",    Weight=12, HP=2.5, Odds=1.5, Scale=1.25 },
+ { Id="Huge",   Label="HUGE",   Weight=3,  HP=6,   Odds=3,   Scale=1.6 },
+ { Id="Secret", Label="SECRET", Weight=0,  HP=20,  Odds=1,   Scale=1.4 },
+}
+Config.EggSizeById = {}
+for _, size in Config.EggSizes do Config.EggSizeById[size.Id] = size end
+Config.SecretEgg = { Chance = 0.001, MinVariant = "Gold", Color = Color3.fromRGB(190, 90, 255) } -- per egg spawn; drops one tier up (max GOAT)
+Config.CardScaleCap = 2 -- Giant x egg size never makes a character larger than this multiple
 Config.GoldenMaxTier = "Mythic" -- drops one tier above the stage, capped here
 Config.GoldenColor = Color3.fromRGB(255, 200, 0)
 Config.GoldenAnnouncement = "A GOLDEN EGG appeared in STAGE %d!"
@@ -107,8 +134,28 @@ Config.GoldenAnnouncement = "A GOLDEN EGG appeared in STAGE %d!"
 Config.AnnouncementSeconds = 6
 
 -- Pickaxe -------------------------------------------------------------
-Config.PickaxeName = "Default Axe"       -- Tool in StarterPack
-Config.PickaxeDamage = 1             -- fixed damage per hit
+-- Pickaxes: Power = damage per hit, bought with cash (any order), one equipped. Template = Tool in ServerStorage.AxeTemplates.
+-- Every player holds one Tool named PickaxeName; equipping swaps it for a copy of the chosen template.
+Config.PickaxeName = "Default Axe"
+Config.Pickaxes = {
+ { Id="Default",  Name="Default Axe",    Power=1,        Cost=0,           Template="Default" },
+ { Id="Hatchet",  Name="Sharp Hatchet",  Power=4,        Cost=270,         Template="Good" },
+ { Id="Miner",    Name="Miner's Pick",   Power=14,       Cost=1200,        Template="Pickaxe" },
+ { Id="Steel",    Name="Steel Pick",     Power=51,       Cost=5100,        Template="SteelPickaxe" },
+ { Id="Golden",   Name="Golden Pick",    Power=187,      Cost=22000,       Template="Golden" },
+ { Id="Magma",    Name="Magma Axe",      Power=693,      Cost=100000,      Template="Volcanic" },
+ { Id="Godly",    Name="Godly Pick",     Power=2565,     Cost=440000,      Template="Godly" },
+ { Id="Ember",    Name="Ember Pick",     Power=9493,     Cost=1900000,     Template="Ember" },
+ { Id="Frost",    Name="Frost Pick",     Power=35124,    Cost=8500000,     Template="Frost" },
+ { Id="Jade",     Name="Jade Hatchet",   Power=129959,   Cost=37000000,    Template="Jade" },
+ { Id="Storm",    Name="Storm Pick",     Power=480848,   Cost=160000000,   Template="Storm" },
+ { Id="Obsidian", Name="Obsidian Axe",   Power=1779000,  Cost=720000000,   Template="Obsidian" },
+ { Id="Rose",     Name="Rose Gold Pick", Power=6583000,  Cost=3200000000,  Template="Rose" },
+ { Id="Void",     Name="Void Pick",      Power=24357000, Cost=14000000000, Template="Void" },
+ { Id="Prism",    Name="Prism Pick",     Power=90121000, Cost=61000000000, Template="Prism" },
+}
+Config.PickaxeShop = { RequestGap = 0.4 } -- seconds between a player's shop requests
+Config.AutoSwing = { Margin = 0.05 } -- Auto Swing waits SwingCooldown + Margin between swings
 Config.SwingCooldown = 0.7          -- seconds between hits (server enforced)
 Config.PickaxeRange = 12             -- max studs from player root to cube centre
 Config.PickaxeCloseRange = 6         -- cubes this close always count, even if not facing
@@ -118,14 +165,10 @@ Config.PickaxeSounds = {             -- placeholder built-in clips
 	Miss = "rbxasset://sounds/swordslash.wav",
 }
 
--- Axe skins are prepared for progression; only Default is currently unlocked.
 Config.Axes = {
  SwingDuration = 0.7, StrikeEnd = 0.46, ImpactTime = 0.43,
  RunSpeedReference = 16, RunMinimumSpeed = 0.5, AnimationDistance = 120,
  RunKneeBend = 0.8, RunElbowBend = 0.7, StrikeElbowBend = 0.6,
- Catalog = { "Default", "Good", "Golden", "Pickaxe", "SteelPickaxe", "Godly", "Volcanic" },
- TemplateHeight = 3.8,
- Default = "Default", Locked = {Good=true,Golden=true,Pickaxe=true,SteelPickaxe=true,Godly=true,Volcanic=true},
 }
 
 -- Cards ---------------------------------------------------------------
@@ -205,7 +248,7 @@ Config.Environment = {
  BambooScale = 0.42, BushScale = 0.27, BushLeafScale = 0.28,
  EdgeInset = 5, TuftsPerStage = 8, TuftScale = 0.6, PlazaTreeOutsideOffset = 60,
  MaxGrassPartsPerStage = 150, MaxPlotVisualParts = 550,
- VegetationViewDistance = 240, VegetationFadeDistance = 60, VisibilityUpdateSeconds = 0.5,
+ VisibilityUpdateSeconds = 0.5,
  Seed = 61103,
 }
 
@@ -282,21 +325,21 @@ Config.Treadmills = {
  ParticleRate=2, EffectsDistance=65, LabelDistance=12, MaxLights=1,
  Catalog={
   {Id="Base",Name="Starter",Multiplier=1.5,Cost=0,Template="TreadmillBasic"},
-  {Id="Circuit",Name="Circuit",Multiplier=2,Cost=100,Template="x1 Treadmill"},
-  {Id="Alloy",Name="Alloy",Multiplier=4,Cost=750,Template="TreadmillPlaytime"},
-  {Id="Flame",Name="Flame",Multiplier=6,Cost=5000,Template="x3 Treadmill"},
-  {Id="Diamond",Name="Diamond",Multiplier=9,Cost=30000,Template="TreadmillDiamond"},
-  {Id="Frost",Name="Frost",Multiplier=12,Cost=180000,Template="x15 Treadmill"},
-  {Id="Nova",Name="Nova",Multiplier=15,Cost=1100000,Template="x50 Treadmill"},
-  {Id="Solar",Name="Solar",Multiplier=20,Cost=6500000,Template="x100 Treadmill"},
-  {Id="Galaxy",Name="Galaxy",Multiplier=25,Cost=40000000,Template="TreadmillGalaxy"},
-  {Id="Aurora",Name="Aurora",Multiplier=35,Cost=250000000,Template="x15 Treadmill"},
-  {Id="Obsidian",Name="Obsidian",Multiplier=50,Cost=1500000000,Template="x50 Treadmill"},
-  {Id="Titan",Name="Titan",Multiplier=75,Cost=9000000000,Template="x100 Treadmill"},
-  {Id="Void",Name="Void",Multiplier=100,Cost=55000000000,Template="TreadmillVoid"},
-  {Id="Infinity",Name="Infinity",Multiplier=250,Cost=330000000000,Template="TreadmillVoid"},
-  {Id="ShadowScott",Name="Shadow Scott",Multiplier=500,Cost=1500000000000,Template="Shadow Scott"},
-  {Id="Celestial",Name="Celestial",Multiplier=100000,GamePassId=0,Template="TreadmillCelestial"}, -- GamePassId: paste the owner-created pass ID here; the price shown is the live Roblox price
+  {Id="Circuit",Name="Circuit",Multiplier=2,Cost=120,Template="x1 Treadmill"},
+  {Id="Alloy",Name="Alloy",Multiplier=4,Cost=230,Template="TreadmillPlaytime"},
+  {Id="Flame",Name="Flame",Multiplier=6,Cost=450,Template="x3 Treadmill"},
+  {Id="Diamond",Name="Diamond",Multiplier=9,Cost=890,Template="TreadmillDiamond"},
+  {Id="Frost",Name="Frost",Multiplier=12,Cost=1700,Template="x15 Treadmill"},
+  {Id="Nova",Name="Nova",Multiplier=15,Cost=3400,Template="x50 Treadmill"},
+  {Id="Solar",Name="Solar",Multiplier=20,Cost=6700,Template="x100 Treadmill"},
+  {Id="Galaxy",Name="Galaxy",Multiplier=25,Cost=13000,Template="TreadmillGalaxy"},
+  {Id="Aurora",Name="Aurora",Multiplier=35,Cost=26000,Template="x15 Treadmill"},
+  {Id="Obsidian",Name="Obsidian",Multiplier=50,Cost=51000,Template="x50 Treadmill"},
+  {Id="Titan",Name="Titan",Multiplier=75,Cost=99000,Template="x100 Treadmill"},
+  {Id="Void",Name="Void",Multiplier=100,Cost=195000,Template="TreadmillVoid"},
+  {Id="Infinity",Name="Infinity",Multiplier=250,Cost=380000,Template="TreadmillVoid"},
+  {Id="ShadowScott",Name="Shadow Scott",Multiplier=500,Cost=750000,Template="Shadow Scott"},
+  {Id="Celestial",Name="Celestial",Multiplier=1500,GamePassId=0,Template="TreadmillCelestial"}, -- GamePassId: paste the owner-created pass ID here; the price shown is the live Roblox price
  },
 }
 Config.PlayerData={Store="FootballerProfiles_v1",ReportStore="FootballerReports_v1",AutosaveSeconds=60,
@@ -304,6 +347,10 @@ Config.PlayerData={Store="FootballerProfiles_v1",ReportStore="FootballerReports_
  LockSeconds=180,Retries=3,RetrySeconds=2,StudioMemoryOnly=true,ProfileVersion=2,MaxCash=1e60,MaxSpeedPoints=1e60,MaxCounter=1e15,
  MaxPurchaseHistory=60,ReportCooldown=60,MaxReportsPerDay=5,MaxInboxRecords=1000,
  FeedbackCategories={"Bug","Lost progress","Controls","Balance","Abuse","Exploiting"}}
+
+-- Permanent income game pass: multiplies cash earned from the player's plot (Celestial is the other pass, in the treadmill catalog).
+-- GamePassId: paste the owner-created pass ID (0 = not available); the shop shows the live Roblox price.
+Config.CashPass = { Id="DoubleCash", Name="2x Cash", Multiplier=2, GamePassId=0 }
 
 -- Robux purchases (see Purchases.luau). StudioTestMode only applies inside Studio: passes, prices and ownership are simulated and
 -- Marketplace is never called, so no real purchase can happen. Live servers always use the real Marketplace.
@@ -322,6 +369,51 @@ Config.Daily={BaseCash=500,StepCash=250,CapDays=7,ClaimCooldownSeconds=2,Refresh
 Config.Announce={Tiers={Mythic=true,GOAT=true},Variants={Diamond=true},Giant=true, -- what counts as a rare hatch
  GlobalGapSeconds=3,MaxPerMinute=6,PlayerGapSeconds=10}
 
+-- The world outside the stages (see Server/WorldBuilder.luau, an edit-time tool). Positions are (X, Z) on the ground.
+-- Jungle: Density is trees per square stud inside Bands, capped by PartBudget (BaseParts of all trees together).
+Config.World = {
+ GroundY = 0, Seed = 20261106, ClearMargin = 24, PathClear = 12,
+ Jungle = {
+  Density = 1 / 2000, PartBudget = 8000, Cell = 28, Scale = { 0.85, 1.25 },
+  ZMin = -1000, ZMax = 5600,
+  Bands = { { XMin = -600, XMax = -110 }, { XMin = 170, XMax = 700 } }, -- either side of the stage corridor (X -68..124)
+  Types = { "Decid Tree 4", "Tree3" },
+ },
+ Lakes = {
+  { Source = "ForestLake", Position = Vector2.new(-520, 1000), Yaw = 0, Scale = 2.2 },
+  { Source = "Random Lake", Position = Vector2.new(-540, -250), Yaw = 0.5 },
+  { Source = "Random Lake", Position = Vector2.new(-450, 2300), Yaw = 2 },
+  { Source = "Random Lake", Position = Vector2.new(620, 1900), Yaw = 4 },
+  { Source = "Lake", Position = Vector2.new(560, 800), Yaw = 0 },
+ },
+ ShoreLake = { Position = Vector2.new(560, 800) }, -- the normal Lake; the reptiles rest beside it
+ Treehouses = {
+  { Position = Vector2.new(-300, -560), Yaw = 0 }, { Position = Vector2.new(-400, 80), Yaw = 0.4 },
+  { Position = Vector2.new(360, -560), Yaw = 0 }, { Position = Vector2.new(440, 100), Yaw = -0.4 },
+ },
+ Path = { Step = 3.5, Lane = 1.8, Jitter = 0.6, Lift = 0.1 }, -- a stone every Step studs on two lanes
+ Paths = { -- from the plaza's open rear end around the plot rows to each treehouse
+  { Name = "West1", Points = { Vector2.new(28, -880), Vector2.new(-30, -905), Vector2.new(-170, -905), Vector2.new(-200, -770), Vector2.new(-230, -650), Vector2.new(-225, -600) } },
+  { Name = "West2", Points = { Vector2.new(-200, -770), Vector2.new(-185, -480), Vector2.new(-230, -300), Vector2.new(-300, -150), Vector2.new(-330, -20) } },
+  { Name = "East1", Points = { Vector2.new(28, -880), Vector2.new(90, -905), Vector2.new(230, -905), Vector2.new(260, -770), Vector2.new(280, -650), Vector2.new(290, -600) } },
+  { Name = "East2", Points = { Vector2.new(260, -770), Vector2.new(250, -480), Vector2.new(300, -300), Vector2.new(350, -120), Vector2.new(375, 40) } },
+ },
+ -- Animals are anchored decoration. Each client animates the ones near it from the server time (no replication, no server cost).
+ AnimalArea = { NearShare = 0.5, NearZMax = 1500 }, -- half of the herd lives within the first 1500 studs
+ Animals = {
+  { Source = "Bison", Count = 3, Radius = 14, Speed = 1.2 }, { Source = "BisonB", Count = 3, Radius = 14, Speed = 1.2 },
+  { Source = "Elk", Count = 3, Radius = 16, Speed = 1.8 }, { Source = "ElkB", Count = 3, Radius = 16, Speed = 1.8 },
+  { Source = "CowMoose", Count = 4, Radius = 14, Speed = 1.5 }, { Source = "BullMoose", Count = 4, Radius = 14, Speed = 1.5 },
+  { Source = "Deer", Count = 8, Radius = 18, Speed = 2, ForwardYaw = math.rad(90) },
+  { Source = "Bear", Count = 3, Radius = 10, Speed = 1.2 }, { Source = "BlackBear", Count = 2, Radius = 10, Speed = 1.2 },
+ },
+ ShoreAnimals = {
+  { Source = "Caiman", Offset = Vector2.new(-122, 40), Radius = 0, Speed = 0 },
+  { Source = "SnappingTurtle", Offset = Vector2.new(-116, -35), Radius = 0, Speed = 0 },
+ },
+ AnimalMotion = { Distance = 90, CheckSeconds = 0.5, BobHeight = 0.08, BobSpeed = 1.6 }, -- client: animals within Distance move
+}
+
 -- Economy -------------------------------------------------------------
 Config.CashTickSeconds = 1
 
@@ -331,10 +423,13 @@ function Config.GetStageLength(stage: number): number
 end
 
 --- Tier of the card a Golden Cube drops for a stage.
-function Config.GetGoldenTier(stage: number): string
+function Config.GetTierAbove(stage: number, capTier: string): string
 	local index = table.find(Config.TierOrder, Config.StageTier[stage]) :: number
-	local cap = table.find(Config.TierOrder, Config.GoldenMaxTier) :: number
+	local cap = table.find(Config.TierOrder, capTier) :: number
 	return Config.TierOrder[math.min(index + 1, cap)]
+end
+function Config.GetGoldenTier(stage: number): string
+	return Config.GetTierAbove(stage, Config.GoldenMaxTier)
 end
 
 

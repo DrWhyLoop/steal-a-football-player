@@ -1,6 +1,6 @@
 --[[
 	PickaxeService: server-side mining and fighting.
-	The Pickaxe Tool lives in StarterPack (edit it in Studio). When a player activates it
+	The Pickaxe Tool is given by PickaxeShop (the equipped pickaxe). When a player activates it
 	(mouse click, phone tap, gamepad - Tool.Activated replicates to the server) we:
 	  1. enforce a per-player cooldown,
 	  2. find the nearest target in range and in front: a cube, or another player carrying a card,
@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local LineOfSight = require(script.Parent.LineOfSight)
+local PickaxeShop = require(script.Parent.PickaxeShop)
 
 local PickaxeService = {}
 
@@ -73,7 +74,7 @@ local function onSwing(player: Player, tool: Tool)
 	task.delay(Config.Axes.ImpactTime,function()
 		if not char.Parent or tool.Parent~=char or humanoid.Health<=0 or not root.Parent then return end
 		local cube,victim=findTarget(player,root)
-		if cube then CubeService.Damage(cube,Config.PickaxeDamage,player)
+		if cube then CubeService.Damage(cube,PickaxeShop.Power(player),player)
 		elseif victim then
    if victim.Character then victim.Character:SetAttribute("HurtStart",workspace:GetServerTimeNow()) end
    CardService.DropCarried(victim) end

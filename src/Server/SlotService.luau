@@ -20,6 +20,7 @@ local LineOfSight = require(script.Parent.LineOfSight)
 local PlayerData = require(script.Parent.PlayerData)
 local Stats = require(script.Parent.PlayerStats)
 local IndexService = require(script.Parent.IndexService)
+local CashService = require(script.Parent.CashService)
 
 local SlotService = {}
 
@@ -35,7 +36,14 @@ local function upgradeCost(card)
  return math.ceil(card:GetAttribute("BaseCashPerSecond")*Config.PlotSlots.FirstCostSeconds*Config.PlotSlots.CostGrowth^level)
 end
 
+-- Boxes show what the owner actually earns, so the owner's 2x Cash pass is included.
+local function slotBoost(slot: BasePart): number
+	local plot = PlotService.GetPlotOfInstance(slot)
+	return CashService.Boost(plot and PlotService.GetOwner(plot))
+end
+
 local function refreshSlot(slot: BasePart, card: Part?)
+	local boost = slotBoost(slot)
 	local name = card and card:GetAttribute("CardName")
 	local beingStolen = reserved[slot] ~= nil
 	slot:SetAttribute("Reserved", beingStolen)
@@ -44,14 +52,14 @@ local function refreshSlot(slot: BasePart, card: Part?)
 	slot.SlotPrompt.ActionText = card and "Pick up" or "Place player"
 	slot.SlotPrompt.ObjectText = beingStolen and "BEING STOLEN" or name or Config.PlotSlots.EmptyText
 	slot.StealPrompt.ObjectText = name or Config.PlotSlots.EmptyText
- slot.EarningsPanel.Value.InfoGui.Label.Text=beingStolen and "BEING STOLEN" or card and ("$%s/s"):format(Format.Money(card:GetAttribute("CashPerSecond"))) or Config.PlotSlots.EmptyText
+ slot.EarningsPanel.Value.InfoGui.Label.Text=beingStolen and "BEING STOLEN" or card and ("$%s/s"):format(Format.Money(card:GetAttribute("CashPerSecond")*boost)) or Config.PlotSlots.EmptyText
  local upgrade=slot.UpgradePanel.Value
  local level=card and card:GetAttribute("UpgradeLevel") or 0
  local cost=card and level<Config.PlotSlots.MaxLevel and upgradeCost(card) or nil
  -- The client renders the brown box from these (cost turns red from the viewer's own cash).
  slot:SetAttribute("UpgradeLevel",level)
  slot:SetAttribute("UpgradeCost",cost)
- slot:SetAttribute("NextIncome",cost and card:GetAttribute("CashPerSecond")*Config.PlotSlots.IncomeGrowth or nil)
+ slot:SetAttribute("NextIncome",cost and card:GetAttribute("CashPerSecond")*Config.PlotSlots.IncomeGrowth*boost or nil)
  upgrade.UpgradePrompt.ObjectText=card and ("Level %d"):format(level) or Config.PlotSlots.EmptyText
  upgrade.UpgradePrompt.ActionText=cost and ("Upgrade ($%s)"):format(Format.Money(cost)) or "Upgrade"
 end
@@ -254,6 +262,14 @@ function SlotService.Init(plotService, cardService, lockService)
 		slot.StealPrompt.Triggered:Connect(function(player) onStealTriggered(player, slot) end)
 	end
 	PlotService.PlotFreed.Event:Connect(clearPlot)
+	local function watch(player)
+		player:GetAttributeChangedSignal("PassOwned_" .. Config.CashPass.Id):Connect(function()
+			local plot = PlotService.GetPlot(player)
+			if plot then for _, slot in plot.Slots:GetChildren() do refreshSlot(slot, slotCards[slot]) end end
+		end)
+	end
+	Players.PlayerAdded:Connect(watch)
+	for _, player in Players:GetPlayers() do watch(player) end
 end
 
 return SlotService

@@ -16,20 +16,25 @@ function Reward.Pick(tier)
  return pool[#pool]
 end
 -- Variants: Gold/Diamond are exclusive (Diamond first), Giant rolls independently; a Lucky Egg uses its own boosted odds.
-function Reward.Roll(lucky)
+function Reward.Roll(lucky,oddsMultiplier)
  local odds=lucky and Config.LuckyEgg.Odds or Config.VariantOdds
+ local m=oddsMultiplier or 1 -- a bigger egg multiplies every variant chance
  local roll=rng:NextNumber()
- local variant=(roll<odds.Diamond and "Diamond") or (roll<odds.Diamond+odds.Gold and "Gold") or nil
- return variant,rng:NextNumber()<odds.Giant or nil
+ local variant=(roll<odds.Diamond*m and "Diamond") or (roll<(odds.Diamond+odds.Gold)*m and "Gold") or nil
+ return variant,rng:NextNumber()<odds.Giant*m or nil
 end
 function Reward.IncomeMultiplier(variant,giant)
  return (variant and Config.Variants[variant].Income or 1)*(giant and Config.GiantVariant.Income or 1)
 end
-function Reward.Attach(card,id,variant,giant)
+-- Character size: Giant and the egg size multiply, capped so a Huge Giant never towers over its display.
+function Reward.Scale(giant,eggSize)
+ return math.min(Config.CardScaleCap,(giant and Config.GiantVariant.Size or 1)*(eggSize and Config.EggSizeById[eggSize].Scale or 1))
+end
+function Reward.Attach(card,id,variant,giant,eggSize)
  local mesh=Templates:FindFirstChild(id):Clone()
  local model=Instance.new("Model") model.Name="PlayerVisual"
  mesh.Name="PlayerMesh"
- local size=giant and Config.GiantVariant.Size or 1
+ local size=Reward.Scale(giant,eggSize)
  local scale=Config.Reveal.DisplayHeight/mesh.Size.Y*size
  mesh.Size*=scale
  for _,bone in mesh:GetDescendants() do if bone:IsA("Bone") then bone.CFrame=CFrame.new(bone.CFrame.Position*scale)*bone.CFrame.Rotation end end

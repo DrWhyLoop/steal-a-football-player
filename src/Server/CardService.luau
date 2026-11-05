@@ -128,7 +128,7 @@ local function tryPickup(player: Player, card: Part)
 end
 
 -- Every attribute (including Variant/Giant) is set before the card is parented, so clients see them from the first frame.
-local function createCard(entry, tier: string, position: Vector3, variant: string?, giant: boolean?): Part
+local function createCard(entry, tier: string, position: Vector3, variant: string?, giant: boolean?, eggSize: string?): Part
  local name=entry.Name
 	local info = Config.Tiers[tier]
 	local card = Instance.new("Part")
@@ -149,8 +149,9 @@ local function createCard(entry, tier: string, position: Vector3, variant: strin
 	card:SetAttribute("CashPerSecond", info.CashPerSecond*Reward.IncomeMultiplier(variant,giant))
  card:SetAttribute("Variant",variant)
  card:SetAttribute("Giant",giant or nil)
+ card:SetAttribute("EggSize",eggSize)
 	CollectionService:AddTag(card, "Card")
- Reward.Attach(card,entry.Id,variant,giant)
+ Reward.Attach(card,entry.Id,variant,giant,eggSize)
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "PickupPrompt"
@@ -174,13 +175,15 @@ end
 --- play the rise locally. The breaker has first pick for Reveal.BreakerPrioritySeconds.
 function CardService.DropFromCube(tier: string,position: Vector3,breaker: Player?,lucky: boolean?,egg: BasePart)
  local entry=Reward.Pick(tier)
- local variant,giant=Reward.Roll(lucky)
+ local eggSize=egg:GetAttribute("Size")
+ local variant,giant=Reward.Roll(lucky,Config.EggSizeById[eggSize].Odds)
+ variant=variant or egg:GetAttribute("MinVariant") -- event and Secret eggs promise Gold or better
  for _,player in Players:GetPlayers() do
   local root=getRoot(player)
   if root and (root.Position-position).Magnitude<=Config.Reveal.MaxDistance then Remotes.EggReveal:FireClient(player,egg,tier) end
  end
  task.wait(Config.Reveal.SwellSeconds)
- local card=createCard(entry,tier,position,variant,giant)
+ local card=createCard(entry,tier,position,variant,giant,eggSize)
  card:SetAttribute("EarnedFromEgg",true)
  card:SetAttribute("RemainingLifetime",Config.CubeDropLifetime)
  if breaker then
@@ -198,7 +201,7 @@ local function itemExists(id)
 end
 function CardService.Record(card)
  return {PlayerId=card:GetAttribute("PlayerId"),Level=card:GetAttribute("UpgradeLevel") or 0,ItemId=card:GetAttribute("ItemId"),
-  Variant=card:GetAttribute("Variant"),Giant=card:GetAttribute("Giant")}
+  Variant=card:GetAttribute("Variant"),Giant=card:GetAttribute("Giant"),EggSize=card:GetAttribute("EggSize")}
 end
 -- Only validated server-saved roster records can be restored. A saved ItemId that already exists live is a duplicate and is refused.
 function CardService.RestoreRecord(record,position)
@@ -211,7 +214,8 @@ function CardService.RestoreRecord(record,position)
  if validId and itemExists(id) then return nil end
  local variant=type(record.Variant)=="string" and Config.Variants[record.Variant] and record.Variant or nil
  local giant=record.Giant==true or nil
- local card=createCard(entry,entry.Tier,position,variant,giant)
+ local eggSize=type(record.EggSize)=="string" and Config.EggSizeById[record.EggSize] and record.EggSize or nil
+ local card=createCard(entry,entry.Tier,position,variant,giant,eggSize)
  if validId then card:SetAttribute("ItemId",id) end
  local level=type(record.Level)=="number" and record.Level==record.Level and math.clamp(math.floor(record.Level),0,Config.PlotSlots.MaxLevel) or 0
  local base=card:GetAttribute("CashPerSecond")

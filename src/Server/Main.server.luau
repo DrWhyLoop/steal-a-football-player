@@ -27,12 +27,14 @@ CubeService.OnBroken(CardService.DropFromCube)
 CubeService.Init()
 
 require(script.Parent.WeatherService).Init()
+require(script.Parent.WorldLayout).Publish()
 
 require(script.Parent.PlayerData).Init(PlotService,SlotService,CardService)
 require(script.Parent.Purchases).Init()
 require(script.Parent.IndexService).Init()
 require(script.Parent.DailyReward).Init()
 require(script.Parent.TreadmillService).Init(PlotService,CardService)
+require(script.Parent.PickaxeShop).Init()
 require(script.Parent.FeedbackService).Init()
 
 require(script.Parent.TorchMount).Apply()

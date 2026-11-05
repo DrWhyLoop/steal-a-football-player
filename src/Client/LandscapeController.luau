@@ -6,8 +6,6 @@ local Landscape={}
 function Landscape.Init()
  task.spawn(function()
   local templates=RS:WaitForChild("EnvironmentTemplates")
-  local base=workspace:WaitForChild("Baseplate")
-  local greybox=workspace:WaitForChild("Greybox")
   local root=Instance.new("Folder") root.Name="LocalLandscape" root.Parent=workspace
   local palms,plants,bushes={},{},{}
   for _,v in templates:GetChildren() do
@@ -15,13 +13,11 @@ function Landscape.Init()
    elseif v.Name:match("^Bush") then table.insert(bushes,v)
    elseif v.Name~="GroundGrass" then table.insert(plants,v) end
   end
-  local clear={}
-  local function reserve(part,margin)
-   table.insert(clear,{X=part.Position.X,Z=part.Position.Z,HX=part.Size.X/2+margin,HZ=part.Size.Z/2+margin})
+  local clear={} -- footprints published by WorldLayout (streaming means stages and plots may not be loaded here)
+  while not RS:GetAttribute("ClearZones") do task.wait(.2) end
+  for _,z in game:GetService("HttpService"):JSONDecode(RS:GetAttribute("ClearZones")) do
+   table.insert(clear,{X=z[1],Z=z[2],HX=z[3]+L.ClearMargin,HZ=z[4]+L.ClearMargin})
   end
-  for _,stage in greybox.Hallway.Stages:GetChildren() do if stage:IsA("BasePart") then reserve(stage,L.ClearMargin) end end
-  for _,plot in greybox.Plots:GetChildren() do if plot:FindFirstChild("Base") then reserve(plot.Base,L.ClearMargin) end end
-  reserve(greybox.Plaza.PlazaFloor,L.ClearMargin)
   local function allowed(p,margin)
    local localPoint=p-L.GroundCenter
    if math.abs(localPoint.X)>L.GroundSize.X/2-margin or math.abs(localPoint.Z)>L.GroundSize.Z/2-margin then return false end
@@ -34,7 +30,7 @@ function Landscape.Init()
    clone.Parent=parent
   end
   local cells,grass={},{ }
-  local top=base.Position.Y+base.Size.Y/2
+  local top=L.GroundCenter.Y+L.GroundSize.Y/2
   local function update(cache,size,radius,isGrass,position)
    local wanted={}
    local cx,cz=math.floor(position.X/size),math.floor(position.Z/size)

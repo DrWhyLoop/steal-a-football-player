@@ -23,7 +23,8 @@ function Labels.Init()
    local full=UDim2.fromOffset(Config.CardLabels.Width,Config.CardLabels.Height)
    gui.Size=full gui.StudsOffsetWorldSpace=Vector3.new(0,Config.CardLabels.HeadClearance,0)
    local variant=card:GetAttribute("Variant")
-   local tag=(card:GetAttribute("Giant") and "GIANT " or "")..(variant and variant:upper().." " or "")
+   local size=Config.EggSizeById[card:GetAttribute("EggSize") or "Normal"]
+   local tag=(size.Label and size.Label.." " or "")..(card:GetAttribute("Giant") and "GIANT " or "")..(variant and variant:upper().." " or "")
    addLine(gui,0,.4,variant and Config.Variants[variant].Tint or Color3.new(1,1,1)).Text=tag..card:GetAttribute("CardName")
    addLine(gui,.4,.32,Config.Tiers[card:GetAttribute("Tier")].Color).Text=card:GetAttribute("Tier")
    entries[card]={status=addLine(gui,.72,.28,Config.CardLabels.StatusColor)}

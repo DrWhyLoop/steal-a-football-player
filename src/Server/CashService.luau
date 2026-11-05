@@ -1,5 +1,5 @@
 --[[
-	CashService: adds income to the player's Cash balance (PlayerStats) and the per-second income tick.
+	CashService: adds income to the player's Cash balance (PlayerStats) and runs the per-second income tick.
 	Income each tick = sum of CashPerSecond of cards placed on the player's plot.
 	AddCash() is the entry point for shops/rewards.
 ]]
@@ -14,6 +14,11 @@ local CashService = {}
 local remainder = {}
 
 local PlotService, SlotService -- injected in Init
+
+-- Income multiplier from the 2x Cash pass (the attribute is set by Purchases).
+function CashService.Boost(player: Player?): number
+	return player and player:GetAttribute("PassOwned_" .. Config.CashPass.Id) and Config.CashPass.Multiplier or 1
+end
 
 function CashService.AddCash(player: Player, amount: number)
 	Stats.Add(player,"Cash",amount)
@@ -35,7 +40,7 @@ function CashService.Init(plotService, slotService)
 			for _, player in ipairs(Players:GetPlayers()) do
 				local plot = PlotService.GetPlot(player)
 				if plot and player:GetAttribute("DataReady")~=false then
-					local income = SlotService.GetPlotIncome(plot) * Config.CashTickSeconds
+					local income = SlotService.GetPlotIncome(plot) * Config.CashTickSeconds * CashService.Boost(player)
 					if income > 0 then
 						local pending=(remainder[player] or 0)+income
       local whole=math.floor(pending)

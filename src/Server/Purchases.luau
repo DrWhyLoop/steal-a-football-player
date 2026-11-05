@@ -1,6 +1,6 @@
 --[[
 	Purchases: every Robux interaction goes through here (server-authoritative).
-	- Game pass items (the Celestial treadmill): explicit tap -> live-price check -> Roblox's own purchase prompt. Nothing prompts on join.
+	- Game pass items (the Celestial treadmill and the 2x Cash pass): explicit tap -> live-price check -> Roblox's own purchase prompt. Nothing prompts on join.
 	- Ownership is stored in the profile (Entitlements). On join a pass the player owns but the profile lacks is re-granted; a refund
 	  revokes it only after Config.Purchases.RevokeStrikes confirmed "not owned" results on separate joins at least
 	  RevokeStrikeGapSeconds apart. An API error never counts and never resets anything.
@@ -23,7 +23,7 @@ local P={}
 P.Granted=Instance.new("BindableEvent")  -- (player, key)
 P.Revoked=Instance.new("BindableEvent")  -- (player, key)
 
-local passes={} -- game pass items from the treadmill catalog: { {key, passId} }
+local passes={} -- game pass items (treadmill catalog passes and Config.CashPass): [key] = {key, passId}
 local byPassId={}
 local cooldown={}
 local checked={}
@@ -190,13 +190,17 @@ function P.ProcessReceipt(info)
 end
 
 function P.Init()
- for _,tier in Config.Treadmills.Catalog do
-  if tier.GamePassId then
-   local passId=tier.GamePassId>0 and tier.GamePassId or (testMode and cfg.TestPassId or 0)
-   local pass={key=tier.Id,passId=passId}
-   passes[tier.Id]=pass byPassId[passId]=pass
-  end
+ local nextTestId=cfg.TestPassId
+ local function register(key,gamePassId)
+  local passId=gamePassId
+  if passId==0 and testMode then passId=nextTestId nextTestId+=1 end -- each unconfigured pass gets its own simulated id in Studio
+  local pass={key=key,passId=passId}
+  passes[key]=pass byPassId[passId]=pass
  end
+ for _,tier in Config.Treadmills.Catalog do
+  if tier.GamePassId then register(tier.Id,tier.GamePassId) end
+ end
+ register(Config.CashPass.Id,Config.CashPass.GamePassId)
  Log.Init()
  Marketplace.ProcessReceipt=P.ProcessReceipt
  Marketplace.PromptGamePassPurchaseFinished:Connect(onFinished)

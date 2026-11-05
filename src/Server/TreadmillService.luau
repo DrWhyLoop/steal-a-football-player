@@ -62,6 +62,7 @@ end
 local function request(player,action,id)
  if player:GetAttribute("DataReady")~=true or type(action)~="string" or (cooldown[player] or 0)>os.clock() then return end
  cooldown[player]=os.clock()+cfg.RequestCooldown
+ if action=="Premium" and id==Config.CashPass.Id then Purchases.RequestPrompt(player,id) return end
  if type(id)~="string" or not byId[id] then return end
  local entry=byId[id] local tier=entry.tier
  if action=="Buy" and tier.Cost then
@@ -110,9 +111,9 @@ function Service.Init(plotService,cardService)
  PlotService.PlotAssigned.Event:Connect(function(_,player) if player:GetAttribute("DataReady") then rebuild(player) end end)
  PlotService.PlotFreed.Event:Connect(function(plot,player) stop(player) local pad=pads[plot] local v=pad:FindFirstChild("Visual") if v then v:Destroy() end local f=pad:FindFirstChild("BeltFooting") if f then f:Destroy() end pad:SetAttribute("OwnerUserId",0) pad.Label.Info.Text="" pad.Label.Enabled=false end)
  Remotes.TreadmillRequest.OnServerEvent:Connect(request)
- Purchases.Granted.Event:Connect(function(player,key) player:SetAttribute("TreadmillId",key) stop(player) rebuild(player) status(player,"Treadmill ready.") end)
+ Purchases.Granted.Event:Connect(function(player,key) if not byId[key] then return end player:SetAttribute("TreadmillId",key) stop(player) rebuild(player) status(player,"Treadmill ready.") end)
  Purchases.Revoked.Event:Connect(function(player,key)
-  if player:GetAttribute("TreadmillId")~=key then return end
+  if not byId[key] or player:GetAttribute("TreadmillId")~=key then return end
   player:SetAttribute("TreadmillId",cfg.Catalog[player:GetAttribute("CashTreadmillTier") or 1].Id) stop(player) rebuild(player) status(player,"Treadmill updated.")
  end)
  Players.PlayerAdded:Connect(added)

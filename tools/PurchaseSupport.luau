@@ -3,7 +3,7 @@
 	Place it as ServerStorage.PurchaseSupport, then in the command bar:
 	  local S = require(game.ServerStorage.PurchaseSupport)
 	  S.History(userId)                       -- every logged Robux event for the player, oldest first
-	  S.Regrant(userId, "Celestial", "reason") -- re-grants a paid item the player owns but lacks; the reason is logged
+	  S.Regrant(userId, "Celestial", "reason") -- (or "DoubleCash") re-grants a paid item the player owns but lacks; the reason is logged
 	It reads/writes the published data stores, so Game Settings > Security > "Enable Studio Access to API Services" must be on.
 	Refunds are handled by Roblox support; this tool only inspects the log and restores an item a verified buyer is missing.
 ]]
@@ -26,7 +26,7 @@ end
 function S.Regrant(userId,key,reason)
  assert(type(userId)=="number" and userId>0,"userId must be a positive number")
  assert(type(reason)=="string" and #reason>=5,"give a reason of at least 5 characters; it is written to the purchase log")
- local known=false
+ local known=key==Config.CashPass.Id
  for _,tier in Config.Treadmills.Catalog do if tier.GamePassId and tier.Id==key then known=true end end
  if not known then return false,"unknown paid item: "..tostring(key) end
  local operator=select(2,pcall(function() return game:GetService("StudioService"):GetUserId() end))

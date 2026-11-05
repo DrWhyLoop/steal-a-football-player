@@ -14,7 +14,7 @@ local store
 local session=game.JobId~="" and game.JobId or HttpService:GenerateGUID(false)
 local PlotService,SlotService,CardService
 local function defaults()
- return {Cash=0,SpeedPoints=0,CashTier=1,TreadmillId="Base",Slots={},SafeCargo={},PlaySeconds=0,Visits=0,FirstSeen=os.time(),PurchaseHistory={},Entitlements={},Receipts={},Index={},IndexClaimed={},Daily={LastDay=0,Streak=0}}
+ return {Cash=0,SpeedPoints=0,Hatched=0,Pickaxes={Default=true},Pickaxe="Default",CashTier=1,TreadmillId="Base",Slots={},SafeCargo={},PlaySeconds=0,Visits=0,FirstSeen=os.time(),PurchaseHistory={},Entitlements={},Receipts={},Index={},IndexClaimed={},Daily={LastDay=0,Streak=0}}
 end
 local function finite(n,maximum)
  return type(n)=="number" and n==n and n>=0 and n<=maximum
@@ -22,13 +22,17 @@ end
 local function sanitize(d)
  local clean=defaults()
  if type(d)~="table" then return clean end
- for key,max in {Cash=settings.MaxCash,SpeedPoints=settings.MaxSpeedPoints,PlaySeconds=settings.MaxCounter,Visits=settings.MaxCounter,FirstSeen=os.time()} do
+ for key,max in {Cash=settings.MaxCash,SpeedPoints=settings.MaxSpeedPoints,PlaySeconds=settings.MaxCounter,Visits=settings.MaxCounter,Hatched=settings.MaxCounter,FirstSeen=os.time()} do
   local n=d[key] -- profiles before version 2 stored plain numbers; version 2 stores Cash/SpeedPoints as strings
   if type(n)=="string" then n=tonumber(n) end
   if finite(n,max) then clean[key]=n end
  end
  if finite(d.CashTier,#Config.Treadmills.Catalog-1) and d.CashTier>=1 then clean.CashTier=math.floor(d.CashTier) end
  if type(d.TreadmillId)=="string" then clean.TreadmillId=d.TreadmillId end
+ for _,def in Config.Pickaxes do -- owned pickaxes: only ids that still exist in Config
+  if type(d.Pickaxes)=="table" and d.Pickaxes[def.Id]==true then clean.Pickaxes[def.Id]=true end
+ end
+ if type(d.Pickaxe)=="string" and clean.Pickaxes[d.Pickaxe] then clean.Pickaxe=d.Pickaxe end
  if type(d.Slots)=="table" then clean.Slots=d.Slots end
  if type(d.SafeCargo)=="table" then clean.SafeCargo=d.SafeCargo end
  if type(d.Entitlements)=="table" then -- paid items: {At,Source,Strikes,LastStrikeAt}

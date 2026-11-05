@@ -12,25 +12,18 @@ function UI.Init()
  local gui=Instance.new("ScreenGui") gui.Name="TreadmillShop" gui.ResetOnSpawn=false gui.Parent=player.PlayerGui
  local open=button(gui,"Treadmills",UDim2.fromOffset(118,42),UDim2.new(1,-130,.48,0))
  local support=button(gui,"Feedback",UDim2.fromOffset(118,36),UDim2.new(1,-130,.48,48))
- local panel=Instance.new("Frame") panel.Name="Shop" panel.AnchorPoint=Vector2.new(.5,.5) panel.Position=UDim2.fromScale(game:GetService("UserInputService").TouchEnabled and .5 or .56,.5)
- panel.Size=UDim2.fromScale(.86,.78) panel.BackgroundColor3=Color3.fromRGB(19,27,38) panel.Visible=false panel.Parent=gui
- local cap=Instance.new("UISizeConstraint") cap.MaxSize=Vector2.new(720,650) cap.Parent=panel
- local gradient=Instance.new("UIGradient") gradient.Color=ColorSequence.new(Color3.fromRGB(255,255,255),Color3.fromRGB(170,210,255)) gradient.Rotation=90 gradient.Parent=panel
- local edge=Instance.new("UIStroke") edge.Color=Color3.fromRGB(76,172,194) edge.Thickness=2 edge.Parent=panel
- local rounded=Instance.new("UICorner") rounded.CornerRadius=UDim.new(0,14) rounded.Parent=panel
- local title=label(panel,"TREADMILLS",UDim2.new(1,-110,0,38),UDim2.fromOffset(12,8)) title.Font=Enum.Font.GothamBold
- local close=button(panel,"Close",UDim2.fromOffset(80,32),UDim2.new(1,-92,0,10))
- close.Activated:Connect(function() panel.Visible=false end)
+ local panel,title,scroll=UIKit.Panel(gui,"Shop","TREADMILLS","Train for Speed points. Movement increases gradually, up to "..Config.Treadmills.MaxWalkSpeed.." studs/s. One treadmill per plot.",74)
  local hud=Instance.new("Frame") hud.Name="PlayerStats" hud.AnchorPoint=Vector2.new(0,1)
  hud.Position=UDim2.new(0,14,1,-22) hud.Size=UDim2.new(.24,0,0,104) hud.BackgroundColor3=Color3.fromRGB(18,31,45) hud.BackgroundTransparency=.12 hud.Parent=gui
  local hudSize=Instance.new("UISizeConstraint") hudSize.MinSize=Vector2.new(175,104) hudSize.MaxSize=Vector2.new(220,104) hudSize.Parent=hud
  local hudCorner=Instance.new("UICorner") hudCorner.CornerRadius=UDim.new(0,12) hudCorner.Parent=hud
  local stats=label(hud,"",UDim2.new(1,-20,1,-12),UDim2.fromOffset(10,6)) stats.TextXAlignment=Enum.TextXAlignment.Left stats.TextSize=16
- label(panel,"Train for Speed points. Movement increases gradually, up to "..Config.Treadmills.MaxWalkSpeed.." studs/s. One treadmill per plot.",UDim2.new(1,-24,0,42),UDim2.fromOffset(12,48))
- local scroll=Instance.new("ScrollingFrame") scroll.Name="Catalog" scroll.BackgroundTransparency=1 scroll.Position=UDim2.fromOffset(12,100)
- scroll.Size=UDim2.new(1,-24,1,-174) scroll.CanvasSize=UDim2.new() scroll.AutomaticCanvasSize=Enum.AutomaticSize.Y scroll.ScrollBarThickness=6 scroll.Parent=panel
- local layout=Instance.new("UIListLayout") layout.SortOrder=Enum.SortOrder.LayoutOrder layout.Padding=UDim.new(0,8) layout.Parent=scroll
  local rows={}
+ -- live Roblox price published by the server: positive = for sale, -1 = off sale/unreachable, 0 = not configured
+ local function priceLabel(id)
+  local price=RS:GetAttribute("PassPrice_"..id) or 0
+  return price,price>0 and "R$ "..Format.Exact(price) or price<0 and "Price unavailable" or "Not available yet"
+ end
  for index,tier in Config.Treadmills.Catalog do
   local row=Instance.new("Frame") row.Name=tier.Id row.Size=UDim2.new(1,-8,0,176) row.BackgroundColor3=Color3.fromRGB(35,53,70) row.LayoutOrder=index row.Parent=scroll
   local thumb=Instance.new("Frame") thumb.Name="TreadmillPicture" thumb.Size=UDim2.new(.42,-8,0,128) thumb.Position=UDim2.fromOffset(8,6) thumb.BackgroundColor3=Color3.fromRGB(185,211,227) thumb.Parent=row
@@ -49,6 +42,14 @@ function UI.Init()
   end)
   table.insert(rows,{button=buy,index=index,tier=tier,details=details,base=base})
  end
+ local cashPass=Config.CashPass
+ local cashRow=Instance.new("Frame") cashRow.Name=cashPass.Id cashRow.Size=UDim2.new(1,-8,0,130) cashRow.BackgroundColor3=Color3.fromRGB(35,53,70) cashRow.LayoutOrder=#Config.Treadmills.Catalog+1 cashRow.Parent=scroll
+ local cashName=label(cashRow,cashPass.Name.." | permanent "..cashPass.Multiplier.."x cash from your plot",UDim2.new(1,-16,0,40),UDim2.fromOffset(8,6)) cashName.TextXAlignment=Enum.TextXAlignment.Left cashName.Font=Enum.Font.GothamBold
+ local cashDetails=label(cashRow,"",UDim2.new(1,-16,0,44),UDim2.fromOffset(8,46)) cashDetails.TextXAlignment=Enum.TextXAlignment.Left cashDetails.TextSize=14
+ local cashBuy=button(cashRow,"",UDim2.new(1,-16,0,32),UDim2.new(0,8,1,-40))
+ cashBuy.Activated:Connect(function()
+  if not player:GetAttribute("PassOwned_"..cashPass.Id) and (RS:GetAttribute("PassPrice_"..cashPass.Id) or 0)>0 then Remotes.TreadmillRequest:FireServer("Premium",cashPass.Id) end
+ end)
  label(panel,"Walk onto your treadmill to train. Walk off to stop.",UDim2.new(1,-24,0,32),UDim2.new(0,12,1,-70))
  local message=label(panel,"",UDim2.new(1,-24,0,28),UDim2.new(0,12,1,-34)) message.TextSize=14
  local lastCash,lastPoints
@@ -65,22 +66,24 @@ function UI.Init()
   hud.Visible=not panel.Visible or workspace.CurrentCamera.ViewportSize.X>=1100
   title.Text="TREADMILLS  |  $"..Format.Compact(cash)
   stats.Text=("CASH  $%s\nSPEED  %s points\nMOVE  %.1f studs/s"):format(Format.Compact(cash),Format.Compact(points),player:GetAttribute("MovementSpeed") or Config.BaseWalkSpeed)
+  local cashOwned=player:GetAttribute("PassOwned_"..cashPass.Id)
+  local cashPrice,cashText=priceLabel(cashPass.Id)
+  cashDetails.Text=cashOwned and "Owned" or cashText..(cashPrice>0 and "\nOpens Roblox's purchase window. Nothing is charged until you confirm there." or "")
+  UIKit.State(cashBuy,cashOwned and "Owned" or cashPrice>0 and "Buy "..cashText or cashText,cashOwned,not cashOwned and cashPrice>0)
   local owned=player:GetAttribute("CashTreadmillTier") or 1
   for _,row in rows do
    local tier=row.tier local selected=player:GetAttribute("TreadmillId")==tier.Id
-   local enabled=true
-   if tier.GamePassId then -- live Roblox price (set by the server): positive = for sale, -1 = off sale/unreachable, 0 = not configured
+   local enabled,text=true
+   if tier.GamePassId then
     local passOwned=player:GetAttribute("PassOwned_"..tier.Id)
-    local price=RS:GetAttribute("PassPrice_"..tier.Id) or 0
-    local priceText=price>0 and "R$ "..Format.Exact(price) or price<0 and "Price unavailable" or "Not available yet"
+    local price,priceText=priceLabel(tier.Id)
     row.details.Text=row.base..(passOwned and "Owned" or priceText..(price>0 and "\nOpens Roblox's purchase window. Nothing is charged until you confirm there." or ""))
-    row.button.Text=selected and "Equipped" or passOwned and "Equip" or price>0 and "Buy "..priceText or priceText
+    text=selected and "Equipped" or passOwned and "Equip" or price>0 and "Buy "..priceText or priceText
     enabled=selected or passOwned or price>0
    else
-    row.button.Text=selected and "Equipped" or row.index<=owned and "Equip" or row.index==owned+1 and "Upgrade" or "Locked"
+    text=selected and "Equipped" or row.index<=owned and "Equip" or row.index==owned+1 and "Upgrade" or "Locked"
    end
-   row.button.Active=enabled row.button.AutoButtonColor=enabled
-   row.button.BackgroundColor3=selected and Color3.fromRGB(44,108,74) or enabled and Color3.fromRGB(41,93,116) or Color3.fromRGB(70,76,84)
+   UIKit.State(row.button,text,selected,enabled)
   end
  end
  open.Activated:Connect(function() panel.Visible=not panel.Visible refresh() end)

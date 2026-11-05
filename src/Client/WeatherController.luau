@@ -3,6 +3,7 @@ local RS=game:GetService("ReplicatedStorage")
 local Lighting=game:GetService("Lighting")
 local TweenService=game:GetService("TweenService")
 local RunService=game:GetService("RunService")
+local CS=game:GetService("CollectionService")
 local Config=require(RS.Shared.Config)
 local W,L=Config.Weather,Config.Landscape
 local Controller={}
@@ -38,13 +39,17 @@ function Controller.Init()
   if camera then rainPart.Position=camera.CFrame.Position+Vector3.new(0,W.RainHeight,0) end
  end)
  task.spawn(function()
-  local fixtures={}
-  local root=workspace:WaitForChild("Greybox"):WaitForChild("Environment"):WaitForChild("Torches")
-  for _,model in root:GetChildren() do
-   local effects={} local light
-   for _,v in model:GetDescendants() do if v:IsA("ParticleEmitter") then v.Rate=v.Name=="Fire" and L.TorchFireRate or v.Name=="Glow" and L.TorchGlowRate or L.TorchSmokeRate table.insert(effects,v) elseif v:IsA("Light") then v.Brightness=L.TorchLightBrightness v.Range=L.TorchLightRange v.Shadows=false light=v end end
-   table.insert(fixtures,{Position=model:GetPivot().Position,Effects=effects,Light=light})
+  local glow=setmetatable({},{__mode="k"}) -- lights and emitters that are on at night (torches and the Forest Lake stones)
+  local function trackTorch(v)
+   if v:IsA("ParticleEmitter") then v.Rate=v.Name=="Fire" and L.TorchFireRate or v.Name=="Glow" and L.TorchGlowRate or L.TorchSmokeRate glow[v]=true
+   elseif v:IsA("Light") then v.Brightness=L.TorchLightBrightness v.Range=L.TorchLightRange v.Shadows=false glow[v]=true end
   end
+  local root=workspace:WaitForChild("Greybox"):WaitForChild("Environment"):WaitForChild("Torches")
+  root.DescendantAdded:Connect(trackTorch) -- streaming loads torches as the player approaches
+  for _,v in root:GetDescendants() do trackTorch(v) end
+  local function trackGlow(v) if v:IsA("Light") then v.Shadows=false end glow[v]=true end
+  CS:GetInstanceAddedSignal("NightGlow"):Connect(trackGlow)
+  for _,v in CS:GetTagged("NightGlow") do trackGlow(v) end
   while root.Parent do
    local camera=workspace.CurrentCamera
    local character=game.Players.LocalPlayer.Character
@@ -55,10 +60,7 @@ function Controller.Init()
    local sheltered=position and workspace:Raycast(position,Vector3.new(0,W.RoofProbeHeight,0),params)
    rain.Enabled=phase=="Rain" and position~=nil and not sheltered
    local night=phase=="Night"
-   for _,fixture in fixtures do
-    for _,emitter in fixture.Effects do emitter.Enabled=night end
-    if fixture.Light then fixture.Light.Enabled=night fixture.Light.Shadows=false end
-   end
+   for v in glow do v.Enabled=night end
    task.wait(Config.Environment.VisibilityUpdateSeconds)
   end
  end)

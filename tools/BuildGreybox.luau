@@ -113,11 +113,8 @@ for n = 1, Config.StageCount do
 	local columns = #Config.CubeColumnX
 	local rows = math.ceil(count / columns)
 	for i = 1, count do
-		local x, zm = 0, zc
-		if n ~= Config.GoatStage then
-			x = Config.CubeColumnX[(i - 1) % columns + 1]
-			zm = z0 + len * (math.ceil(i / columns) - 0.5) / rows
-		end
+		local x = Config.CubeColumnX[(i - 1) % columns + 1]
+		local zm = z0 + len * (math.ceil(i / columns) - 0.5) / rows
 		local marker = part("CubeSpawn_" .. i, Vector3.new(6, 0.2, 6), Vector3.new(x, 1.1, zm), Config.Tiers[tier].Color, markers)
 		marker.Material = Enum.Material.Neon
 		marker.Transparency = Config.CubeSpawnMarkerTransparency
