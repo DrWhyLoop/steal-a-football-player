@@ -18,6 +18,7 @@ local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local Format = require(ReplicatedStorage.Shared.NumberFormat)
 local LineOfSight = require(script.Parent.LineOfSight)
 local PlayerData = require(script.Parent.PlayerData)
+local Stats = require(script.Parent.PlayerStats)
 local IndexService = require(script.Parent.IndexService)
 
 local SlotService = {}
@@ -109,17 +110,15 @@ local function onUpgrade(player: Player,slot: BasePart)
  if not plot or reserved[slot] or not card then return end
  if PlotService.GetOwner(plot)~=player then reject(player,"NotOwner") return end
  local level=card:GetAttribute("UpgradeLevel") or 0
- local stats=player:FindFirstChild("leaderstats")
- local cash=stats and stats:FindFirstChild("Cash")
  local cost=upgradeCost(card)
  local reason
  if not isAliveAndNear(player,slot) then reason="Far"
  elseif level>=Config.PlotSlots.MaxLevel then reason="Max"
  elseif os.clock()<(upgradeUntil[slot] or 0) then reason="Cooldown"
- elseif not cash or cash.Value<cost then reason="Cash" end
+ elseif Stats.Get(player,"Cash")<cost then reason="Cash" end
  if reason then reject(player,reason) return end
  upgradeUntil[slot]=os.clock()+Config.PlotSlots.UpgradeCooldown
- cash.Value-=cost
+ Stats.Add(player,"Cash",-cost)
  card:SetAttribute("UpgradeLevel",level+1)
  CardService.SetIncome(card,card:GetAttribute("BaseCashPerSecond")*Config.PlotSlots.IncomeGrowth^(level+1))
  refreshSlot(slot,card)

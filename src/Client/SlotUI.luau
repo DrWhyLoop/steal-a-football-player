@@ -17,9 +17,7 @@ local function render(slot)
  elseif not owner then label.Text=("Lv %d"):format(level)
  elseif not cost then label.Text=("Lv %d\nMAX LEVEL"):format(level)
  else
-  local stats=player:FindFirstChild("leaderstats")
-  local cash=stats and stats:FindFirstChild("Cash")
-  local color=cash and cash.Value<cost and Config.PlotSlots.CantAffordColor or Color3.new(1,1,1)
+  local color=(player:GetAttribute("Cash") or 0)<cost and Config.PlotSlots.CantAffordColor or Color3.new(1,1,1)
   label.Text=('Lv %d\n<font color="#%s">Upgrade: $%s</font>\nNext: $%s/s'):format(level,color:ToHex(),Format.Money(cost),Format.Money(slot:GetAttribute("NextIncome")))
  end
 end
@@ -34,8 +32,7 @@ function SlotUI.Init()
   end
  end
  task.spawn(function()
-  local cash=player:WaitForChild("leaderstats"):WaitForChild("Cash")
-  cash.Changed:Connect(function() for _,slot in slots do if slot:GetAttribute("UpgradeCost") then render(slot) end end end)
+  player:GetAttributeChangedSignal("Cash"):Connect(function() for _,slot in slots do if slot:GetAttribute("UpgradeCost") then render(slot) end end end)
  end)
 
  local gui=Instance.new("ScreenGui") gui.Name="SlotMessages" gui.ResetOnSpawn=false gui.DisplayOrder=50 gui.Parent=player:WaitForChild("PlayerGui")

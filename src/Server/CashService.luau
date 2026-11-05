@@ -1,46 +1,32 @@
 --[[
-	CashService: owns the "Cash" leaderstat and the per-second income tick.
+	CashService: adds income to the player's Cash balance (PlayerStats) and the per-second income tick.
 	Income each tick = sum of CashPerSecond of cards placed on the player's plot.
-	Future hooks: AddCash() for shops/rewards; replace the leaderstat with saved data later.
+	AddCash() is the entry point for shops/rewards.
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Stats = require(script.Parent.PlayerStats)
 
 local CashService = {}
 local remainder = {}
 
 local PlotService, SlotService -- injected in Init
 
-local function setup(player: Player)
-	if player:FindFirstChild("leaderstats") then return end
-	local stats = Instance.new("Folder")
-	stats.Name = "leaderstats"
-	local cash = Instance.new("IntValue")
-	cash.Name = "Cash"
-	cash.Value = 0
-	cash.Parent = stats
-	stats.Parent = player
-end
-
 function CashService.AddCash(player: Player, amount: number)
-	local stats = player:FindFirstChild("leaderstats")
-	local cash = stats and stats:FindFirstChild("Cash") :: IntValue?
-	if cash then
-		cash.Value = math.clamp(cash.Value+amount,0,Config.PlayerData.MaxCash)
-	end
+	Stats.Add(player,"Cash",amount)
 end
 
 function CashService.Init(plotService, slotService)
 	PlotService = plotService
 	SlotService = slotService
 
-	Players.PlayerAdded:Connect(setup)
+	Players.PlayerAdded:Connect(Stats.Setup)
  Players.PlayerRemoving:Connect(function(player) remainder[player]=nil end)
 	for _, p in ipairs(Players:GetPlayers()) do
-		setup(p)
+		Stats.Setup(p)
 	end
 
 	task.spawn(function()

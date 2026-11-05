@@ -58,13 +58,13 @@ function UI.Init()
   game:GetService("Debris"):AddItem(t,.8)
  end
  local function refresh()
-  local st=player:FindFirstChild("leaderstats") local cash=st and st:FindFirstChild("Cash") local points=st and st:FindFirstChild("Speed")
-  if cash and lastCash and cash.Value>lastCash then gain("+$"..Format.Compact(cash.Value-lastCash),Color3.fromRGB(125,255,150),-26) end
-  if points and lastPoints and points.Value>lastPoints then gain("+"..Format.Compact(points.Value-lastPoints).." Speed",Color3.fromRGB(100,210,255),-54) end
-  lastCash=cash and cash.Value lastPoints=points and points.Value
+  local cash,points=player:GetAttribute("Cash") or 0,player:GetAttribute("Speed") or 0
+  if lastCash and cash>lastCash then gain("+$"..Format.Compact(cash-lastCash),Color3.fromRGB(125,255,150),-26) end
+  if lastPoints and points>lastPoints then gain("+"..Format.Compact(points-lastPoints).." Speed",Color3.fromRGB(100,210,255),-54) end
+  lastCash,lastPoints=cash,points
   hud.Visible=not panel.Visible or workspace.CurrentCamera.ViewportSize.X>=1100
-  title.Text="TREADMILLS  |  $"..Format.Compact(cash and cash.Value or 0)
-  stats.Text=("CASH  $%s\nSPEED  %s points\nMOVE  %.1f studs/s"):format(Format.Compact(cash and cash.Value or 0),Format.Compact(points and points.Value or 0),player:GetAttribute("MovementSpeed") or Config.BaseWalkSpeed)
+  title.Text="TREADMILLS  |  $"..Format.Compact(cash)
+  stats.Text=("CASH  $%s\nSPEED  %s points\nMOVE  %.1f studs/s"):format(Format.Compact(cash),Format.Compact(points),player:GetAttribute("MovementSpeed") or Config.BaseWalkSpeed)
   local owned=player:GetAttribute("CashTreadmillTier") or 1
   for _,row in rows do
    local tier=row.tier local selected=player:GetAttribute("TreadmillId")==tier.Id

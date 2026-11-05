@@ -4,6 +4,7 @@ local Config=require(game.ReplicatedStorage.Shared.Config)
 local Remotes=require(game.ReplicatedStorage.Shared.Remotes)
 local Format=require(game.ReplicatedStorage.Shared.NumberFormat)
 local PlayerData=require(script.Parent.PlayerData)
+local Stats=require(script.Parent.PlayerStats)
 local Purchases=require(script.Parent.Purchases)
 local Service={}
 local cfg=Config.Treadmills
@@ -13,9 +14,7 @@ local byId={}
 for i,tier in cfg.Catalog do byId[tier.Id]={tier=tier,index=i} end
 local function status(player,text) Remotes.TreadmillStatus:FireClient(player,text) end
 local function speed(player)
- local stats=player:FindFirstChild("leaderstats")
- local points=stats and stats:FindFirstChild("Speed")
- return math.min(cfg.MaxWalkSpeed,cfg.MovementBase+cfg.MovementPerLog*math.log10(1+(points and points.Value or 0)/cfg.PointsPerScale))
+ return math.min(cfg.MaxWalkSpeed,cfg.MovementBase+cfg.MovementPerLog*math.log10(1+Stats.Get(player,"Speed")/cfg.PointsPerScale))
 end
 function Service.UpdateSpeed(player)
  local char=player.Character local h=char and char:FindFirstChildOfClass("Humanoid")
@@ -68,9 +67,8 @@ local function request(player,action,id)
  if action=="Buy" and tier.Cost then
   local owned=player:GetAttribute("CashTreadmillTier") or 1
   if entry.index~=owned+1 then status(player,"Buy the next cash upgrade in order.") return end
-  local cash=player.leaderstats.Cash
-  if cash.Value<tier.Cost then status(player,"Not enough cash.") return end
-  cash.Value-=tier.Cost
+  if Stats.Get(player,"Cash")<tier.Cost then status(player,"Not enough cash.") return end
+  Stats.Add(player,"Cash",-tier.Cost)
   player:SetAttribute("CashTreadmillTier",entry.index) player:SetAttribute("TreadmillId",id)
   PlayerData.RecordPurchase(player,id,tier.Cost,"Cash")
  elseif action=="Equip" then
@@ -129,7 +127,7 @@ function Service.Init(plotService,cardService)
     if os.clock()>=(nextGain[player] or math.huge) then
      nextGain[player]=os.clock()+cfg.TickSeconds
      local tier=byId[player:GetAttribute("TreadmillId")].tier
-     player.leaderstats.Speed.Value=math.min(Config.PlayerData.MaxSpeedPoints,player.leaderstats.Speed.Value+cfg.BaseGain*tier.Multiplier)
+     Stats.Add(player,"Speed",cfg.BaseGain*tier.Multiplier)
      Service.UpdateSpeed(player)
     end
    elseif training[player] then stop(player) end

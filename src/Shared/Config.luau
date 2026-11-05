@@ -301,7 +301,7 @@ Config.Treadmills = {
 }
 Config.PlayerData={Store="FootballerProfiles_v1",ReportStore="FootballerReports_v1",AutosaveSeconds=60,
  SaveCoalesceSeconds=6,ItemIdMinLength=8,ItemIdMaxLength=40,
- LockSeconds=180,Retries=3,RetrySeconds=2,StudioMemoryOnly=true,MaxCash=9000000000000000,MaxSpeedPoints=1e15,
+ LockSeconds=180,Retries=3,RetrySeconds=2,StudioMemoryOnly=true,ProfileVersion=2,MaxCash=1e60,MaxSpeedPoints=1e60,MaxCounter=1e15,
  MaxPurchaseHistory=60,ReportCooldown=60,MaxReportsPerDay=5,MaxInboxRecords=1000,
  FeedbackCategories={"Bug","Lost progress","Controls","Balance","Abuse","Exploiting"}}
 

@@ -14,6 +14,7 @@ local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
+local Format = require(ReplicatedStorage.Shared.NumberFormat)
 
 local CubeService = {}
 
@@ -35,7 +36,7 @@ end
 
 local function updateLabel(cube: BasePart)
 	local label = cube.HpGui.HpLabel :: TextLabel
-	label.Text = ("%sHP %d / %d"):format(cube:GetAttribute("Lucky") and Config.LuckyEgg.Label .. "  " or "", cube:GetAttribute("HP"), cube:GetAttribute("MaxHP"))
+	label.Text = ("%sHP %s / %s"):format(cube:GetAttribute("Lucky") and Config.LuckyEgg.Label .. "  " or "", Format.Compact(cube:GetAttribute("HP")), Format.Compact(cube:GetAttribute("MaxHP")))
 end
 
 local function makeCube(stage: number, position: Vector3, golden: boolean): BasePart

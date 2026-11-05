@@ -5,6 +5,7 @@ local RunService=game:GetService("RunService")
 local HttpService=game:GetService("HttpService")
 local Config=require(game.ReplicatedStorage.Shared.Config)
 local Keys=require(game.ReplicatedStorage.Shared.IndexKeys)
+local Stats=require(script.Parent.PlayerStats)
 local P={}
 local settings=Config.PlayerData
 local profiles={}
@@ -21,8 +22,10 @@ end
 local function sanitize(d)
  local clean=defaults()
  if type(d)~="table" then return clean end
- for key,max in {Cash=settings.MaxCash,SpeedPoints=settings.MaxSpeedPoints,PlaySeconds=settings.MaxSpeedPoints,Visits=settings.MaxSpeedPoints,FirstSeen=os.time()} do
-  if finite(d[key],max) then clean[key]=d[key] end
+ for key,max in {Cash=settings.MaxCash,SpeedPoints=settings.MaxSpeedPoints,PlaySeconds=settings.MaxCounter,Visits=settings.MaxCounter,FirstSeen=os.time()} do
+  local n=d[key] -- profiles before version 2 stored plain numbers; version 2 stores Cash/SpeedPoints as strings
+  if type(n)=="string" then n=tonumber(n) end
+  if finite(n,max) then clean[key]=n end
  end
  if finite(d.CashTier,#Config.Treadmills.Catalog-1) and d.CashTier>=1 then clean.CashTier=math.floor(d.CashTier) end
  if type(d.TreadmillId)=="string" then clean.TreadmillId=d.TreadmillId end
@@ -60,8 +63,8 @@ function P.RecordPurchase(player,id,cost,currency)
 end
 local function snapshot(player)
  local p=profiles[player] if not p then return end
- local d=p.data local stats=player:FindFirstChild("leaderstats")
- if stats then d.Cash=stats.Cash.Value d.SpeedPoints=stats.Speed.Value end
+ local d=p.data
+ d.Cash=Stats.Get(player,"Cash") d.SpeedPoints=Stats.Get(player,"Speed")
  d.CashTier=player:GetAttribute("CashTreadmillTier") or 1
  d.TreadmillId=player:GetAttribute("TreadmillId") or "Base"
  local plot=PlotService.GetPlot(player)
@@ -77,12 +80,14 @@ function P.Save(player,releasing)
  p.saving=true p.lastStart=os.clock()
  local d=snapshot(player)
  if not store then memory[player.UserId]=table.clone(d) p.saving=false p.closed=releasing return true end
+ local stored=table.clone(d) -- Cash/SpeedPoints exceed 2^53, so they are saved as full-precision strings
+ stored.Cash=("%.17g"):format(d.Cash) stored.SpeedPoints=("%.17g"):format(d.SpeedPoints)
  local success=false
  for attempt=1,settings.Retries do
   local ok,result=pcall(function()
    return store:UpdateAsync(tostring(player.UserId),function(old)
     if not old or not old.Session or old.Session.Id~=session then return nil end
-    local record={Version=1,Data=d}
+    local record={Version=settings.ProfileVersion,Data=stored}
     if not releasing then record.Session={Id=session,Expires=os.time()+settings.LockSeconds} end
     return record
    end)
@@ -128,7 +133,7 @@ local function load(player)
    local ok,result=pcall(function()
     return store:UpdateAsync(tostring(player.UserId),function(old)
      if old and old.Session and old.Session.Id~=session and old.Session.Expires>os.time() then return nil end
-     return {Version=1,Data=sanitize(old and old.Data),Session={Id=session,Expires=os.time()+settings.LockSeconds}}
+     return {Version=settings.ProfileVersion,Data=sanitize(old and old.Data),Session={Id=session,Expires=os.time()+settings.LockSeconds}}
     end)
    end)
    if ok and result then data=result.Data break end
@@ -138,9 +143,8 @@ local function load(player)
  if not data then if player.Parent then player:Kick("Progress is unavailable or open in another server. Please rejoin shortly.") end return end
  profiles[player]={data=data,started=os.clock(),initialPlay=data.PlaySeconds,lastSaved=os.clock(),lastStart=os.clock()}
  if not player.Parent then P.Save(player,true) profiles[player]=nil return end
- local stats=player:WaitForChild("leaderstats")
- local speed=Instance.new("NumberValue") speed.Name="Speed" speed.Value=data.SpeedPoints speed.Parent=stats
- stats.Cash.Value=data.Cash
+ Stats.Setup(player)
+ Stats.Set(player,"Cash",data.Cash) Stats.Set(player,"Speed",data.SpeedPoints)
  player:SetAttribute("CashTreadmillTier",data.CashTier)
  local selected=Config.Treadmills.Catalog[data.CashTier]
  player:SetAttribute("TreadmillId",selected.Id)
