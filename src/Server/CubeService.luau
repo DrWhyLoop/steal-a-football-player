@@ -4,7 +4,7 @@
 	- Normal stages respawn a broken cube after Config.CubeRespawnSeconds.
 	- GOAT stage: one cube per Config.GoatSpawnIntervalSeconds, with an announcement.
 	- Golden Cube: one at a random point of a random stage every Config.GoldenIntervalSeconds.
-	- OnBroken(callback(dropTier, position, breaker)) lets other systems react (drops, quests, guards...).
+	- OnBroken(callback(dropTier, position, breaker, lucky, egg)) - runs when the egg breaks; the egg is destroyed Reveal.SwellSeconds later lets other systems react (drops, quests, guards...).
 ]]
 
 local CollectionService = game:GetService("CollectionService")
@@ -35,7 +35,7 @@ end
 
 local function updateLabel(cube: BasePart)
 	local label = cube.HpGui.HpLabel :: TextLabel
-	label.Text = ("HP %d / %d"):format(cube:GetAttribute("HP"), cube:GetAttribute("MaxHP"))
+	label.Text = ("%sHP %d / %d"):format(cube:GetAttribute("Lucky") and Config.LuckyEgg.Label .. "  " or "", cube:GetAttribute("HP"), cube:GetAttribute("MaxHP"))
 end
 
 local function makeCube(stage: number, position: Vector3, golden: boolean): BasePart
@@ -68,6 +68,15 @@ local function makeCube(stage: number, position: Vector3, golden: boolean): Base
 	cube:SetAttribute("HP", hp)
 	cube:SetAttribute("BaseColor", color)
 	cube:SetAttribute("DropTier", golden and Config.GetGoldenTier(stage) or tier)
+ local lucky = not golden and stage ~= Config.GoatStage and rng:NextNumber() < Config.LuckyEgg.Chance
+ if lucky then
+  cube:SetAttribute("Lucky", true)
+  local glow = Instance.new("Highlight") glow.FillColor = Config.LuckyEgg.Color glow.OutlineColor = Config.LuckyEgg.Color
+  glow.FillTransparency = 0.6 glow.DepthMode = Enum.HighlightDepthMode.Occluded glow.Parent = cube
+  local sparkle = Instance.new("ParticleEmitter") sparkle.Texture = "rbxasset://textures/particles/sparkles_main.dds" sparkle.Rate = Config.Eggs.ParticleRate
+  sparkle.Lifetime = NumberRange.new(.8, 1.4) sparkle.Speed = NumberRange.new(1, 3) sparkle.SpreadAngle = Vector2.new(180, 180) sparkle.LightEmission = 1
+  sparkle.Color = ColorSequence.new(Config.LuckyEgg.Color) sparkle.Parent = cube
+ end
 	CollectionService:AddTag(cube, "Cube")
 
 	local gui = Instance.new("BillboardGui")
@@ -82,7 +91,7 @@ local function makeCube(stage: number, position: Vector3, golden: boolean): Base
 	text.Size = UDim2.fromScale(1, 1)
 	text.TextScaled = true
 	text.Font = Enum.Font.GothamBold
-	text.TextColor3 = golden and Config.GoldenColor or Color3.new(1, 1, 1)
+	text.TextColor3 = golden and Config.GoldenColor or lucky and Config.LuckyEgg.Color or Color3.new(1, 1, 1)
 	text.TextStrokeTransparency = 0.2
 	text.Parent = gui
 
@@ -153,25 +162,16 @@ local function onBroken(cube: BasePart, breaker: Player?)
 	local marker = cubeMarker[cube]
 	local dropTier, position = cube:GetAttribute("DropTier"), cube.Position
 	cubeMarker[cube] = nil
- table.insert(revealReservations,{position=position,untilTime=os.clock()+Config.Reveal.EggShakeSeconds+Config.Reveal.SwellSeconds+Config.Reveal.WorldRiseSeconds+Config.EggSpawning.RetrySeconds})
-	cube.CanCollide=false
+ table.insert(revealReservations,{position=position,untilTime=os.clock()+Config.Reveal.SwellSeconds+Config.Reveal.RiseSeconds+Config.EggSpawning.RetrySeconds})
+		cube.CanCollide=false
  cube.CanQuery=false
  cube.HpGui.Enabled=false
- local rest=cube.CFrame
- local step=Config.Reveal.EggShakeSeconds/(Config.Reveal.EggShakeCycles*2)
- for index=1,Config.Reveal.EggShakeCycles*2 do
-  local angle=Config.Reveal.EggShakeAngle*(index%2==0 and 1 or -1)
-  local tween=TweenService:Create(cube,TweenInfo.new(step,Enum.EasingStyle.Sine),{CFrame=rest*CFrame.Angles(0,0,angle)})
-  tween:Play() task.wait(step)
+ -- The egg stays still: DropFromCube tells nearby clients to animate it locally. Result and card spawn happen with the destroy.
+ for _, callback in ipairs(brokenCallbacks) do
+  task.spawn(callback, dropTier, position, breaker, cube:GetAttribute("Lucky"), cube)
  end
- cube.CFrame=rest
- TweenService:Create(cube,TweenInfo.new(Config.Reveal.SwellSeconds),{Size=cube.Size*Config.Reveal.SwellScale}):Play()
  task.wait(Config.Reveal.SwellSeconds)
  cube:Destroy()
-
-	for _, callback in ipairs(brokenCallbacks) do
-		task.spawn(callback, dropTier, position, breaker)
-	end
 	if marker and marker:GetAttribute("Stage") ~= Config.GoatStage then
 		task.delay(Config.CubeRespawnSeconds, function()
 			if marker.Parent then spawnWhenClear(marker) end

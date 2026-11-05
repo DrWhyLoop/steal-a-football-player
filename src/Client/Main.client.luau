@@ -17,6 +17,7 @@ require(script.Parent.WeatherController).Init()
 require(script.Parent.CharacterMotion).Init()
 
 require(script.Parent.RewardEffects).Init()
+require(script.Parent.LuckyOdds).Init()
 
 require(script.Parent.TreadmillUI).Init()
 

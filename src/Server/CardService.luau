@@ -121,17 +121,18 @@ local function tryPickup(player: Player, card: Part)
 	local root = getRoot(player)
 	if player:GetAttribute("DataReady")==false or not root or not card.Parent or (card:GetAttribute("State") ~= "World" and card:GetAttribute("State") ~= "Safe") then return end
 	if (root.Position - card.Position).Magnitude > Config.PickupMaxDistance then return end
+ if card:GetAttribute("BreakerUserId")~=player.UserId and clock()<(card:GetAttribute("PriorityUntil") or 0) then return end -- the breaker gets first pick
 	CardService.Carry(player, card)
 end
 
-local function createCard(entry, tier: string, position: Vector3): Part
+-- Every attribute (including Variant/Giant) is set before the card is parented, so clients see them from the first frame.
+local function createCard(entry, tier: string, position: Vector3, variant: string?, giant: boolean?): Part
  local name=entry.Name
 	local info = Config.Tiers[tier]
 	local card = Instance.new("Part")
 	card.Name = "Card_" .. name
 	card.Size = Config.CardSize
  card.CFrame=CFrame.new(position.X,Config.GroundY+Config.CardSize.Y/2+Config.CardRestHeight,position.Z)
- card.Parent=cardsFolder
 	card.Color = info.Color
  card.Transparency=1
  card.CanQuery=false
@@ -143,9 +144,11 @@ local function createCard(entry, tier: string, position: Vector3): Part
 	card.CanTouch = false
 	card:SetAttribute("CardName", name)
 	card:SetAttribute("Tier", tier)
-	card:SetAttribute("CashPerSecond", info.CashPerSecond)
+	card:SetAttribute("CashPerSecond", info.CashPerSecond*Reward.IncomeMultiplier(variant,giant))
+ card:SetAttribute("Variant",variant)
+ card:SetAttribute("Giant",giant or nil)
 	CollectionService:AddTag(card, "Card")
- Reward.Attach(card,entry.Id)
+ Reward.Attach(card,entry.Id,variant,giant)
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "PickupPrompt"
@@ -156,6 +159,7 @@ local function createCard(entry, tier: string, position: Vector3): Part
 	prompt.RequiresLineOfSight = true
 	prompt.Parent = card
 	prompt.Triggered:Connect(function(player) tryPickup(player, card) end)
+ card.Parent=cardsFolder
 	return card
 end
 
@@ -163,18 +167,26 @@ function CardService.SetIncome(card: Part, amount: number)
  card:SetAttribute("CashPerSecond",amount)
 end
 
---- Called when a cube breaks: drop a random card of `tier` on the floor below `position`.
-function CardService.DropFromCube(tier: string,position: Vector3,breaker: Player?)
+--- Called when an egg breaks: the result is rolled NOW, nearby clients animate the still egg for SwellSeconds
+--- (the egg is destroyed by CubeService at the same moment), then the card spawns at its final CFrame and clients
+--- play the rise locally. The breaker has first pick for Reveal.BreakerPrioritySeconds.
+function CardService.DropFromCube(tier: string,position: Vector3,breaker: Player?,lucky: boolean?,egg: BasePart)
  local entry=Reward.Pick(tier)
- local card=createCard(entry,tier,position)
+ local variant,giant=Reward.Roll(lucky)
+ for _,player in Players:GetPlayers() do
+  local root=getRoot(player)
+  if root and (root.Position-position).Magnitude<=Config.Reveal.MaxDistance then Remotes.EggReveal:FireClient(player,egg,tier) end
+ end
+ task.wait(Config.Reveal.SwellSeconds)
+ local card=createCard(entry,tier,position,variant,giant)
  card:SetAttribute("EarnedFromEgg",true)
  card:SetAttribute("RemainingLifetime",Config.CubeDropLifetime)
+ if breaker then
+  card:SetAttribute("BreakerUserId",breaker.UserId)
+  card:SetAttribute("PriorityUntil",clock()+Config.Reveal.BreakerPrioritySeconds)
+ end
  CardService.SetState(card,"Revealing")
- local final=card.CFrame card.CFrame=final-Vector3.new(0,Config.Reveal.DisplayHeight/2,0)
- local tween=game:GetService("TweenService"):Create(card,TweenInfo.new(Config.Reveal.WorldRiseSeconds,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{CFrame=final})
- tween:Play()
- Remotes.EggReveal:FireAllClients(position,tier,entry.Id)
- task.delay(Config.Reveal.WorldRiseSeconds,function() if card.Parent and card:GetAttribute("State")=="Revealing" then CardService.SetState(card,"World") end end)
+ task.delay(Config.Reveal.RiseSeconds,function() if card.Parent and card:GetAttribute("State")=="Revealing" then CardService.SetState(card,"World") end end)
 end
 
 local function itemExists(id)
@@ -182,7 +194,8 @@ local function itemExists(id)
  return false
 end
 function CardService.Record(card)
- return {PlayerId=card:GetAttribute("PlayerId"),Level=card:GetAttribute("UpgradeLevel") or 0,ItemId=card:GetAttribute("ItemId")}
+ return {PlayerId=card:GetAttribute("PlayerId"),Level=card:GetAttribute("UpgradeLevel") or 0,ItemId=card:GetAttribute("ItemId"),
+  Variant=card:GetAttribute("Variant"),Giant=card:GetAttribute("Giant")}
 end
 -- Only validated server-saved roster records can be restored. A saved ItemId that already exists live is a duplicate and is refused.
 function CardService.RestoreRecord(record,position)
@@ -193,12 +206,15 @@ function CardService.RestoreRecord(record,position)
  local id=record.ItemId
  local validId=type(id)=="string" and #id>=Config.PlayerData.ItemIdMinLength and #id<=Config.PlayerData.ItemIdMaxLength
  if validId and itemExists(id) then return nil end
- local card=createCard(entry,entry.Tier,position)
+ local variant=type(record.Variant)=="string" and Config.Variants[record.Variant] and record.Variant or nil
+ local giant=record.Giant==true or nil
+ local card=createCard(entry,entry.Tier,position,variant,giant)
  if validId then card:SetAttribute("ItemId",id) end
  local level=type(record.Level)=="number" and record.Level==record.Level and math.clamp(math.floor(record.Level),0,Config.PlotSlots.MaxLevel) or 0
+ local base=card:GetAttribute("CashPerSecond")
  card:SetAttribute("UpgradeLevel",level)
- card:SetAttribute("BaseCashPerSecond",Config.Tiers[entry.Tier].CashPerSecond)
- CardService.SetIncome(card,Config.Tiers[entry.Tier].CashPerSecond*Config.PlotSlots.IncomeGrowth^level)
+ card:SetAttribute("BaseCashPerSecond",base)
+ CardService.SetIncome(card,base*Config.PlotSlots.IncomeGrowth^level)
  return card
 end
 

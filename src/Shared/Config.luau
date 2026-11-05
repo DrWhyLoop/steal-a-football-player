@@ -56,9 +56,21 @@ Config.PlayerRoster = {
  {Id="Player_02",Name="Crimson Ace",Tier="GOAT",Weight=30},
  {Id="Player_01",Name="Pocket Wizard",Tier="GOAT",Weight=20},
 }
-Config.Reveal = { EggShakeSeconds=.65, EggShakeAngle=.12, EggShakeCycles=4, PopSeconds=.3, SparkCount=12, SwellSeconds=0.22, SwellScale=1.16, WorldRiseSeconds=.35,
+-- Egg hatch: the egg stays still on the server for SwellSeconds while nearby clients animate it locally
+-- (swell, harder shake, glow, crack sparkles), then the egg is destroyed and the card spawns; clients play the pop and rise.
+Config.Reveal = { SwellSeconds=1.8, SwellScale=1.35, ShakeStart=0.03, ShakeEnd=0.2, GlowFillEnd=0.35, SparkRateStart=4, SparkRateEnd=45,
+ PopSeconds=0.3, PopSize=16, ConfettiCount=45, RiseSeconds=0.6, SpinTurns=1, BeamSeconds=0.9, BeamHeight=60, BeamWidth=3,
+ PopSoundId="rbxasset://sounds/impact_explosion_03.mp3", PopSoundVolume=0.6, BreakerPrioritySeconds=3,
  DisplayHeight=5, SafeCelebrationSeconds=1.4, SafeCheckSeconds=0.2, SafeMargin=2,
  MaxDistance=100, MaxConcurrent=3, SafeColor=Color3.fromRGB(100,255,165) }
+
+-- Card variants. Gold/Diamond are exclusive (Diamond checked first); Giant is an independent roll. Income multipliers stack.
+Config.Variants = { Gold={Income=2,Tint=Color3.fromRGB(255,200,60)}, Diamond={Income=5,Tint=Color3.fromRGB(235,250,255),Glow=Color3.fromRGB(120,220,255),GlowFill=0.5}, SparkleRate=2 }
+Config.GiantVariant = { Income=3, Size=1.5 }
+Config.VariantOdds = { Gold=0.05, Diamond=0.005, Giant=0.02 }
+-- Lucky Egg: occasionally replaces a normal egg (never the GOAT or Golden egg) and boosts the variant odds.
+Config.LuckyEgg = { Chance=0.03, Odds={ Gold=0.20, Diamond=0.03, Giant=0.08 }, Color=Color3.fromRGB(80,255,120), Label="LUCKY EGG",
+ OddsDistance=35, LookDot=0.97 }
 
 -- Egg visuals use the existing cube mining/reward system.
 Config.Eggs = {
@@ -118,7 +130,7 @@ Config.Axes = {
 
 -- Cards ---------------------------------------------------------------
 Config.CardSize = Vector3.new(3, 5, 2)
-Config.CardLabels = {Distance=60,HeadClearance=1.6,Width=170,Height=74,RefreshSeconds=0.25,StatusColor=Color3.fromRGB(255,190,90)}
+Config.CardLabels = {Distance=60,HeadClearance=1.6,Width=230,Height=74,RefreshSeconds=0.25,StatusColor=Color3.fromRGB(255,190,90)}
 Config.DropPlayer = {Forward=4,RequestCooldown=.4,SafeCargoLimit=30}
 Config.CardRestHeight = 0.6          -- gap between dropped card and floor
 Config.CarryOffset = Vector3.new(0, 3.2, 0) -- above the Head
