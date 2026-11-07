@@ -1,8 +1,8 @@
 --[[
 	GuardService: simple NPC guards. Each stage has Config.GuardCountPerStage[stage] guards that
-	patrol random points inside their own stage zone and chase the nearest player in range.
-	A guard that touches a player knocks them back (the hit client applies the impulse) and makes
-	them drop their card. No pathfinding: guards steer in a straight line, clamped to their zone.
+	patrol random points inside their own stage zone. A guard chases ONLY a player carrying an unsecured character taken from its stage
+	(card attribute SourceStage); when it touches that carrier it knocks them back (the hit client applies the impulse) and makes
+	them drop the card. Nobody else is ever chased or touched. No pathfinding: guards steer in a straight line, clamped to their zone.
 	Guards ALWAYS patrol. Guards with a player within Config.GuardNearDistance are updated every frame
 	(chase/hit logic); all others only re-evaluate their patrol Config.GuardFarUpdatesPerSecond times a second.
 	Movement itself is physics (see MonsterFactory), so far guards still glide smoothly on clients.
@@ -48,9 +48,7 @@ end
 local function createGuard(stage: number,index: number)
  local zone=zones[stage]
  local list=Config.MonsterGuards.Stages[stage]
- local design=list[(index-1)%#list+1]
- local model,view=MonsterFactory.Build(design,pointIn(zone))
- view.patrolSpeed=Config.GuardChaseSpeed[stage]*Config.GuardPatrolSpeedFactor
+ local model,view=MonsterFactory.Build(list[(index-1)%#list+1],pointIn(zone))
  local margin=Config.GuardZoneMargin+math.max(view.width,view.depth)/2
  model:PivotTo(CFrame.new(pointIn(zone,margin)))
  MonsterFactory.Hold(view)
@@ -59,7 +57,8 @@ local function createGuard(stage: number,index: number)
  CollectionService:AddTag(model,"Guard")
  model.Parent=guardsFolder
  MonsterFactory.Activate(view)
- table.insert(guards,{model=model,view=view,stage=stage,waypoint=pointIn(zone,margin),margin=margin,stunUntil=0,near=false,nextPatrol=0})
+ table.insert(guards,{model=model,view=view,stage=stage,waypoint=pointIn(zone,margin),margin=margin,stunUntil=0,near=false,nextPatrol=0,
+  hitRadius=view.height*Config.GuardHit.PerHeight+Config.GuardHit.Margin})
 end
 
 local function livingTargets(): { { player: Player, root: BasePart } }
@@ -86,33 +85,52 @@ local function hit(guard, target, now: number)
 	CardService.DropCarried(target.player)
 end
 
+-- A guard only goes after a player carrying an unsecured character taken from ITS stage, and only while that player is inside the stage.
+local function wantsToChase(guard, target): boolean
+	local card = CardService.GetCarried(target.player)
+	if not card or card:GetAttribute("Escaped") or card:GetAttribute("SourceStage") ~= guard.stage then return false end
+	local localPoint = zones[guard.stage].CFrame:PointToObjectSpace(target.root.Position)
+	return math.abs(localPoint.X) <= zones[guard.stage].Size.X / 2 and math.abs(localPoint.Z) <= zones[guard.stage].Size.Z / 2
+end
+
+local function flat(v: Vector3): Vector3 return Vector3.new(v.X, 0, v.Z) end
+
+-- A touch: the carrier's body is within the guard's visible body radius of the path it just walked (so a fast guard cannot skip past a
+-- player between two frames) and at a height the body reaches.
+local function touches(guard, target, previous: Vector3, position: Vector3): boolean
+	local root = target.root.Position
+	if math.abs(root.Y - position.Y) > guard.view.height / 2 + Config.GuardHit.PlayerHalfHeight then return false end
+	local a, b, p = flat(previous), flat(position), flat(root)
+	local along = b - a
+	local t = along.Magnitude > 1e-4 and math.clamp(along:Dot(p - a) / along:Dot(along), 0, 1) or 0
+	return (p - (a + along * t)).Magnitude <= guard.hitRadius
+end
+
 -- `targets` is nil for far guards: they only patrol (no chase or hit checks).
 local function updateGuard(guard, targets, now: number)
 	local view, zone = guard.view, zones[guard.stage]
-	if now < guard.stunUntil then MonsterFactory.Stop(view) return end
 	local position = guard.model.PrimaryPart.Position
+	local previous = guard.lastPosition or position
+	guard.lastPosition = position
+	if now < guard.stunUntil then MonsterFactory.Stop(view) return end
 
-	local nearest, nearestDistance, bestPriority
+	local nearest, nearestDistance
 	for _, target in ipairs(targets or {}) do
-		local offset = target.root.Position - position
-		if offset.Magnitude <= Config.GuardHitRadius and (hitUntil[target.player] or 0) <= now then
-			hit(guard, target, now)
-			MonsterFactory.Stop(view)
-			return
-		end
-		local flat = Vector3.new(offset.X, 0, offset.Z).Magnitude
-		local card=CardService.GetCarried(target.player)
-		local localPoint=zone.CFrame:PointToObjectSpace(target.root.Position)
-		local carrierInside=card and math.abs(localPoint.X)<=zone.Size.X/2 and math.abs(localPoint.Z)<=zone.Size.Z/2
-		local priority=card and (card:GetAttribute('OriginalOwnerUserId') and 2 or 1) or 0
-		if (card or not target.player:GetAttribute("DropDisengaged")) and (carrierInside or flat<=Config.GuardChaseRange[guard.stage]) and (not nearest or priority>bestPriority or priority==bestPriority and flat<nearestDistance) then
-			nearest,nearestDistance,bestPriority=target,flat,priority
+		if wantsToChase(guard, target) then
+			if (hitUntil[target.player] or 0) <= now and touches(guard, target, previous, position) then
+				hit(guard, target, now)
+				MonsterFactory.Attack(view)
+				MonsterFactory.Stop(view)
+				return
+			end
+			local distance = (flat(target.root.Position) - flat(position)).Magnitude
+			if not nearest or distance < nearestDistance then nearest, nearestDistance = target, distance end
 		end
 	end
 
-	local destination, speed
+	local destination, speed, running
 	if nearest then
-		destination, speed = nearest.root.Position, Config.GuardChaseSpeed[guard.stage]
+		destination, speed, running = nearest.root.Position, Config.GuardChaseSpeed[guard.stage], true
 		guard.model:SetAttribute('ChasePlayerUserId',nearest.player.UserId)
 	else
 		guard.model:SetAttribute('ChasePlayerUserId',nil)
@@ -121,7 +139,7 @@ local function updateGuard(guard, targets, now: number)
 		end
 		destination, speed = guard.waypoint, Config.GuardChaseSpeed[guard.stage] * Config.GuardPatrolSpeedFactor
 	end
-	MonsterFactory.Drive(view, clampToZone(destination, zone, guard.margin), speed)
+	MonsterFactory.Drive(view, clampToZone(destination, zone, guard.margin), speed, running)
 end
 
 local function step()
@@ -147,9 +165,9 @@ local function refreshNear()
 		local position = guard.model.PrimaryPart.Position
 		for _, target in ipairs(targets) do nearest = math.min(nearest, (target.root.Position - position).Magnitude) end
 		guard.near = nearest <= Config.GuardNearDistance
-		local visible = nearest <= Config.MonsterGuards.EffectsDistance
-		MonsterFactory.SetEffects(guard.view, visible)
-		MonsterFactory.SetAnimated(guard.view, visible)
+		if not guard.near then for _, target in ipairs(targets) do if wantsToChase(guard, target) then guard.near = true break end end end -- a carrier in the stage is always chased, however far
+		MonsterFactory.SetEffects(guard.view, nearest <= Config.MonsterGuards.EffectsDistance)
+		MonsterFactory.SetAnimated(guard.view, nearest <= Config.MonsterGuards.AnimationDistance)
 		if not guard.near then guard.model:SetAttribute('ChasePlayerUserId',nil) end
 	end
 end

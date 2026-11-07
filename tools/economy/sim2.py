@@ -14,7 +14,10 @@ STAGE_TIER=[0,0,1,1,2,2,2,3,3,4,4,5]
 TREAD_MULT=[1.5,2,4,6,9,12,15,20,25,35,50,75,100,250,500]
 SIZES=[(30,0.5,1.0),(55,1.0,1.0),(12,2.5,1.5),(3,6.0,3.0)] # weight, HP x, variant odds x
 def speed(p): return min(120,16+12*math.log10(1+p/100))
+LAST_STATS={}
 def run(P,tier_inc,pick_power,pick_cost,tread_cost,realistic,seed=1,minutes=720,celestial=0,income_mult=1):
+    global LAST_STATS
+    stats={}
     rnd=random.Random(seed)
     t=0;cash=0;pts=0;pick=0;tread=0;cards=[];broken=0;income=0
     trip_left=None;trip=None;reach={};rows=[];golden=None;next_golden=P['golden_interval']
@@ -76,6 +79,9 @@ def run(P,tier_inc,pick_power,pick_cost,tread_cost,realistic,seed=1,minutes=720,
                 if r<dm: mult*=P['diamond_m']
                 elif rnd.random()<g: mult*=P['gold_m']
                 if rnd.random()<gi: mult*=P['giant_m']
+            sc=1/(1-P['train_share'])
+            st=stats.setdefault(stage+1,{'trips':0,'walk':0.0,'mine':0.0,'other':0.0,'train':0.0,'hits':0})
+            st['trips']+=1;st['walk']+=(d/v+d/carry)*sc;st['mine']+=hits*P['swing']*sc;st['other']+=(extra+P['find']+P['reveal']+P['pickup']+P['place'])*sc;st['train']+=dur*P['train_share'];st['hits']+=hits
             trip_left=dur;trip=(stage,tier,mult)
             if stage+1 not in reach: reach[stage+1]=t;speed_at[stage+1]=v
         trip_left-=1
@@ -89,6 +95,7 @@ def run(P,tier_inc,pick_power,pick_cost,tread_cost,realistic,seed=1,minutes=720,
         pts+=P['train_share']*2*max(TREAD_MULT[tread],celestial)
         t+=1
         if t%60==0 and t//60<=30: rows.append((t//60,cash,income,len(cards),pick+1,tread+1,speed(pts),(trip[0]+1) if trip else 1,sum(l for _,l in cards)))
+    LAST_STATS=stats
     return reach,speed_at,rows,pts
 def fmt(x):
     for s,u in ((1e15,'Qa'),(1e12,'T'),(1e9,'B'),(1e6,'M'),(1e3,'K')):

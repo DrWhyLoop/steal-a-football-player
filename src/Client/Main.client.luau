@@ -14,14 +14,17 @@ require(script.Parent.Knockback).Init()
 require(script.Parent.LandscapeController).Init()
 require(script.Parent.WeatherController).Init()
 require(script.Parent.AnimalMotion).Init()
+require(script.Parent.NpcMotion).Init()
 require(script.Parent.CharacterMotion).Init()
 
 require(script.Parent.RewardEffects).Init()
 require(script.Parent.LuckyOdds).Init()
+require(script.Parent.EggBars).Init()
+require(script.Parent.LightFlicker).Init()
 require(script.Parent.IndexUI).Init()
 
 require(script.Parent.TreadmillUI).Init()
-require(script.Parent.PickaxeUI).Init()
+require(script.Parent.ToolUI).Init()
 task.spawn(require(script.Parent.AutoSwing).Init)
 task.spawn(require(script.Parent.StageBanner).Init)
 

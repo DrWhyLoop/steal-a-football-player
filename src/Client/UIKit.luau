@@ -1,4 +1,5 @@
 -- Shared plain-menu widgets (labels, buttons) so menus look and behave alike.
+local Format=require(game.ReplicatedStorage.Shared.NumberFormat)
 local Kit={}
 function Kit.Label(parent,text,size,pos)
  local t=Instance.new("TextLabel") t.Text=text t.Size=size t.Position=pos t.BackgroundTransparency=1
@@ -8,6 +9,11 @@ function Kit.Button(parent,text,size,pos)
  local b=Instance.new("TextButton") b.Text=text b.Size=size b.Position=pos b.BackgroundColor3=Color3.fromRGB(41,93,116)
  b.TextColor3=Color3.new(1,1,1) b.Font=Enum.Font.GothamBold b.TextSize=15 b.Parent=parent
  local corner=Instance.new("UICorner") corner.CornerRadius=UDim.new(0,8) corner.Parent=b return b
+end
+-- Live Roblox price published by the server for a game pass: positive = for sale, -1 = off sale/unreachable, 0 = not configured.
+function Kit.PriceLabel(id)
+ local price=game.ReplicatedStorage:GetAttribute("PassPrice_"..id) or 0
+ return price,price>0 and "R$ "..Format.Exact(price) or price<0 and "Price unavailable" or "Not available yet"
 end
 -- Shop button state: label plus enabled/selected colouring.
 function Kit.State(b,text,selected,enabled)

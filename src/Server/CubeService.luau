@@ -14,7 +14,6 @@ local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
-local Format = require(ReplicatedStorage.Shared.NumberFormat)
 local PlayerData = require(script.Parent.PlayerData)
 
 local CubeService = {}
@@ -25,6 +24,7 @@ local brokenCallbacks = {}
 local cubeMarker = {}  -- [cube] = spawn marker (regular cubes; Golden and event eggs have none)
 local stageFloors = {} -- [stage] = floor part
 local goatCube, goldenCube
+local floorParams = RaycastParams.new() floorParams.FilterType = Enum.RaycastFilterType.Include
 local revealReservations = {}
 
 function CubeService.OnBroken(callback)
@@ -33,17 +33,6 @@ end
 
 local function announce(text: string)
 	Remotes.Announcement:FireAllClients(text)
-end
-
-local function updateLabel(cube: BasePart)
-	local hp, maxHp = cube:GetAttribute("HP"), cube:GetAttribute("MaxHP")
-	local size = Config.EggSizeById[cube:GetAttribute("Size")]
-	local tags = (cube:GetAttribute("Lucky") and Config.LuckyEgg.Label .. "  " or "") .. (size.Label and size.Label .. "  " or "")
-	local gui = cube.HpGui
-	gui.HpLabel.Text = ("%sHP %s / %s"):format(tags, Format.Compact(hp), Format.Compact(maxHp))
-	local fraction = math.clamp(hp / maxHp, 0, 1)
-	gui.Bar.Fill.Size = UDim2.fromScale(fraction, 1)
-	gui.Bar.Fill.BackgroundColor3 = Color3.fromHSV(fraction * 0.33, 0.85, 1) -- green at full health, red when nearly broken
 end
 
 local totalWeight = 0
@@ -65,12 +54,12 @@ local function addGlow(cube: BasePart, color: Color3)
 	sparkle.Color = ColorSequence.new(color) sparkle.Parent = cube
 end
 
--- Egg kinds: normal (size rolled, small chance of Secret), Golden (one tier up), the timed GOAT event egg (always Huge) and Secret
--- (one tier up). The event and Secret eggs promise a Gold-or-better variant (MinVariant).
-local function makeCube(stage: number, position: Vector3, golden: boolean, event: boolean?): BasePart
+-- Egg kinds: normal (size rolled, small chance of Secret), Golden (one tier up), the timed GOAT event egg (always Huge), Secret
+-- (one tier up) and the global Titanic. The event, Secret and Titanic eggs promise a Gold-or-better variant (MinVariant).
+local function makeCube(stage: number, position: Vector3, golden: boolean, event: boolean?, titanic: boolean?): BasePart
 	local tier = Config.StageTier[stage]
 	local secret = not golden and not event and rng:NextNumber() < Config.SecretEgg.Chance
-	local size = golden and Config.EggSizeById.Normal or event and Config.EggSizeById.Huge or secret and Config.EggSizeById.Secret or rollSize()
+	local size = titanic and Config.EggSizeById.Titanic or golden and Config.EggSizeById.Normal or event and Config.EggSizeById.Huge or secret and Config.EggSizeById.Secret or rollSize()
 	local hp = Config.CubeHP[stage] * size.HP * (golden and Config.GoldenHPMultiplier or 1)
 
 	local eggName = golden and Config.Eggs.Golden or Config.Eggs.ByTier[tier]
@@ -93,17 +82,24 @@ local function makeCube(stage: number, position: Vector3, golden: boolean, event
    effect.Rate = math.min(effect.Rate, Config.Eggs.ParticleRate)
   end
  end
-	cube.CFrame = CFrame.new(position)
+	-- stand the egg on the real floor below the point, by its actual (scaled) size
+	local floor = stageFloors[stage]
+	local hit = workspace:Raycast(position + Vector3.new(0, Config.EggSpawning.RayUp, 0), Vector3.new(0, -Config.EggSpawning.RayDown, 0), floorParams)
+	local ground = hit and hit.Position.Y or floor.Position.Y + floor.Size.Y / 2
+	cube.CFrame = CFrame.new(position.X, ground + cube.Size.Y / 2, position.Z)
 	cube:SetAttribute("Stage", stage)
 	cube:SetAttribute("Event", event)
 	cube:SetAttribute("Size", size.Id)
-	cube:SetAttribute("MinVariant", event and Config.GoatEvent.MinVariant or secret and Config.SecretEgg.MinVariant or nil)
+	cube:SetAttribute("Golden", golden or nil)
+	cube:SetAttribute("MinVariant", event and Config.GoatEvent.MinVariant or titanic and Config.Titanic.MinVariant or secret and Config.SecretEgg.MinVariant or nil)
 	cube:SetAttribute("MaxHP", hp)
 	cube:SetAttribute("HP", hp)
 	cube:SetAttribute("BaseColor", color)
-	cube:SetAttribute("DropTier", golden and Config.GetGoldenTier(stage) or secret and Config.GetTierAbove(stage, "GOAT") or tier)
- local lucky = not golden and not secret and stage ~= Config.GoatStage and rng:NextNumber() < Config.LuckyEgg.Chance
- if lucky then
+	cube:SetAttribute("DropTier", titanic and Config.Titanic.Tier or golden and Config.GetGoldenTier(stage) or secret and Config.GetTierAbove(stage, "GOAT") or tier)
+ local lucky = not golden and not secret and not titanic and stage ~= Config.GoatStage and rng:NextNumber() < Config.LuckyEgg.Chance
+ if titanic then
+  addGlow(cube, Config.Titanic.Color)
+ elseif lucky then
   cube:SetAttribute("Lucky", true)
   addGlow(cube, Config.LuckyEgg.Color)
  elseif secret then
@@ -111,38 +107,6 @@ local function makeCube(stage: number, position: Vector3, golden: boolean, event
  end
 	CollectionService:AddTag(cube, "Cube")
 
-	local gui = Instance.new("BillboardGui")
-	gui.Name = "HpGui"
-	gui.Size = UDim2.fromOffset(170, 54)
-	gui.StudsOffset = Vector3.new(0, Config.CubeSize * size.Scale / 2 + 1.8, 0)
-	gui.MaxDistance = 90
-	gui.Parent = cube
-	local text = Instance.new("TextLabel")
-	text.Name = "HpLabel"
-	text.BackgroundTransparency = 1
-	text.Size = UDim2.fromScale(1, 0.55)
-	text.TextScaled = true
-	text.Font = Enum.Font.GothamBold
-	text.TextColor3 = golden and Config.GoldenColor or lucky and Config.LuckyEgg.Color or secret and Config.SecretEgg.Color or Color3.new(1, 1, 1)
-	text.TextStrokeTransparency = 0.2
-	text.Parent = gui
-	local bar = Instance.new("Frame")
-	bar.Name = "Bar"
-	bar.Position = UDim2.fromScale(0, 0.62)
-	bar.Size = UDim2.fromScale(1, 0.3)
-	bar.BackgroundColor3 = Color3.new(0, 0, 0)
-	bar.BackgroundTransparency = 0.35
-	bar.Parent = gui
-	local barCorner = Instance.new("UICorner") barCorner.CornerRadius = UDim.new(0.5, 0) barCorner.Parent = bar
-	local barEdge = Instance.new("UIStroke") barEdge.Color = Color3.new(1, 1, 1) barEdge.Thickness = 1.5 barEdge.Parent = bar
-	local fill = Instance.new("Frame")
-	fill.Name = "Fill"
-	fill.Size = UDim2.fromScale(1, 1)
-	fill.BorderSizePixel = 0
-	fill.Parent = bar
-	local fillCorner = Instance.new("UICorner") fillCorner.CornerRadius = UDim.new(0.5, 0) fillCorner.Parent = fill
-
-	updateLabel(cube)
 	cube.Parent = cubesFolder
 	return cube
 end
@@ -212,7 +176,6 @@ local function onBroken(cube: BasePart, breaker: Player?)
  table.insert(revealReservations,{position=position,untilTime=os.clock()+Config.Reveal.SwellSeconds+Config.Reveal.RiseSeconds+Config.EggSpawning.RetrySeconds})
 		cube.CanCollide=false
  cube.CanQuery=false
- cube.HpGui.Enabled=false
  -- The egg stays still: DropFromCube tells nearby clients to animate it locally. Result and card spawn happen with the destroy.
  for _, callback in ipairs(brokenCallbacks) do
   task.spawn(callback, dropTier, position, breaker, cube:GetAttribute("Lucky"), cube)
@@ -240,7 +203,6 @@ function CubeService.Damage(cube: BasePart, amount: number, breaker: Player?)
 		onBroken(cube, breaker)
 	else
 		cube:SetAttribute("HP", hp)
-		updateLabel(cube)
 		flash(cube)
 	end
 end
@@ -252,6 +214,39 @@ local function goatLoop()
 			if point then goatCube = makeCube(Config.GoatStage, point, false, true) announce(Config.GoatAnnouncement) end
 		end
 		task.wait(Config.GoatSpawnIntervalSeconds)
+	end
+end
+
+-- Global Titanic: the slot number comes from os.time(), so every server spawns it at the same moment, in the same stage.
+local function titanicStage(slot: number): number
+	local T = Config.Titanic
+	local total = 0
+	for stage = 1, #Config.CubeHP do total += 1 + T.StageBias * (stage - 1) end
+	local roll = Random.new(slot):NextNumber() * total
+	for stage = 1, #Config.CubeHP do
+		roll -= 1 + T.StageBias * (stage - 1)
+		if roll < 0 then return stage end
+	end
+	return #Config.CubeHP
+end
+local function titanicLoop()
+	local T = Config.Titanic
+	local lastSlot
+	while true do
+		local now = os.time()
+		local slot = now // T.IntervalSeconds
+		local into = now - slot * T.IntervalSeconds
+		if slot ~= lastSlot and into < T.LifetimeSeconds then
+			local stage = titanicStage(slot)
+			local point = randomPointOn(stageFloors[stage])
+			if point then
+				lastSlot = slot
+				local egg = makeCube(stage, point, false, false, true)
+				announce(T.Announcement:format(stage))
+				task.delay(T.LifetimeSeconds - into, function() if egg.Parent and not egg:GetAttribute("Dead") then egg:Destroy() end end)
+			end
+		end
+		task.wait(1)
 	end
 end
 
@@ -268,13 +263,17 @@ local function goldenLoop()
 end
 
 function CubeService.Init()
+	local floors = {}
 	for _, floor in ipairs(CollectionService:GetTagged("StageZone")) do
 		stageFloors[floor:GetAttribute("Stage")] = floor
+		table.insert(floors, floor)
 	end
+	floorParams.FilterDescendantsInstances = floors
 	for _, marker in ipairs(CollectionService:GetTagged("CubeSpawn")) do
 		task.spawn(spawnWhenClear,marker)
 	end
 	task.spawn(goatLoop)
+	task.spawn(titanicLoop)
 	task.spawn(goldenLoop)
 end
 

@@ -19,11 +19,7 @@ function UI.Init()
  local hudCorner=Instance.new("UICorner") hudCorner.CornerRadius=UDim.new(0,12) hudCorner.Parent=hud
  local stats=label(hud,"",UDim2.new(1,-20,1,-12),UDim2.fromOffset(10,6)) stats.TextXAlignment=Enum.TextXAlignment.Left stats.TextSize=16
  local rows={}
- -- live Roblox price published by the server: positive = for sale, -1 = off sale/unreachable, 0 = not configured
- local function priceLabel(id)
-  local price=RS:GetAttribute("PassPrice_"..id) or 0
-  return price,price>0 and "R$ "..Format.Exact(price) or price<0 and "Price unavailable" or "Not available yet"
- end
+ local priceLabel=UIKit.PriceLabel
  for index,tier in Config.Treadmills.Catalog do
   local row=Instance.new("Frame") row.Name=tier.Id row.Size=UDim2.new(1,-8,0,176) row.BackgroundColor3=Color3.fromRGB(35,53,70) row.LayoutOrder=index row.Parent=scroll
   local thumb=Instance.new("Frame") thumb.Name="TreadmillPicture" thumb.Size=UDim2.new(.42,-8,0,128) thumb.Position=UDim2.fromOffset(8,6) thumb.BackgroundColor3=Color3.fromRGB(185,211,227) thumb.Parent=row

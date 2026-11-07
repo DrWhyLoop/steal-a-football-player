@@ -1,6 +1,6 @@
 --[[
 	Purchases: every Robux interaction goes through here (server-authoritative).
-	- Game pass items (the Celestial treadmill and the 2x Cash pass): explicit tap -> live-price check -> Roblox's own purchase prompt. Nothing prompts on join.
+	- Game pass items (the Celestial treadmill, the 2x Cash pass and the premium tools): explicit tap -> live-price check -> Roblox's own purchase prompt. Nothing prompts on join.
 	- Ownership is stored in the profile (Entitlements). On join a pass the player owns but the profile lacks is re-granted; a refund
 	  revokes it only after Config.Purchases.RevokeStrikes confirmed "not owned" results on separate joins at least
 	  RevokeStrikeGapSeconds apart. An API error never counts and never resets anything.
@@ -23,7 +23,7 @@ local P={}
 P.Granted=Instance.new("BindableEvent")  -- (player, key)
 P.Revoked=Instance.new("BindableEvent")  -- (player, key)
 
-local passes={} -- game pass items (treadmill catalog passes and Config.CashPass): [key] = {key, passId}
+local passes={} -- game pass items (treadmill catalog passes, Config.CashPass, Config.PremiumTools): [key] = {key, passId}
 local byPassId={}
 local cooldown={}
 local checked={}
@@ -93,9 +93,9 @@ local function revoke(player,pass)
 end
 
 -- Explicit tap only. Every refusal is logged with its reason.
-function P.RequestPrompt(player,key)
+function P.RequestPrompt(player,key,notify)
  local pass=passes[key] if not pass or player:GetAttribute("DataReady")~=true or not data(player) then return end
- local function block(reason,message) log(player.UserId,"PromptBlocked",pass,reason) status(player,message) end
+ local function block(reason,message) log(player.UserId,"PromptBlocked",pass,reason) if notify then notify(message) else status(player,message) end end
  if (cooldown[player] or 0)>os.clock() then block("cooldown","Please wait a few seconds before trying again.") return end
  cooldown[player]=os.clock()+cfg.PromptCooldownSeconds
  if pass.passId==0 then block("notConfigured","This is not available yet.") return end
@@ -201,6 +201,9 @@ function P.Init()
   if tier.GamePassId then register(tier.Id,tier.GamePassId) end
  end
  register(Config.CashPass.Id,Config.CashPass.GamePassId)
+ for _,tool in Config.PremiumTools do
+  if tool.GamePassId then register(tool.Id,tool.GamePassId) end
+ end
  Log.Init()
  Marketplace.ProcessReceipt=P.ProcessReceipt
  Marketplace.PromptGamePassPurchaseFinished:Connect(onFinished)

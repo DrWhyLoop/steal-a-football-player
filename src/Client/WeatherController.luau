@@ -30,8 +30,19 @@ function Controller.Init()
  local rain=Instance.new("ParticleEmitter") rain.Name="Rain" rain.Texture=W.RainTexture rain.EmissionDirection=Enum.NormalId.Bottom
  rain.Rate=W.RainRate rain.Speed=NumberRange.new(W.RainSpeed) rain.Lifetime=NumberRange.new(W.RainLifetime)
  rain.Size=NumberSequence.new(W.RainSize) rain.Transparency=NumberSequence.new(W.RainTransparency) rain.Orientation=Enum.ParticleOrientation.FacingCameraWorldUp
- rain.SpreadAngle=Vector2.new(4,4) rain.LightEmission=0.25 rain.Enabled=false rain.Parent=rainPart
+ rain.SpreadAngle=Vector2.new(4,4) rain.LightEmission=0.25 rain.Enabled=false rain.LockedToPart=true rain.Parent=rainPart -- locked: the drops travel with the camera, so running or turning never leaves the rain behind
  local params=RaycastParams.new() params.RespectCanCollide=true params.FilterType=Enum.RaycastFilterType.Exclude
+ -- A roof is a visible part of at least RoofMinSize studs above the player; small colliders (trunks, fences, torches) and glass do not stop the rain.
+ local function sheltered(position)
+  local origin=position
+  for _=1,W.RoofProbeSteps do
+   local hit=workspace:Raycast(origin,Vector3.new(0,W.RoofProbeHeight,0),params)
+   if not hit then return false end
+   if hit.Instance.Size.Magnitude>=W.RoofMinSize and hit.Instance.Transparency<W.RoofMaxTransparency then return true end
+   origin=hit.Position+Vector3.new(0,0.1,0)
+  end
+  return false
+ end
  RunService.RenderStepped:Connect(function()
   local elapsed=workspace:GetServerTimeNow()-state:GetAttribute("CycleStart")
   Lighting.ClockTime=(elapsed%W.DaySeconds)/W.DaySeconds*24
@@ -39,7 +50,7 @@ function Controller.Init()
   if camera then rainPart.Position=camera.CFrame.Position+Vector3.new(0,W.RainHeight,0) end
  end)
  task.spawn(function()
-  local glow=setmetatable({},{__mode="k"}) -- lights and emitters that are on at night (torches and the Forest Lake stones)
+  local glow={} -- lights and emitters that are on at night (torches, treehouse lamps, Forest Lake stones). A strong set: the collector drops Instance keys of a weak table, which left every light off
   local function trackTorch(v)
    if v:IsA("ParticleEmitter") then v.Rate=v.Name=="Fire" and L.TorchFireRate or v.Name=="Glow" and L.TorchGlowRate or L.TorchSmokeRate glow[v]=true
    elseif v:IsA("Light") then v.Brightness=L.TorchLightBrightness v.Range=L.TorchLightRange v.Shadows=false glow[v]=true end
@@ -57,10 +68,9 @@ function Controller.Init()
    local position=characterRoot and characterRoot.Position or camera and camera.CFrame.Position
    local phase=state:GetAttribute("Current")
    params.FilterDescendantsInstances=character and {character} or {}
-   local sheltered=position and workspace:Raycast(position,Vector3.new(0,W.RoofProbeHeight,0),params)
-   rain.Enabled=phase=="Rain" and position~=nil and not sheltered
+   rain.Enabled=phase=="Rain" and position~=nil and not sheltered(position)
    local night=phase=="Night"
-   for v in glow do v.Enabled=night end
+   for v in glow do if v:IsDescendantOf(workspace) then v.Enabled=night else glow[v]=nil end end -- streamed-out instances leave the set; they register again when they stream in
    task.wait(Config.Environment.VisibilityUpdateSeconds)
   end
  end)

@@ -22,11 +22,11 @@ Config.TierOrder = { "Common", "Rare", "Epic", "Legendary", "Mythic", "GOAT" }
 
 Config.Tiers = {
 	Common    = { CashPerSecond = 1,    WalkSpeed = 16, Color = Color3.fromRGB(163, 162, 165) },
-	Rare      = { CashPerSecond = 8,    WalkSpeed = 15, Color = Color3.fromRGB(60, 120, 255) },
-	Epic      = { CashPerSecond = 75,   WalkSpeed = 14, Color = Color3.fromRGB(170, 60, 255) },
-	Legendary = { CashPerSecond = 700,  WalkSpeed = 13, Color = Color3.fromRGB(255, 150, 30) },
-	Mythic    = { CashPerSecond = 6800,  WalkSpeed = 12, Color = Color3.fromRGB(255, 50, 120) },
-	GOAT      = { CashPerSecond = 65000, WalkSpeed = 11, Color = Color3.fromRGB(255, 215, 0) },
+	Rare      = { CashPerSecond = 9.3,  WalkSpeed = 15, Color = Color3.fromRGB(60, 120, 255) },
+	Epic      = { CashPerSecond = 82,   WalkSpeed = 14, Color = Color3.fromRGB(170, 60, 255) },
+	Legendary = { CashPerSecond = 730,  WalkSpeed = 13, Color = Color3.fromRGB(255, 150, 30) },
+	Mythic    = { CashPerSecond = 6500,  WalkSpeed = 12, Color = Color3.fromRGB(255, 50, 120) },
+	GOAT      = { CashPerSecond = 57700, WalkSpeed = 11, Color = Color3.fromRGB(255, 215, 0) },
 }
 
 -- Tier dropped by each stage (index = stage number)
@@ -80,8 +80,32 @@ Config.Eggs = {
 }
 
 -- Cubes ---------------------------------------------------------------
-Config.EggSpawning = { Attempts=40, EdgeMargin=12, Clearance=12, AvatarClearance=10, RetrySeconds=1 }
+Config.EggSpawning = { Attempts=40, EdgeMargin=12, Clearance=12, AvatarClearance=10, RetrySeconds=1, RayUp=10, RayDown=40 } -- RayUp/RayDown: the floor probe that stands each egg on the ground
 Config.CubeSize = 6
+-- Egg HP bars (Client/EggBars): sizes are studs, so a bar shrinks with distance like the egg. LabelWidth = bar-gui width as a multiple of the
+-- egg width (room for the one-line text). Shown within MaxDistance, and only on a damaged egg or one within ShowDistance of the player.
+-- Decorative lights tagged Tag flicker: their Range jumps to a random whole number between Min and Max every Step seconds (client only).
+Config.LightFlicker = { Tag = "Flicker", Min = 5, Max = 10, Step = 0.1 }
+
+-- Plaza NPCs (Client/NpcMotion.luau): anchored, harmless, animated locally. Routes are offsets from each model's Home attribute, walked in a loop.
+-- R15 uses NPC 1's own animations (idle 742637544, walk 742638842) plus Roblox's R15 wave; R6 uses Roblox's default R6 set.
+Config.Npc = {
+	Tag = "Npc", ActiveDistance = 140, CheckSeconds = 0.5,
+	WalkSpeed = 6, AnimRefSpeed = 16, TurnRate = 8, Fade = 0.2, -- studs/s, studs/s of the walk clip at playback 1, turn smoothing per second
+	WaveDistance = 14, WaveSeconds = 2.5, WaveCooldown = 15, IdlePause = { 2, 5 },
+	Animations = {
+		R15 = { Idle = 742637544, Walk = 742638842, Wave = 507770239 },
+		R6 = { Idle = 180435571, Walk = 180426354, Wave = 128777973 },
+	},
+	Priority = { Idle = Enum.AnimationPriority.Idle, Walk = Enum.AnimationPriority.Movement, Wave = Enum.AnimationPriority.Action },
+	Routes = {
+		["NPC 1"] = { Rig = "R15", Points = { Vector3.new(0, 0, 0), Vector3.new(12, 0, 0), Vector3.new(12, 0, -8), Vector3.new(0, 0, -8) } },
+		["NPC 2"] = { Rig = "R6", Points = { Vector3.new(0, 0, 0), Vector3.new(-10, 0, 0), Vector3.new(-10, 0, 8), Vector3.new(0, 0, 8) } },
+		["NPC 3"] = { Rig = "R6", Points = { Vector3.new(0, 0, 0), Vector3.new(14, 0, 0) } },
+	},
+}
+
+Config.EggBars = { MaxDistance = 35, ShowDistance = 15, CheckSeconds = 0.1, LabelWidth = 1.7, TextHeight = 0.7, BarHeight = 0.35, Gap = 0.4 }
 Config.CubeSpawnMarkerTransparency = 1
 Config.CubeRespawnSeconds = 15
 Config.CubeFlashSeconds = 0.08
@@ -90,14 +114,14 @@ Config.CubeHP = {}                                        -- per stage, derived 
 for stage = 1, 12 do Config.CubeHP[stage] = math.floor(Config.EggHP.Base * Config.EggHP.Growth ^ (stage - 1) + 0.5) end
 Config.Onboarding = { Eggs = 5, Hits = 3 } -- a new player's first Eggs Stage 1 eggs break in Hits hits
 Config.CubeCountPerStage = { 6, 6, 7, 7, 8, 8, 9, 10, 10, 11, 12, 4 }    -- per stage
--- Stage theme and the recommended movement speed (studs/s) shown on entry: distance to the middle of the stage / TravelSeconds, at least
--- the normal walk speed (see tools/economy). Speed 64 is reached around Stage 12 in the economy model.
-Config.StageBanner = { Seconds = 3.5, CheckSeconds = 0.25, TravelSeconds = 90 }
+-- Stage theme and the recommended movement speed (studs/s) shown on entry: the speed that keeps a round trip to that stage's eggs near 75 s
+-- (fitted in tools/economy; the 200 cap is reached at Stage 11). Guard chase speeds below are 80% of these.
+Config.StageBanner = { Seconds = 3.5, CheckSeconds = 0.25 }
 Config.StageInfo = {
- { Name = "Training Grounds", Speed = 16 }, { Name = "Clover Park", Speed = 16 }, { Name = "Sandlot Yard", Speed = 16 },
- { Name = "Stone Quarry", Speed = 17 }, { Name = "Lantern Alley", Speed = 22 }, { Name = "Mossy Ruins", Speed = 27 },
- { Name = "Rust Harbor", Speed = 32 }, { Name = "Ember Works", Speed = 37 }, { Name = "Frost Terrace", Speed = 42 },
- { Name = "Neon Arcade", Speed = 49 }, { Name = "Storm Dome", Speed = 55 }, { Name = "Golden Colosseum", Speed = 64 },
+ { Name = "Training Grounds", Speed = 16 }, { Name = "Clover Park", Speed = 26 }, { Name = "Sandlot Yard", Speed = 42 },
+ { Name = "Stone Quarry", Speed = 58 }, { Name = "Lantern Alley", Speed = 76 }, { Name = "Mossy Ruins", Speed = 93 },
+ { Name = "Rust Harbor", Speed = 109 }, { Name = "Ember Works", Speed = 131 }, { Name = "Frost Terrace", Speed = 149 },
+ { Name = "Neon Arcade", Speed = 178 }, { Name = "Storm Dome", Speed = 200 }, { Name = "Golden Colosseum", Speed = 200 },
 }
 Config.CubeColumnX = { -72, 72, -40, 40 } -- spawn columns (fill order); centre lane stays free
 
@@ -117,14 +141,22 @@ Config.GoldenHPMultiplier = 3
 -- Egg sizes, rolled per egg by Weight. HP multiplies the egg's HP, Odds multiplies the variant odds, Scale sizes the egg and the
 -- character inside. Secret is never rolled by weight (see SecretEgg); Huge is also the timed GOAT event egg.
 Config.EggSizes = {
- { Id="Small",  Label="SMALL",  Weight=30, HP=0.5, Odds=1,   Scale=0.85 },
- { Id="Normal",                 Weight=55, HP=1,   Odds=1,   Scale=1 },
- { Id="Big",    Label="BIG",    Weight=12, HP=2.5, Odds=1.5, Scale=1.25 },
- { Id="Huge",   Label="HUGE",   Weight=3,  HP=6,   Odds=3,   Scale=1.6 },
+ { Id="Tiny",   Label="TINY",   Weight=15, HP=0.25, Odds=1,   Scale=0.7 },
+ { Id="Small",  Label="SMALL",  Weight=25, HP=0.5, Odds=1,   Scale=0.85 },
+ { Id="Normal",                 Weight=45, HP=1,   Odds=1,   Scale=1 },
+ { Id="Big",    Label="BIG",    Weight=11, HP=2.5, Odds=1.5, Scale=1.25 },
+ { Id="Huge",   Label="HUGE",   Weight=4,  HP=6,   Odds=3,   Scale=1.6 },
  { Id="Secret", Label="SECRET", Weight=0,  HP=20,  Odds=1,   Scale=1.4 },
+ { Id="Titanic", Label="TITANIC", Weight=0, HP=100, Odds=5,  Scale=2.5 }, -- only the global Titanic event (Config.Titanic)
 }
 Config.EggSizeById = {}
 for _, size in Config.EggSizes do Config.EggSizeById[size.Id] = size end
+-- Titanic event: one egg per server at the same moment everywhere. The schedule comes from os.time(): a slot starts every IntervalSeconds
+-- and the egg lives LifetimeSeconds (a server that starts inside the window spawns it with the time that is left). Its stage is drawn from
+-- the slot number, so every server picks the same one; stage s has weight 1 + StageBias * (s - 1), slightly favouring later stages. Its HP is
+-- the egg size's HP (x100) times that stage's normal egg HP. It always drops the top tier, Gold or better, and is announced to everyone.
+Config.Titanic = { IntervalSeconds = 5 * 3600, LifetimeSeconds = 20 * 60, StageBias = 0.15, Tier = "GOAT", MinVariant = "Gold", Color = Color3.fromRGB(255, 200, 40),
+ Announcement = "A TITANIC EGG has appeared in STAGE %d! Every server - break it together!" }
 Config.SecretEgg = { Chance = 0.001, MinVariant = "Gold", Color = Color3.fromRGB(190, 90, 255) } -- per egg spawn; drops one tier up (max GOAT)
 Config.CardScaleCap = 2 -- Giant x egg size never makes a character larger than this multiple
 Config.GoldenMaxTier = "Mythic" -- drops one tier above the stage, capped here
@@ -134,27 +166,42 @@ Config.GoldenAnnouncement = "A GOLDEN EGG appeared in STAGE %d!"
 Config.AnnouncementSeconds = 6
 
 -- Pickaxe -------------------------------------------------------------
--- Pickaxes: Power = damage per hit, bought with cash (any order), one equipped. Template = Tool in ServerStorage.AxeTemplates.
--- Every player holds one Tool named PickaxeName; equipping swaps it for a copy of the chosen template.
+-- Tools: every player holds one mining Tool named PickaxeName (equipping swaps it for a copy of the chosen template, a Tool in
+-- ServerStorage.AxeTemplates) plus the free Mesh Bat. Cash tools: Power = damage per hit, bought with cash in any order.
 Config.PickaxeName = "Default Axe"
-Config.Pickaxes = {
+Config.CashTools = {
  { Id="Default",  Name="Default Axe",    Power=1,        Cost=0,           Template="Default" },
- { Id="Hatchet",  Name="Sharp Hatchet",  Power=4,        Cost=270,         Template="Good" },
- { Id="Miner",    Name="Miner's Pick",   Power=14,       Cost=1200,        Template="Pickaxe" },
- { Id="Steel",    Name="Steel Pick",     Power=51,       Cost=5100,        Template="SteelPickaxe" },
- { Id="Golden",   Name="Golden Pick",    Power=187,      Cost=22000,       Template="Golden" },
- { Id="Magma",    Name="Magma Axe",      Power=693,      Cost=100000,      Template="Volcanic" },
- { Id="Godly",    Name="Godly Pick",     Power=2565,     Cost=440000,      Template="Godly" },
- { Id="Ember",    Name="Ember Pick",     Power=9493,     Cost=1900000,     Template="Ember" },
- { Id="Frost",    Name="Frost Pick",     Power=35124,    Cost=8500000,     Template="Frost" },
- { Id="Jade",     Name="Jade Hatchet",   Power=129959,   Cost=37000000,    Template="Jade" },
- { Id="Storm",    Name="Storm Pick",     Power=480848,   Cost=160000000,   Template="Storm" },
- { Id="Obsidian", Name="Obsidian Axe",   Power=1779000,  Cost=720000000,   Template="Obsidian" },
- { Id="Rose",     Name="Rose Gold Pick", Power=6583000,  Cost=3200000000,  Template="Rose" },
- { Id="Void",     Name="Void Pick",      Power=24357000, Cost=14000000000, Template="Void" },
- { Id="Prism",    Name="Prism Pick",     Power=90121000, Cost=61000000000, Template="Prism" },
+ { Id="Hatchet",  Name="Sharp Hatchet",  Power=4,        Cost=361,         Template="Good" },
+ { Id="Miner",    Name="Miner's Pick",   Power=14,       Cost=1690,        Template="Pickaxe" },
+ { Id="Steel",    Name="Steel Pick",     Power=51,       Cost=7880,        Template="SteelPickaxe" },
+ { Id="Golden",   Name="Golden Pick",    Power=187,      Cost=36800,       Template="Golden" },
+ { Id="Magma",    Name="Magma Axe",      Power=693,      Cost=172000,      Template="Volcanic" },
+ { Id="Godly",    Name="Godly Pick",     Power=2565,     Cost=803000,      Template="Godly" },
+ { Id="Ember",    Name="Ember Pick",     Power=9493,     Cost=3750000,     Template="Ember" },
+ { Id="Frost",    Name="Frost Pick",     Power=35124,    Cost=17500000,    Template="Frost" },
+ { Id="Jade",     Name="Jade Hatchet",   Power=129959,   Cost=81800000,    Template="Jade" },
+ { Id="Storm",    Name="Storm Pick",     Power=480848,   Cost=382000000,   Template="Storm" },
+ { Id="Obsidian", Name="Obsidian Axe",   Power=1779000,  Cost=1780000000,  Template="Obsidian" },
+ { Id="Rose",     Name="Rose Gold Pick", Power=6583000,  Cost=8330000000,  Template="Rose" },
+ { Id="Void",     Name="Void Pick",      Power=24357000, Cost=38900000000, Template="Void" },
+ { Id="Prism",    Name="Prism Pick",     Power=90121000, Cost=182000000000, Template="Prism" },
 }
-Config.PickaxeShop = { RequestGap = 0.4 } -- seconds between a player's shop requests
+-- Premium tools are Robux game passes (GamePassId 0 until the owner creates the pass). Their power is never an absolute number: it is the
+-- player's best owned CASH tool times Multiplier (at most 1.5), so paying is a convenience and style boost, never a way past the economy.
+-- ComingSoon rows show a picture only. Arms = the Robot Arm Drill, held in the Right hand, Left hand or Both (Config.ArmModes).
+Config.PremiumTools = {
+ { Id="Hammer",   Name="Hammer",          Multiplier=1.2,  GamePassId=0, Template="Hammer" },
+ { Id="Reaper",   Name="Marrow Reaper",   Multiplier=1.25, GamePassId=0, Template="Reaper" },
+ { Id="Drill",    Name="Drill",           Multiplier=1.3,  GamePassId=0, Template="Drill" },
+ { Id="Drill2",   Name="Gilded Auger",    Multiplier=1.35, GamePassId=0, Template="Drill2" },
+ { Id="RobotArm", Name="Robot Arm Drill", Multiplier=1.4,  GamePassId=0, Template="RobotArm", Arms=true },
+ { Id="Laser",    Name="Laser Drill",     Multiplier=1.5,  ComingSoon=true, Template="Laser" },
+}
+Config.ArmModes = { "Right", "Left", "Both" }
+Config.ToolShop = { RequestGap = 0.4 } -- seconds between a player's shop requests
+-- Mesh Bat: free combat tool in hotbar slot 2. Same cooldown, range, facing and line-of-sight rules as the pickaxe on players
+-- (only a player carrying a character can be hit); a hit makes the carrier drop it and knocks them back. It never damages.
+Config.Bat = { Name="Mesh Bat", Template="MeshBat", KnockbackSpeed=70, KnockbackUp=28, ToolTip="Knock a carrier back so they drop their player" }
 Config.AutoSwing = { Margin = 0.05 } -- Auto Swing waits SwingCooldown + Margin between swings
 Config.SwingCooldown = 0.7          -- seconds between hits (server enforced)
 Config.PickaxeRange = 12             -- max studs from player root to cube centre
@@ -204,13 +251,12 @@ Config.LockExpelInset = 10            -- trespassers are moved this far inside t
 
 -- Guards (per stage, index = stage number) -------------------------------
 Config.GuardCountPerStage = { 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 2 }
-Config.GuardChaseSpeed    = { 8, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 15 }
-Config.GuardChaseRange    = { 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24 }
+Config.GuardChaseSpeed    = { 12.8, 20.8, 33.6, 46.4, 60.8, 74.4, 87.2, 94.3, 112, 128.2, 144, 144 } -- 80% of the stage's recommended speed; Stages 8-12 trimmed (at most 10%) where the run clip cannot keep up at AnimSpeedMax
 Config.GuardPatrolSpeedFactor = 0.7   -- patrol speed = chase speed * factor
 Config.GuardSize = Vector3.new(3, 6, 2)
 Config.GuardHeadSize = 2
 Config.GuardColor = Color3.fromRGB(200, 40, 40)
-Config.GuardHitRadius = 4.5           -- distance from guard centre that counts as a touch
+Config.GuardHit = { PerHeight = 0.3, Margin = 1.5, PlayerHalfHeight = 3 } -- touch = the player's body within PerHeight x the guard's visible height (+ Margin) of its axis, measured flat along the path it just walked
 Config.GuardHitCooldownSeconds = 1.5  -- per-player immunity after a hit
 Config.GuardStunSeconds = 1           -- guard pauses after hitting
 Config.GuardKnockbackSpeed = 55
@@ -223,7 +269,7 @@ Config.GuardFarUpdatesPerSecond = 4   -- patrol re-evaluations per second for gu
 Config.GuardNearCheckSeconds = 0.25   -- how often near/far and animation distance are re-evaluated
 -- Guards are unanchored, server-owned and moved by an AlignPosition (speed-limited, so far guards glide between 4 Hz targets)
 -- plus an upright AlignOrientation; they never collide with players.
-Config.GuardAlign = { MaxForce=1e7, MaxTorque=1e7, Responsiveness=200, TurnSpeed=6, HoldVelocity=5, MinMove=0.3 }
+Config.GuardAlign = { MaxForce=1e7, MaxTorque=1e7, Responsiveness=200, TurnSpeed=6, HoldVelocity=5, MinMove=0.3, SettleGain=0.5, MaxSettle=1.5 }
 
 -- Boss construction and preview (guard integration is a separate approval).
 Config.BossMaxParts = 59
@@ -270,8 +316,8 @@ Config.Landscape = {
 Config.Weather = {
  DaySeconds = 1200, StartHour = 9, UpdateSeconds = 1, TransitionSeconds = 4,
  RainStartHour = 13, RainEndHour = 15, RainChance = 0.6, DayStartHour = 6, EveningHour = 16, NightHour = 18,
- RainRate = 350, RainSpeed = 75, RainLifetime = 0.6, RainSize = 3, RainTransparency = 0.4,
- RainHeight = 32, RainArea = 52, RoofProbeHeight = 40,
+ RainRate = 1400, RainSpeed = 75, RainLifetime = 0.6, RainSize = 3, RainTransparency = 0.4,
+ RainHeight = 32, RainArea = 140, RoofProbeHeight = 40, RoofProbeSteps = 4, RoofMinSize = 8, RoofMaxTransparency = 0.9, -- RainArea: studs covered around the camera
  RainTexture = "rbxassetid://3806148993",
  Presets = {
   Sunny = {Sky = "Sunny sky", Brightness = 2.4, Ambient = Color3.fromRGB(115,125,135), OutdoorAmbient = Color3.fromRGB(145,150,145), Density = 0.23, Haze = 1, Color = Color3.fromRGB(205,225,245)},
@@ -294,51 +340,84 @@ Config.PlotSlots = {
 }
 Config.MonsterGuards = {
  EffectsDistance = 80, ParticleRate = 2,
+ AnimationDistance = 800, -- guards animate whenever a client can see them: the streaming target radius (Workspace.StreamingTargetRadius)
  LightBrightness = 1, LightRange = 6,
  BodyGlowDesigns = { Noob=true, BigGuy=true }, BodyGlowTransparency = 0.88,
  BodyGlowColor = Color3.fromRGB(255,235,170),
- -- Stages 4, 8 and 11 temporarily use animated designs; their original bone-driven designs (no usable animation yet)
- -- are kept in OriginalStages: put them back into Stages once walk animations are authored and added to AnimationSets.
+ -- Each stage lists its guards (guard i uses entry (i-1) mod #list + 1): Design = template in ServerStorage.MonsterTemplates, Height in
+-- studs (one uniform scale, so proportions never stretch), Pack = key of Packs, optional Tint multiplies the colours. A design without a
+-- Pack is bone-driven (client clips). Stages 4, 8 and 11 use animated designs; their original bone-driven ones are kept in OriginalStages:
+-- copy them into Stages once they have a pack.
  Stages = {
-  { "Noob" }, { "Monster" }, { "Teddy" }, { "Backrooms" }, { "RiggedNew" },
-  { "RiggedNew" }, { "Backrooms" }, { "Teddy" }, { "Backrooms" }, { "Teddy" },
-  { "LongArm" }, { "LongArm", "Soul" },
+  { { Design = "Noob",      Height = 7,    Pack = "DefaultR6" } },
+  { { Design = "Monster",   Height = 8,    Pack = "DefaultR6" } },
+  { { Design = "Teddy",     Height = 9,    Pack = "TeddyZombie" } },
+  { { Design = "Backrooms", Height = 10,   Pack = "ZombieR15" } },
+  { { Design = "RiggedNew", Height = 10.5, Pack = "ZombieR15" } },
+  { { Design = "RiggedNew", Height = 11.5, Pack = "ZombieR15" } },
+  { { Design = "Backrooms", Height = 12.5, Pack = "ZombieR15" } },
+  { { Design = "Teddy",     Height = 13,   Pack = "TeddyZombie" } },
+  { { Design = "Backrooms", Height = 14,   Pack = "WerewolfR15" } },
+  { { Design = "Teddy",     Height = 14.5, Pack = "TeddyZombie" } },
+  { { Design = "LongArm",   Height = 15.5, Pack = "LongArmZombie" } },
+  { { Design = "LongArm",   Height = 19,   Pack = "LongArmZombie" }, { Design = "RiggedNew", Height = 20, Pack = "WerewolfR15", Tint = Color3.fromRGB(135, 115, 155) } },
  },
- OriginalStages = { [4] = { "Realistic" }, [8] = { "Paranormica" }, [11] = { "White" } },
- -- Bone-driven designs keep the client-side bone clips. Rigs with standard R6/R15 joint names use a real Animator with Roblox-made animations.
+ OriginalStages = { [4] = { { Design = "Realistic", Height = 10 } }, [8] = { { Design = "Paranormica", Height = 13 } }, [11] = { { Design = "White", Height = 15.5 } } },
+ -- Bone-driven designs keep the client-side bone clips.
  Animations = { White="WhiteRun", Jessie="JessieRun" },
- AnimationSets = { R6={Idle="rbxassetid://180435571",Walk="rbxassetid://180426354"}, R15={Idle="rbxassetid://507766388",Walk="rbxassetid://507777826"} },
- AnimationDesigns = { Noob="R6", Monster="R6", Teddy="R6", LongArm="R6", RiggedNew="R15", Backrooms="R15" },
- -- Walk playback speed = ground speed / (AnimWalkRefSpeed * height / AnimRefHeight): a 5-stud R6/R15 rig walks 16 studs/s at
- -- speed 1, and stride length grows with height, so big guards take slow heavy strides; AnimSpeedMin keeps them from looking like slow motion (chasing scales it up by chase speed / patrol speed).
- AnimWalkRefSpeed = 16, AnimRefHeight = 5, AnimSpeedMin = 0.35, AnimFadeSeconds = 0.2,
+ -- Animation packs. ZombieR15 and WerewolfR15 are Roblox-made; the others were generated with Studio's animation generator ("zombie-style"
+-- walk/run/idle and a 2 s lunge, saved to the owner's account) and drive an R6-style rig through its Retarget. Idle/Walk/Run loop, IdleLook plays
+-- once now and then while idle, Attack plays once when the guard hits. Stride = studs per second the feet cover per stud of guard height at
+-- playback speed 1 (Roblox packs use their 16 studs/s for a 5-stud avatar; generated clips come from their leg swing: leg length x
+-- sin(half the swing range) x cycles / length). Playback = ground speed / (Stride * height), capped by AnimSpeedMax; a patrol whose Walk
+-- would need more than the cap plays the Run clip instead.
+ Packs = {
+  ZombieR15 = { Idle="rbxassetid://616158929", IdleLook="rbxassetid://616160636", Walk="rbxassetid://616168032", Run="rbxassetid://616163682", Attack="rbxassetid://522635514", Stride={Walk=3.2,Run=3.2} },
+  WerewolfR15 = { Idle="rbxassetid://1083195517", IdleLook="rbxassetid://1083214717", Walk="rbxassetid://1083178339", Run="rbxassetid://1083216690", Attack="rbxassetid://522635514", Stride={Walk=3.2,Run=3.2} },
+  TeddyZombie = { Retarget="Forearm", Idle="rbxassetid://120512474902742", Walk="rbxassetid://128874772131770", Run="rbxassetid://75198745894759", Attack="rbxassetid://100225665383596", Stride={Walk=1.16,Run=2.55} },
+  LongArmZombie = { Retarget="Forearm", Idle="rbxassetid://107136854838348", Walk="rbxassetid://78505627347284", Run="rbxassetid://129748293211846", Attack="rbxassetid://98443400452270", Stride={Walk=0.65,Run=2.11} },
+  DefaultR6 = { Idle="rbxassetid://180435571", Walk="rbxassetid://180426354", Run="rbxassetid://180426354", Attack="rbxassetid://129967390", Stride={Walk=3.2,Run=3.2} }, -- Roblox default R6 (the walk doubles as the run); Noob and Monster: generated zombie clips tumbled their rigs
+ },
+ -- Rigs with forearm chains lack the R15 part names and hierarchy: Parts renames them, Parents moves a joint under another part (stand-ins from R15Chain).
+ Retargets = {
+  Forearm = { -- Teddy, LongArm: torso, forearm > arm > hand chains
+   Parts = { Torso="LowerTorso", ["Right Forearm"]="RightUpperArm", ["Right Arm"]="RightLowerArm", ["Right Hand"]="RightHand", ["Left Forearm"]="LeftUpperArm", ["Left Arm"]="LeftLowerArm", ["Left Hand"]="LeftHand", ["Right Leg"]="RightUpperLeg", ["Left Leg"]="LeftUpperLeg" },
+   Parents = { Head="Chest", RightUpperArm="RightClavicle", LeftUpperArm="LeftClavicle" },
+  },
+ },
+ RestPoses = { Backrooms = { RightUpperArm = Vector3.new(0, 0, -90), LeftUpperArm = Vector3.new(0, 0, 90) } }, -- imported T-posed arms rest at the clip's arms-down pose
+ R15Chain = { -- {stand-in part, its parent}: the R15+ joints a retargeted design lacks
+  { "UpperTorso", "LowerTorso" }, { "Spine", "UpperTorso" }, { "Chest", "Spine" }, { "RightClavicle", "Chest" }, { "LeftClavicle", "Chest" },
+  { "RightLowerLeg", "RightUpperLeg" }, { "RightFoot", "RightLowerLeg" }, { "RightToeBase", "RightFoot" },
+  { "LeftLowerLeg", "LeftUpperLeg" }, { "LeftFoot", "LeftLowerLeg" }, { "LeftToeBase", "LeftFoot" },
+ },
+ AnimSpeedMax = 2.5, AnimFadeSeconds = 0.2, AttackSeconds = 0.8, IdleLookChance = 0.35,
  BoneAliases = {
  Realistic = {["upper_arm.L"]="Left Arm",["upper_arm.R"]="Right Arm",["thigh.L"]="Left Leg",["thigh.R"]="Right Leg",["spine.002"]="Torso"},
  },
- Heights = { Realistic=10,RiggedNew=11,Gaben=12,Backrooms=13,Paranormica=14,Jessie=15,White=16,LongArm=17,Soul=18,Fantasy=16, Noob=6, Monster=7, Teddy=9 },
 }
 -- Training points are distinct from studs/second. All 15 levels share one owned pad.
 Config.Treadmills = {
- BaseGain=2, TickSeconds=1, RequestCooldown=.5,
- RunAnimationR15="rbxassetid://507767714",RunAnimationR6="rbxassetid://180426354", MovementBase=16, PointsPerScale=100, MovementPerLog=12, MaxWalkSpeed=120,
+ BaseGain=5, TickSeconds=1, RequestCooldown=.5,
+ RunAnimationR15="rbxassetid://507767714",RunAnimationR6="rbxassetid://180426354", MovementBase=16, PointsPerScale=60, MovementExponent=0.257, MaxWalkSpeed=200,
  TemplateSize=Vector3.new(9,7,13), PlotOffset=24.5, EntrySideOffset=10, SensorSeconds=.1, BeltWidth=6, BeltLength=8, BeltCenter=2, BeltHeight=.8, EntryRun=4, GroundY=1.1,
  ParticleRate=2, EffectsDistance=65, LabelDistance=12, MaxLights=1,
  Catalog={
   {Id="Base",Name="Starter",Multiplier=1.5,Cost=0,Template="TreadmillBasic"},
-  {Id="Circuit",Name="Circuit",Multiplier=2,Cost=120,Template="x1 Treadmill"},
-  {Id="Alloy",Name="Alloy",Multiplier=4,Cost=230,Template="TreadmillPlaytime"},
-  {Id="Flame",Name="Flame",Multiplier=6,Cost=450,Template="x3 Treadmill"},
-  {Id="Diamond",Name="Diamond",Multiplier=9,Cost=890,Template="TreadmillDiamond"},
-  {Id="Frost",Name="Frost",Multiplier=12,Cost=1700,Template="x15 Treadmill"},
-  {Id="Nova",Name="Nova",Multiplier=15,Cost=3400,Template="x50 Treadmill"},
-  {Id="Solar",Name="Solar",Multiplier=20,Cost=6700,Template="x100 Treadmill"},
-  {Id="Galaxy",Name="Galaxy",Multiplier=25,Cost=13000,Template="TreadmillGalaxy"},
-  {Id="Aurora",Name="Aurora",Multiplier=35,Cost=26000,Template="x15 Treadmill"},
-  {Id="Obsidian",Name="Obsidian",Multiplier=50,Cost=51000,Template="x50 Treadmill"},
-  {Id="Titan",Name="Titan",Multiplier=75,Cost=99000,Template="x100 Treadmill"},
-  {Id="Void",Name="Void",Multiplier=100,Cost=195000,Template="TreadmillVoid"},
-  {Id="Infinity",Name="Infinity",Multiplier=250,Cost=380000,Template="TreadmillVoid"},
-  {Id="ShadowScott",Name="Shadow Scott",Multiplier=500,Cost=750000,Template="Shadow Scott"},
+  {Id="Circuit",Name="Circuit",Multiplier=2,Cost=24,Template="x1 Treadmill"},
+  {Id="Alloy",Name="Alloy",Multiplier=4,Cost=56,Template="TreadmillPlaytime"},
+  {Id="Flame",Name="Flame",Multiplier=6,Cost=133,Template="x3 Treadmill"},
+  {Id="Diamond",Name="Diamond",Multiplier=9,Cost=313,Template="TreadmillDiamond"},
+  {Id="Frost",Name="Frost",Multiplier=12,Cost=737,Template="x15 Treadmill"},
+  {Id="Nova",Name="Nova",Multiplier=15,Cost=1740,Template="x50 Treadmill"},
+  {Id="Solar",Name="Solar",Multiplier=20,Cost=4090,Template="x100 Treadmill"},
+  {Id="Galaxy",Name="Galaxy",Multiplier=25,Cost=9630,Template="TreadmillGalaxy"},
+  {Id="Aurora",Name="Aurora",Multiplier=35,Cost=22700,Template="x15 Treadmill"},
+  {Id="Obsidian",Name="Obsidian",Multiplier=50,Cost=53400,Template="x50 Treadmill"},
+  {Id="Titan",Name="Titan",Multiplier=75,Cost=126000,Template="x100 Treadmill"},
+  {Id="Void",Name="Void",Multiplier=100,Cost=296000,Template="TreadmillVoid"},
+  {Id="Infinity",Name="Infinity",Multiplier=250,Cost=697000,Template="TreadmillVoid"},
+  {Id="ShadowScott",Name="Shadow Scott",Multiplier=500,Cost=1640000,Template="Shadow Scott"},
   {Id="Celestial",Name="Celestial",Multiplier=1500,GamePassId=0,Template="TreadmillCelestial"}, -- GamePassId: paste the owner-created pass ID here; the price shown is the live Roblox price
  },
 }
@@ -370,7 +449,7 @@ Config.Announce={Tiers={Mythic=true,GOAT=true},Variants={Diamond=true},Giant=tru
  GlobalGapSeconds=3,MaxPerMinute=6,PlayerGapSeconds=10}
 
 -- The world outside the stages (see Server/WorldBuilder.luau, an edit-time tool). Positions are (X, Z) on the ground.
--- Jungle: Density is trees per square stud inside Bands, capped by PartBudget (BaseParts of all trees together).
+-- Jungle: Density is trees per square stud inside Bands, capped by PartBudget (BaseParts of all trees together, trunk colliders included).
 Config.World = {
  GroundY = 0, Seed = 20261106, ClearMargin = 24, PathClear = 12,
  Jungle = {
@@ -378,6 +457,8 @@ Config.World = {
   ZMin = -1000, ZMax = 5600,
   Bands = { { XMin = -600, XMax = -110 }, { XMin = 170, XMax = 700 } }, -- either side of the stage corridor (X -68..124)
   Types = { "Decid Tree 4", "Tree3" },
+  -- Trunk collider per type: Diameter as a fraction of the Trunk part's X size, Offset (X, Z) of its centre as fractions of the part's size.
+  Trunk = { Height = 10, ["Decid Tree 4"] = { Diameter = 0.19, Offset = Vector2.new(0.066, 0.096) }, Tree3 = { Diameter = 0.95, Offset = Vector2.zero } },
  },
  Lakes = {
   { Source = "ForestLake", Position = Vector2.new(-520, 1000), Yaw = 0, Scale = 2.2 },
@@ -431,7 +512,5 @@ end
 function Config.GetGoldenTier(stage: number): string
 	return Config.GetTierAbove(stage, Config.GoldenMaxTier)
 end
-
-
 
 return Config

@@ -75,7 +75,6 @@ function CardService.Carry(player: Player, card: Part): boolean
  if carried[player] or not head or not humanoid or humanoid.Health <= 0 then return false end
 
 	carried[player] = card
- player:SetAttribute("DropDisengaged",false)
  card:SetAttribute("PickupOwnerUserId",nil)
  safePending[player]=false
 	local root = getRoot(player)
@@ -185,6 +184,7 @@ function CardService.DropFromCube(tier: string,position: Vector3,breaker: Player
  task.wait(Config.Reveal.SwellSeconds)
  local card=createCard(entry,tier,position,variant,giant,eggSize)
  card:SetAttribute("EarnedFromEgg",true)
+ card:SetAttribute("SourceStage",egg:GetAttribute("Stage")) -- guards only chase a carrier of a character taken from their own stage
  card:SetAttribute("RemainingLifetime",Config.CubeDropLifetime)
  if breaker then
   card:SetAttribute("BreakerUserId",breaker.UserId)
@@ -243,7 +243,6 @@ function CardService.DropCarried(player: Player,char: Model?)
  local position=root and root.Position or lastPos[player] or Config.FallbackDropPosition
  local card=CardService.Release(player)
  if not card then return end
- player:SetAttribute("DropDisengaged",true)
  local stolen=card:GetAttribute("OriginalOwnerUserId")~=nil
  if returnStolen(card) then return end
  if card:GetAttribute("Escaped") and not stolen then secureAtHome(player,card) return end
@@ -278,7 +277,7 @@ local function manualDrop(player)
  point=Vector3.new(math.clamp(point.X,-zone.Size.X/2+3,zone.Size.X/2-3),point.Y,math.clamp(point.Z,-zone.Size.Z/2+3,zone.Size.Z/2-3))
  lastPos[player]=zone.CFrame*point
  local position=lastPos[player] or root.Position
- local released=CardService.Release(player) player:SetAttribute("DropDisengaged",true)
+ local released=CardService.Release(player)
  if released then dropOnGround(released,position,Config.DroppedCardLifetime) end
 end
 

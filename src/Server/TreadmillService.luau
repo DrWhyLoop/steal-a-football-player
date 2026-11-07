@@ -14,7 +14,7 @@ local byId={}
 for i,tier in cfg.Catalog do byId[tier.Id]={tier=tier,index=i} end
 local function status(player,text) Remotes.TreadmillStatus:FireClient(player,text) end
 local function speed(player)
- return math.min(cfg.MaxWalkSpeed,cfg.MovementBase+cfg.MovementPerLog*math.log10(1+Stats.Get(player,"Speed")/cfg.PointsPerScale))
+ return math.min(cfg.MaxWalkSpeed,cfg.MovementBase*(1+Stats.Get(player,"Speed")/cfg.PointsPerScale)^cfg.MovementExponent)
 end
 function Service.UpdateSpeed(player)
  local char=player.Character local h=char and char:FindFirstChildOfClass("Humanoid")

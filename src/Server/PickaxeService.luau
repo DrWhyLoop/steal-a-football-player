@@ -1,6 +1,6 @@
 --[[
 	PickaxeService: server-side mining and fighting.
-	The Pickaxe Tool is given by PickaxeShop (the equipped pickaxe). When a player activates it
+	The mining Tool is given by ToolShop (the equipped tool); the free Mesh Bat uses the same swing rules on players. When a player activates it
 	(mouse click, phone tap, gamepad - Tool.Activated replicates to the server) we:
 	  1. enforce a per-player cooldown,
 	  2. find the nearest target in range and in front: a cube, or another player carrying a card,
@@ -15,7 +15,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local LineOfSight = require(script.Parent.LineOfSight)
-local PickaxeShop = require(script.Parent.PickaxeShop)
+local ToolShop = require(script.Parent.ToolShop)
+local Remotes = require(ReplicatedStorage.Shared.Remotes)
 
 local PickaxeService = {}
 
@@ -36,12 +37,12 @@ local function reachDistance(root: BasePart, position: Vector3): number?
 	return nil
 end
 
---- Nearest cube or card-carrying player. Returns (cube, victim); at most one is set.
-local function findTarget(player: Player, root: BasePart): (Part?, Player?)
+--- Nearest cube (unless `playersOnly`) or card-carrying player. Returns (cube, victim); at most one is set.
+local function findTarget(player: Player, root: BasePart, playersOnly: boolean?): (Part?, Player?)
 	local bestDistance = math.huge
 	local cube, victim
 	for _, inst in ipairs(CollectionService:GetTagged("Cube")) do
-		if inst.Parent and not inst:GetAttribute("Dead") then
+		if not playersOnly and inst.Parent and not inst:GetAttribute("Dead") then
 			local distance = reachDistance(root, (inst :: Part).Position)
 			if distance and distance < bestDistance and LineOfSight.IsClear(root.Parent, inst, inst.Position) then
 				bestDistance, cube, victim = distance, inst :: Part, nil
@@ -60,6 +61,7 @@ local function findTarget(player: Player, root: BasePart): (Part?, Player?)
 end
 
 local function onSwing(player: Player, tool: Tool)
+	local bat = tool.Name == Config.Bat.Name
 	local now = os.clock()
 	if lastSwing[player] and now - lastSwing[player] < Config.SwingCooldown then return end
 
@@ -71,12 +73,20 @@ local function onSwing(player: Player, tool: Tool)
 	lastSwing[player] = now
 
 	tool:SetAttribute('SwingStart',workspace:GetServerTimeNow())
+	if bat then -- the default Animate script plays Roblox's own slash animation for this value
+		local slash = Instance.new("StringValue") slash.Name = "toolanim" slash.Value = "Slash" slash.Parent = tool
+	end
 	task.delay(Config.Axes.ImpactTime,function()
 		if not char.Parent or tool.Parent~=char or humanoid.Health<=0 or not root.Parent then return end
-		local cube,victim=findTarget(player,root)
-		if cube then CubeService.Damage(cube,PickaxeShop.Power(player),player)
+		local cube,victim=findTarget(player,root,bat)
+		if cube then CubeService.Damage(cube,ToolShop.Power(player),player)
 		elseif victim then
+   local victimRoot=victim.Character and victim.Character:FindFirstChild("HumanoidRootPart")
    if victim.Character then victim.Character:SetAttribute("HurtStart",workspace:GetServerTimeNow()) end
+   if bat and victimRoot then
+    local away=(victimRoot.Position-root.Position)*Vector3.new(1,0,1)
+    Remotes.Knockback:FireClient(victim,away.Unit*Config.Bat.KnockbackSpeed+Vector3.new(0,Config.Bat.KnockbackUp,0))
+   end
    CardService.DropCarried(victim) end
 		local handle=tool:FindFirstChild('Handle')
 		local sound=handle and handle:FindFirstChild((cube or victim) and 'HitSound' or 'MissSound')
@@ -85,7 +95,7 @@ local function onSwing(player: Player, tool: Tool)
 end
 
 local function hookTool(player: Player, tool: Instance)
-	if not tool:IsA("Tool") or tool.Name ~= Config.PickaxeName or tool:GetAttribute("Hooked") then return end
+	if not tool:IsA("Tool") or (tool.Name ~= Config.PickaxeName and tool.Name ~= Config.Bat.Name) or tool:GetAttribute("Hooked") then return end
 	tool:SetAttribute("Hooked", true)
 	for name, soundId in pairs(Config.PickaxeSounds) do
 		local sound = Instance.new("Sound")

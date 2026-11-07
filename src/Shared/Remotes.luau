@@ -13,8 +13,8 @@ local NAMES = {
  "DropPlayer",
  "TreadmillRequest",
  "TreadmillStatus",
- "PickaxeRequest", -- client -> server: ("Buy"|"Equip", pickaxe id)
- "PickaxeStatus",  -- server -> client: message text
+ "ToolRequest", -- client -> server: ("Buy"|"Equip"|"Premium", tool id) or ("Arm", "Right"|"Left"|"Both")
+ "ToolStatus",  -- server -> client: message text
  "FeedbackRequest",
  "FeedbackStatus",
  "EggReveal", -- cosmetic only; reward is selected on the server

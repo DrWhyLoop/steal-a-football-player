@@ -99,6 +99,26 @@ local function buildPaths(root: Instance)
 	end
 end
 
+-- Trees only block at their trunk: every mesh part is non-colliding and one invisible cylinder (a clone of one template) stands at the
+-- trunk, sized and offset from the Trunk part by the fractions in Config.World.Jungle.Trunk.
+local trunkTemplate = Instance.new("Part")
+trunkTemplate.Name, trunkTemplate.Shape, trunkTemplate.Transparency = "TrunkCollider", Enum.PartType.Cylinder, 1
+trunkTemplate.Anchored, trunkTemplate.CanCollide, trunkTemplate.CanTouch, trunkTemplate.CanQuery, trunkTemplate.CastShadow = true, true, false, false, false
+
+local function makeTrunkCollider(tree: Model, kind: string)
+	local T = W.Jungle.Trunk
+	local def, trunk = T[kind], tree:FindFirstChild("Trunk")
+	for _, d in tree:GetDescendants() do
+		if d:IsA("BasePart") then d.CanCollide, d.CanTouch, d.CanQuery = false, false, false end
+	end
+	local diameter = def.Diameter * trunk.Size.X
+	local centre = trunk.CFrame:PointToWorldSpace(Vector3.new(def.Offset.X * trunk.Size.X, 0, def.Offset.Y * trunk.Size.Z))
+	local collider = trunkTemplate:Clone()
+	collider.Size = Vector3.new(T.Height, diameter, diameter)
+	collider.CFrame = CFrame.new(centre.X, trunk.Position.Y - trunk.Size.Y / 2 + T.Height / 2, centre.Z) * CFrame.Angles(0, 0, math.pi / 2)
+	collider.Parent = tree
+end
+
 local function buildJungle(root: Instance)
 	local folder = Instance.new("Folder") folder.Name = "Jungle" folder.Parent = root
 	local J = W.Jungle
@@ -106,7 +126,7 @@ local function buildJungle(root: Instance)
 	for _, name in J.Types do
 		local parts = 0
 		for _, d in sources[name]:GetDescendants() do if d:IsA("BasePart") then parts += 1 end end
-		table.insert(types, {Source = sources[name], Parts = parts})
+		table.insert(types, {Name = name, Source = sources[name], Parts = parts + 1}) -- +1: the trunk collider
 	end
 	local candidates, area = {}, 0
 	for _, band in J.Bands do
@@ -124,7 +144,7 @@ local function buildJungle(root: Instance)
 		local kind = types[rng:NextInteger(1, #types)]
 		if parts + kind.Parts > J.PartBudget then break end
 		if not blocked(p.X, p.Y, W.ClearMargin) then
-			place(kind.Source, p.X, p.Y, rng:NextNumber(0, math.pi * 2), folder, rng:NextNumber(J.Scale[1], J.Scale[2]))
+			makeTrunkCollider(place(kind.Source, p.X, p.Y, rng:NextNumber(0, math.pi * 2), folder, rng:NextNumber(J.Scale[1], J.Scale[2])), kind.Name)
 			parts += kind.Parts count += 1
 			if count % 200 == 0 then task.wait() end -- keep Studio responsive while building
 		end
