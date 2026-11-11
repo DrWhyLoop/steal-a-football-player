@@ -184,6 +184,8 @@ local function updateGuard(guard, targets, now: number)
 			if not nearest or distance < nearestDistance then nearest, nearestDistance = target, distance end
 		end
 	end
+	if nearest and not guard.chasing and nearestDistance > Config.GuardDetectRadius then nearest = nil end -- not noticed yet
+	guard.chasing = nearest ~= nil
 
 	local destination, speed, running
 	if nearest then

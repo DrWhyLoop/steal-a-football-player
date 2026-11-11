@@ -279,7 +279,7 @@ Config.LockExpelInset = 10            -- trespassers are moved this far inside t
 
 -- Guards (per stage, index = stage number) -------------------------------
 Config.GuardCountPerStage = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
-Config.GuardChaseSpeed    = { 12.8, 20.8, 33.6, 46.4, 60.8, 74.4, 87.2, 94.3, 112, 128.2, 144, 144 } -- 80% of the stage's recommended speed; Stages 8-12 trimmed (at most 10%) where the run clip cannot keep up at AnimSpeedMax
+Config.GuardChaseSpeed    = { 12.8, 20.8, 33.6, 46.4, 60.8, 74.4, 87.2, 94.3, 112, 128.2, 144, 122.4 } -- 80% of the stage's recommended speed; Stages 8-12 trimmed (at most 10%) where the run clip cannot keep up at AnimSpeedMax; Stage 12 x0.85 so a carrier can get out (tools/economy/escape.py)
 Config.GuardPatrolSpeedFactor = 0.7   -- patrol speed = chase speed * factor
 Config.GuardSize = Vector3.new(3, 6, 2)
 Config.GuardHeadSize = 2
@@ -287,6 +287,7 @@ Config.GuardColor = Color3.fromRGB(200, 40, 40)
 Config.GuardMinimumHeight = 12
 Config.GuardVisualScale = 1.65
 Config.GuardPickupChaseMultiplier = 1.15
+Config.GuardDetectRadius = 150         -- a guard starts chasing a carrier inside its stage only once the carrier is this close (flat studs); it then chases to the stage edge
 Config.SecuredCarry = { GripSettleSeconds = 0.35, Grip = CFrame.new(0, -0.15, -1.5), VisualOffset = Vector3.new(0, .7, -1) }
 Config.GuardHit = { PerHeight = 0.3, Margin = 1.5, PlayerHalfHeight = 3 } -- touch = the player's body within PerHeight x the guard's pre-scale height (+ Margin) of its axis, measured flat along the path it just walked
 Config.GuardHitCooldownSeconds = 1.5  -- per-player immunity after a hit
