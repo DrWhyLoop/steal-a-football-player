@@ -25,7 +25,9 @@ require(script.Parent.IndexUI).Init()
 
 require(script.Parent.TreadmillUI).Init()
 require(script.Parent.ToolUI).Init()
+require(script.Parent.TrailUI).Init()
 task.spawn(require(script.Parent.AutoSwing).Init)
 task.spawn(require(script.Parent.StageBanner).Init)
 
 require(script.Parent.PlayerLabels).Init()
+require(script.Parent.FootballLobbyUI).Init()

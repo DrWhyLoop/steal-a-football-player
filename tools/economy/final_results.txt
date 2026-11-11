@@ -1,0 +1,24 @@
+Stage 12 3h41m cap 2h58m S11 2h58m
+PICKAXES (power, price, bought at mean [min-max reached by]):
+   1 power         1 $    0  0h01m  (12/12 seeds within 12 h)
+   2 power         3 $  260  0h03m  (12/12 seeds within 12 h)
+   3 power         7 $  700  0h06m  (12/12 seeds within 12 h)
+   4 power        18 $ 2.1K  0h12m  (12/12 seeds within 12 h)
+   5 power        47 $ 6.6K  0h17m  (12/12 seeds within 12 h)
+   6 power       120 $  20K  0h24m  (12/12 seeds within 12 h)
+   7 power       330 $  66K  0h35m  (12/12 seeds within 12 h)
+   8 power       850 $ 200K  0h43m  (12/12 seeds within 12 h)
+   9 power      2200 $ 620K  0h53m  (12/12 seeds within 12 h)
+  10 power      5900 $   2M  1h03m  (12/12 seeds within 12 h)
+  11 power     15000 $   6M  1h19m  (12/12 seeds within 12 h)
+  12 power     40000 $  19M  1h41m  (12/12 seeds within 12 h)
+  13 power    110000 $  63M  2h02m  (12/12 seeds within 12 h)
+  14 power    280000 $ 190M  2h33m  (12/12 seeds within 12 h)
+  15 power    730000 $ 580M  2h59m  (12/12 seeds within 12 h)
+  16 power   1900000 $ 1.8B  3h41m  (12/12 seeds within 12 h)
+  17 power   5000000 $ 5.6B  4h18m  (12/12 seeds within 12 h)
+  18 power  13000000 $  17B  5h23m  (12/12 seeds within 12 h)
+  19 power  34000000 $  54B  6h57m  (12/12 seeds within 12 h)
+  20 power  90000000 $ 170B  9h43m  (12/12 seeds within 12 h)
+SPEED CURVE: [(0, 16), (330, 26), (2560, 42), (4212, 58), (72153, 76), (251866, 93), (1632903, 109), (68517539, 131), (827588229, 149), (6071109646, 178), (31944619545, 200)] | Stage 12 arrival points 50421266204
+SIGN POINTS per stage (recommended = curve points at that stage's speed; Stage 12 = mean arrival points): [0, 330, 2560, 4212, 72153, 251866, 1632903, 68517539, 827588229, 6071109646, 31944619545, 50421266204]

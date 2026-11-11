@@ -55,10 +55,26 @@ local function frame(binding,item,clip,time,scale)
     local axis=item.basis:Inverse()*base.Rotation
     return axis*pose*axis:Inverse()
 end
-function Rig.PoseBones(binding,clipName,time,moving,scale)
+local upperArms={LeftArm=true,RightArm=true,LeftUpperArm=true,RightUpperArm=true}
+local function carryArm(item)
+ if not upperArms[item.name] then return CFrame.identity end
+ local child=item.bone:FindFirstChildWhichIsA("Bone")
+ if not child or child.Position.Magnitude<1e-4 then return CFrame.identity end
+ local direction=item.basis:VectorToWorldSpace(child.Position.Unit)
+ local down=-Vector3.yAxis
+ local axis=direction:Cross(down)
+ if axis.Magnitude<1e-4 then return CFrame.identity end
+ local rotation=CFrame.fromAxisAngle(axis.Unit,math.acos(math.clamp(direction:Dot(down),-1,1)))
+ return item.basis:Inverse()*rotation*item.basis
+end
+
+function Rig.PoseBones(binding,clipName,time,moving,scale,carrying)
     local clip=Clips[clipName] or Clips.RunR6
     local t=time%clip.Duration
-    for _,item in binding.bones do item.bone.Transform=moving and frame(binding,item,clip,t,scale or 1) or CFrame.identity end
+    for _,item in binding.bones do
+        if carrying and not item.carry then item.carry=carryArm(item) end
+        item.bone.Transform=carrying and item.carry or moving and frame(binding,item,clip,t,scale or 1) or CFrame.identity
+    end
 end
 function Rig.PoseAvatar(binding,runTime,running,swingTime)
     local run=Clips.RunR6 local strike=Clips.AxeStrikeR6 local a=Config.Axes

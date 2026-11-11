@@ -21,4 +21,6 @@ function Format.Exact(value)
  local result=s:reverse():gsub("(%d%d%d)","%1,"):reverse():gsub("^,","")
  return result
 end
+-- Sign and banner text for a stage's recommended Speed Points.
+function Format.Recommended(points) return points>0 and "Recommended: "..Format.Compact(points).." Speed" or "Recommended: Any Speed" end
 return Format

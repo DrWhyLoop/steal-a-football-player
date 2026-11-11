@@ -10,16 +10,22 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local NAMES = {
+ "EyeLook",
+ "FootballRequest",
+ "FootballLobby",
  "DropPlayer",
  "TreadmillRequest",
  "TreadmillStatus",
  "ToolRequest", -- client -> server: ("Buy"|"Equip"|"Premium", tool id) or ("Arm", "Right"|"Left"|"Both")
+ "TrailRequest",
+ "TrailStatus",
  "ToolStatus",  -- server -> client: message text
  "FeedbackRequest",
  "FeedbackStatus",
- "EggReveal", -- cosmetic only; reward is selected on the server
+ "EggReveal", -- server -> nearby clients: (position, tier, luck, lucky, variant, giant, radius); cosmetic only, the reward is selected on the server
  "SafeReturn",
  "UpgradeResult", -- server -> clicking client: (reason key, see Config.PlotSlots.Messages)
+ "CollectResult", -- server -> collecting client: (slot, amount) for the press effect and the floating +$X
  "IndexRequest",  -- client -> server: ask for the index and daily-reward state (rate limited)
  "IndexSync",     -- server -> client: (index {id=bitmask}, claimed {tier=true}); full on request/join, deltas afterwards
  "DailyClaim",    -- client -> server: claim today's reward (validated by day on the server)

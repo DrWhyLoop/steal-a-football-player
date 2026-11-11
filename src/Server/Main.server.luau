@@ -34,7 +34,12 @@ require(script.Parent.Purchases).Init()
 require(script.Parent.IndexService).Init()
 require(script.Parent.DailyReward).Init()
 require(script.Parent.TreadmillService).Init(PlotService,CardService)
-require(script.Parent.ToolShop).Init()
+require(script.Parent.ToolShop).Init(CardService)
+require(script.Parent.TrailShop).Init()
 require(script.Parent.FeedbackService).Init()
+require(script.Parent.Leaderboards).Init()
 
 require(script.Parent.TorchMount).Apply()
+
+require(script.Parent.FootballBall).Init()
+require(script.Parent.FootballLobby).Init(PlotService, SlotService)

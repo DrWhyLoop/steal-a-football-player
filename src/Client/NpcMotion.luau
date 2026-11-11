@@ -10,18 +10,24 @@ local Motion = {}
 local function flat(v: Vector3): Vector3 return Vector3.new(v.X, 0, v.Z) end
 
 local function newNpc(model: Model)
-	local route = N.Routes[model.Name]
-	local animator = model:FindFirstChildWhichIsA("AnimationController"):FindFirstChildWhichIsA("Animator")
+	local spectatorSource = model:GetAttribute("SpectatorSource")
+	local route = N.Routes[spectatorSource or model.Name]
+	local controller = model:FindFirstChildWhichIsA("AnimationController")
+	local animator = controller and controller:FindFirstChildWhichIsA("Animator")
+	if not route or not animator then return nil end
 	local tracks = {}
 	for name, id in N.Animations[route.Rig] do
+		if spectatorSource and name ~= "Idle" then continue end
 		local animation = Instance.new("Animation") animation.AnimationId = "rbxassetid://" .. id
 		tracks[name] = animator:LoadAnimation(animation)
 		tracks[name].Priority = N.Priority[name]
+		animation:Destroy()
 	end
 	local home = model:GetAttribute("Home")
 	local points = {}
 	for _, offset in route.Points do table.insert(points, home + offset) end
-	return { model = model, tracks = tracks, points = points, target = 2, position = home, look = model:GetPivot().LookVector,
+	if spectatorSource then tracks.Idle.Looped = true end
+	return { spectator = spectatorSource ~= nil, model = model, tracks = tracks, points = points, target = 2, position = home, look = model:GetPivot().LookVector,
 		state = "", stateEnd = 0, lastWave = -N.WaveCooldown }
 end
 
@@ -44,8 +50,8 @@ function Motion.Init()
 			local root = character and character:FindFirstChild("HumanoidRootPart")
 			for model, npc in npcs do
 				if not model.Parent or not root or (flat(npc.position) - flat(root.Position)).Magnitude > N.ActiveDistance * 1.2 then
-					for _, track in npc.tracks do track:Stop(0) end
-					if model.Parent then model:PivotTo(CFrame.lookAt(model:GetAttribute("Home"), model:GetAttribute("Home") + npc.look)) end
+					for _, track in npc.tracks do track:Stop(0) track:Destroy() end
+					if model.Parent and not npc.spectator then model:PivotTo(CFrame.lookAt(model:GetAttribute("Home"), model:GetAttribute("Home") + npc.look)) end
 					npcs[model] = nil
 				end
 			end
@@ -54,7 +60,7 @@ function Motion.Init()
 					local home = model:GetAttribute("Home")
 					if not npcs[model] and home and (flat(home) - flat(root.Position)).Magnitude <= N.ActiveDistance then
 						npcs[model] = newNpc(model)
-						setState(npcs[model], "Idle", os.clock())
+						if npcs[model] then setState(npcs[model], "Idle", os.clock()) end
 					end
 				end
 			end
@@ -65,6 +71,7 @@ function Motion.Init()
 		local root = character and character:FindFirstChild("HumanoidRootPart")
 		local now = os.clock()
 		for _, npc in npcs do
+			if npc.spectator then continue end
 			local toPlayer = root and flat(root.Position - npc.position)
 			local wantLook = nil
 			if npc.state ~= "Wave" and toPlayer and toPlayer.Magnitude <= N.WaveDistance and now - npc.lastWave >= N.WaveCooldown then

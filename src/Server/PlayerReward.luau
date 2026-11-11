@@ -23,12 +23,25 @@ function Reward.Roll(lucky,oddsMultiplier)
  local variant=(roll<odds.Diamond*m and "Diamond") or (roll<(odds.Diamond+odds.Gold)*m and "Gold") or nil
  return variant,rng:NextNumber()<odds.Giant*m or nil
 end
+-- Luck L: the value on the break counter (rounded to one decimal so the counter lands on it). A Lucky Cage rolls the high range.
+function Reward.Luck(lucky)
+ local L=Config.Luck
+ local value=lucky and L.LuckyMin+(L.LuckyMax-L.LuckyMin)*rng:NextNumber() or L.Min+(L.Max-L.Min)*rng:NextNumber()^L.Power
+ return math.floor(value/L.Step+.5)*L.Step
+end
+-- Income factor inside the footballer's range; luck pushes the roll towards the top.
+function Reward.IncomeRoll(entry,luck)
+ local range=entry.IncomeRange or Config.IncomeRange[entry.Tier]
+ return range.Min+(range.Max-range.Min)*rng:NextNumber()^(1/luck)
+end
 function Reward.IncomeMultiplier(variant,giant)
  return (variant and Config.Variants[variant].Income or 1)*(giant and Config.GiantVariant.Income or 1)
 end
 -- Character size: Giant and the egg size multiply, capped so a Huge Giant never towers over its display.
 function Reward.Scale(giant,eggSize)
- return math.min(Config.CardScaleCap,(giant and Config.GiantVariant.Size or 1)*(eggSize and Config.EggSizeById[eggSize].Scale or 1))
+ local size=eggSize and Config.EggSizeById[eggSize]
+ local scale=size and (size.CharacterScale or size.Scale) or 1
+ return math.min(Config.CardScaleCap,(giant and Config.GiantVariant.Size or 1)*scale)
 end
 function Reward.Attach(card,id,variant,giant,eggSize)
  local mesh=Templates:FindFirstChild(id):Clone()

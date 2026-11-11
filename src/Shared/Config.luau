@@ -56,11 +56,15 @@ Config.PlayerRoster = {
  {Id="Player_02",Name="Crimson Ace",Tier="GOAT",Weight=30},
  {Id="Player_01",Name="Pocket Wizard",Tier="GOAT",Weight=20},
 }
--- Egg hatch: the egg stays still on the server for SwellSeconds while nearby clients animate it locally
--- (swell, harder shake, glow, crack sparkles), then the egg is destroyed and the card spawns; clients play the pop and rise.
-Config.Reveal = { SwellSeconds=1.8, SwellScale=1.35, ShakeStart=0.03, ShakeEnd=0.2, GlowFillEnd=0.35, SparkRateStart=4, SparkRateEnd=45,
- PopSeconds=0.3, PopSize=16, ConfettiCount=45, RiseSeconds=0.6, SpinTurns=1, BeamSeconds=0.9, BeamHeight=60, BeamWidth=3,
- PopSoundId="rbxasset://sounds/impact_explosion_03.mp3", PopSoundVolume=0.6, BreakerPrioritySeconds=3,
+-- Cage break: the server rolls the result at once and destroys the cage. Nearby clients show a glowing blob in its place for GlowSeconds (it swells
+-- to GlowScale, pulses and jitters harder towards the end) with a luck counter ticking up to the rolled luck, then a burst; the character
+-- appears when the glow ends. Everything here is cosmetic and runs on the client.
+Config.Reveal = { GlowSeconds=4.5, GlowScale=1.6, PulseStart=2, PulseEnd=9, JitterStart=.02, JitterEnd=.14, SparkRateStart=8, SparkRateEnd=60,
+ TickStart=2, TickEnd=14, TickSoundId="rbxasset://sounds/electronicpingshort.wav", TickVolume=.35, CounterHeight=3, CounterColor=Color3.fromRGB(110,255,140),
+ PopSeconds=.3, PopSize=16, LuckyPopSize=26, ConfettiCount=45, RayCount=12, LuckyRayCount=22, RayLength=26, RayColorLucky=Color3.fromRGB(255,215,0),
+ RiseSeconds=.35, StartScale=.9, LuckyScale=1.25, PopTextSeconds=1.4, PopTextHeight=7,
+ BeamSeconds=.9, BeamHeight=60, BeamWidth=3, PopSoundId="rbxasset://sounds/impact_explosion_03.mp3", PopSoundVolume=.9, BreakerPrioritySeconds=3,
+ ShakeSeconds=.35, ShakeDistance=90, ShakeStrength={Rare=.15,Epic=.25,Legendary=.4,Mythic=.55,GOAT=.8},
  DisplayHeight=5, SafeCelebrationSeconds=1.4, SafeCheckSeconds=0.2, SafeMargin=2,
  MaxDistance=100, MaxConcurrent=3, SafeColor=Color3.fromRGB(100,255,165) }
 
@@ -68,15 +72,27 @@ Config.Reveal = { SwellSeconds=1.8, SwellScale=1.35, ShakeStart=0.03, ShakeEnd=0
 Config.Variants = { Gold={Income=2,Tint=Color3.fromRGB(255,200,60)}, Diamond={Income=5,Tint=Color3.fromRGB(235,250,255),Glow=Color3.fromRGB(120,220,255),GlowFill=0.5}, SparkleRate=2 }
 Config.GiantVariant = { Income=3, Size=1.5 }
 Config.VariantOdds = { Gold=0.05, Diamond=0.005, Giant=0.02 }
+-- Luck: every break rolls a luck value L (the counter on screen). A normal cage rolls Min + (Max - Min) * r^Power; a Lucky Cage rolls LuckyMin..LuckyMax.
+-- The income roll is u = random()^(1/L) (L = 1 is uniform, more luck pushes towards 1) and the card's income factor is Min + (Max - Min) * u from its
+-- IncomeRange (a roster entry may set its own IncomeRange = {Min=, Max=}; otherwise the tier's). Each tier range averages 1.0 at normal luck.
+Config.Luck = { Min=1, Max=1.5, Power=2, LuckyMin=3, LuckyMax=4, Step=.1 } -- Step: the counter shows one decimal, so L is rounded to it
+Config.IncomeRange = { Common={Min=.79,Max=1.19}, Rare={Min=.73,Max=1.23}, Epic={Min=.68,Max=1.28}, Legendary={Min=.62,Max=1.32}, Mythic={Min=.57,Max=1.37}, GOAT={Min=.46,Max=1.46} }
+-- Pop text in the burst: LUCKY! only for a Lucky Cage; the variants have their own.
+Config.PopText = { Lucky={Text="LUCKY!",Color=Color3.fromRGB(255,215,0)}, Gold={Text="GOLD!",Color=Config.Variants.Gold.Tint},
+ Diamond={Text="DIAMOND!",Color=Config.Variants.Diamond.Glow}, Giant={Text="GIANT!",Color=Color3.fromRGB(255,140,40)} }
 -- Lucky Egg: occasionally replaces a normal egg (never the GOAT or Golden egg) and boosts the variant odds.
-Config.LuckyEgg = { Chance=0.03, Odds={ Gold=0.20, Diamond=0.03, Giant=0.08 }, Color=Color3.fromRGB(80,255,120), Label="LUCKY EGG",
+Config.LuckyEgg = { Chance=0.03, Odds={ Gold=0.20, Diamond=0.03, Giant=0.08 }, Color=Color3.fromRGB(80,255,120), Label="LUCKY CAGE",
  OddsDistance=35, LookDot=0.97 }
 
--- Egg visuals use the existing cube mining/reward system.
-Config.Eggs = {
- ByTier = { Common = "Classic Cream", Rare = "Lavender Tiles", Epic = "Treasure Chest", Legendary = "Diamond Plated", Mythic = "Obsidian Fortune", GOAT = "Royal Crown" },
- Golden = "Solid Gold", Reserved = { "Aurora Prism", "Starlight" },
- ParticleRate = 2, HitTint = Color3.fromRGB(255, 190, 190),
+-- Each numbered cage belongs to exactly one stage. Regular slots use three copies of each.
+Config.Cages = {
+ ByStage = {
+  {8,14,19}, {4,5,26}, {9,13,17}, {3,12,15},
+  {2,18,27}, {22,28,35}, {1,16,30}, {21,23,24},
+  {6,7,25}, {10,11,34}, {20,32,33}, {29,31,36},
+ },
+ CopiesPerDesign = 3, MaxNormalWidth = 8,
+ ParticleRate = 2, HitTint = Color3.fromRGB(255,190,190),
 }
 
 -- Cubes ---------------------------------------------------------------
@@ -105,7 +121,7 @@ Config.Npc = {
 	},
 }
 
-Config.EggBars = { MaxDistance = 35, ShowDistance = 15, CheckSeconds = 0.1, LabelWidth = 1.7, TextHeight = 0.7, BarHeight = 0.35, Gap = 0.4 }
+Config.EggBars = { HitShowSeconds = 1.5, ShowDistance = 15, CheckSeconds = 0.1, LabelWidth = 1.7, TextHeight = 0.7, BarHeight = 0.35, Gap = 0.4 }
 Config.CubeSpawnMarkerTransparency = 1
 Config.CubeRespawnSeconds = 15
 Config.CubeFlashSeconds = 0.08
@@ -114,14 +130,17 @@ Config.CubeHP = {}                                        -- per stage, derived 
 for stage = 1, 12 do Config.CubeHP[stage] = math.floor(Config.EggHP.Base * Config.EggHP.Growth ^ (stage - 1) + 0.5) end
 Config.Onboarding = { Eggs = 5, Hits = 3 } -- a new player's first Eggs Stage 1 eggs break in Hits hits
 Config.CubeCountPerStage = { 6, 6, 7, 7, 8, 8, 9, 10, 10, 11, 12, 4 }    -- per stage
--- Stage theme and the recommended movement speed (studs/s) shown on entry: the speed that keeps a round trip to that stage's eggs near 75 s
--- (fitted in tools/economy; the 200 cap is reached at Stage 11). Guard chase speeds below are 80% of these.
+-- Stage signs and the entry banner: name, difficulty word and the recommended Speed Points (the points at which the SpeedCurve gives the walking speed
+-- that keeps a round trip to that stage's cages near 75 s; Stage 12 is the average arrival in the sim). Guard chase speeds are 80% of that walking speed.
 Config.StageBanner = { Seconds = 3.5, CheckSeconds = 0.25 }
+Config.DifficultyColor = { Easy = Color3.fromRGB(110, 230, 120), Medium = Color3.fromRGB(255, 225, 90), Hard = Color3.fromRGB(255, 160, 60), Insane = Color3.fromRGB(255, 80, 80), Impossible = Color3.fromRGB(190, 90, 255) }
 Config.StageInfo = {
- { Name = "Training Grounds", Speed = 16 }, { Name = "Clover Park", Speed = 26 }, { Name = "Sandlot Yard", Speed = 42 },
- { Name = "Stone Quarry", Speed = 58 }, { Name = "Lantern Alley", Speed = 76 }, { Name = "Mossy Ruins", Speed = 93 },
- { Name = "Rust Harbor", Speed = 109 }, { Name = "Ember Works", Speed = 131 }, { Name = "Frost Terrace", Speed = 149 },
- { Name = "Neon Arcade", Speed = 178 }, { Name = "Storm Dome", Speed = 200 }, { Name = "Golden Colosseum", Speed = 200 },
+ { Name = "Training Grounds", Difficulty = "Easy", Points = 0 }, { Name = "Clover Park", Difficulty = "Easy", Points = 330 },
+ { Name = "Sandlot Yard", Difficulty = "Medium", Points = 2560 }, { Name = "Stone Quarry", Difficulty = "Medium", Points = 4210 },
+ { Name = "Lantern Alley", Difficulty = "Medium", Points = 72200 }, { Name = "Mossy Ruins", Difficulty = "Hard", Points = 252000 },
+ { Name = "Rust Harbor", Difficulty = "Hard", Points = 1630000 }, { Name = "Ember Works", Difficulty = "Hard", Points = 68500000 },
+ { Name = "Frost Terrace", Difficulty = "Insane", Points = 828000000 }, { Name = "Neon Arcade", Difficulty = "Insane", Points = 6070000000 },
+ { Name = "Storm Dome", Difficulty = "Impossible", Points = 31900000000 }, { Name = "Golden Colosseum", Difficulty = "Impossible", Points = 50400000000 },
 }
 Config.CubeColumnX = { -72, 72, -40, 40 } -- spawn columns (fill order); centre lane stays free
 
@@ -129,9 +148,9 @@ Config.CubeColumnX = { -72, 72, -40, 40 } -- spawn columns (fill order); centre 
 Config.GoatStage = 12
 Config.GoatSpawnIntervalSeconds = 120 -- TESTING VALUE. Set to 1200 (20 minutes) for live.
 Config.GoatAnnouncement = "A GOAT EGG has appeared in STAGE 12!"
-Config.GoatEvent = { MinVariant = "Gold" } -- timed event egg: always the Huge size and a Gold-or-better variant; Stage 12 also has regular GOAT eggs
+Config.GoatEvent = { MinVariant = "Gold" } -- timed event egg: always the Huge size and a Gold-or-better variant; Stage 12 also has regular GOAT cages
 
--- Golden Cube event: one at a random point of a random stage in [Min, Max]
+-- Golden Cage event: one at a random point of a random stage in [Min, Max]
 Config.GoldenIntervalSeconds = 300
 Config.GoldenInitialDelaySeconds = 300
 Config.GoldenMinStage = 4
@@ -147,7 +166,7 @@ Config.EggSizes = {
  { Id="Big",    Label="BIG",    Weight=11, HP=2.5, Odds=1.5, Scale=1.25 },
  { Id="Huge",   Label="HUGE",   Weight=4,  HP=6,   Odds=3,   Scale=1.6 },
  { Id="Secret", Label="SECRET", Weight=0,  HP=20,  Odds=1,   Scale=1.4 },
- { Id="Titanic", Label="TITANIC", Weight=0, HP=100, Odds=5,  Scale=2.5 }, -- only the global Titanic event (Config.Titanic)
+ { Id="Titanic", Label="TITANIC", Weight=0, HP=100, Odds=5,  Scale=2.5, CharacterScale=2 }, -- only the global Titanic event (Config.Titanic)
 }
 Config.EggSizeById = {}
 for _, size in Config.EggSizes do Config.EggSizeById[size.Id] = size end
@@ -169,22 +188,30 @@ Config.AnnouncementSeconds = 6
 -- Tools: every player holds one mining Tool named PickaxeName (equipping swaps it for a copy of the chosen template, a Tool in
 -- ServerStorage.AxeTemplates) plus the free Mesh Bat. Cash tools: Power = damage per hit, bought with cash in any order.
 Config.PickaxeName = "Default Axe"
+-- Rarity tags of tools and trails (the sim in tools/economy/sim4.py priced them).
+Config.ToolRarity = { Common=Color3.fromRGB(190,190,195), Uncommon=Color3.fromRGB(90,220,110), Rare=Color3.fromRGB(70,140,255), Epic=Color3.fromRGB(175,80,255),
+ Legendary=Color3.fromRGB(255,160,40), Mythic=Color3.fromRGB(255,70,130), Celestial=Color3.fromRGB(110,235,255) }
 Config.CashTools = {
- { Id="Default",  Name="Default Axe",    Power=1,        Cost=0,           Template="Default" },
- { Id="Hatchet",  Name="Sharp Hatchet",  Power=4,        Cost=361,         Template="Good" },
- { Id="Miner",    Name="Miner's Pick",   Power=14,       Cost=1690,        Template="Pickaxe" },
- { Id="Steel",    Name="Steel Pick",     Power=51,       Cost=7880,        Template="SteelPickaxe" },
- { Id="Golden",   Name="Golden Pick",    Power=187,      Cost=36800,       Template="Golden" },
- { Id="Magma",    Name="Magma Axe",      Power=693,      Cost=172000,      Template="Volcanic" },
- { Id="Godly",    Name="Godly Pick",     Power=2565,     Cost=803000,      Template="Godly" },
- { Id="Ember",    Name="Ember Pick",     Power=9493,     Cost=3750000,     Template="Ember" },
- { Id="Frost",    Name="Frost Pick",     Power=35124,    Cost=17500000,    Template="Frost" },
- { Id="Jade",     Name="Jade Hatchet",   Power=129959,   Cost=81800000,    Template="Jade" },
- { Id="Storm",    Name="Storm Pick",     Power=480848,   Cost=382000000,   Template="Storm" },
- { Id="Obsidian", Name="Obsidian Axe",   Power=1779000,  Cost=1780000000,  Template="Obsidian" },
- { Id="Rose",     Name="Rose Gold Pick", Power=6583000,  Cost=8330000000,  Template="Rose" },
- { Id="Void",     Name="Void Pick",      Power=24357000, Cost=38900000000, Template="Void" },
- { Id="Prism",    Name="Prism Pick",     Power=90121000, Cost=182000000000, Template="Prism" },
+ { Id="Default",  Name="Default Axe",    Rarity="Common",    Power=1,        Cost=0,            Template="Default" },
+ { Id="Hatchet",  Name="Sharp Hatchet",  Rarity="Common",    Power=3,        Cost=260,          Template="Good" },
+ { Id="Copper",   Name="Copper Pick",    Rarity="Common",    Power=7,        Cost=700,          Template="Copper" },
+ { Id="Miner",    Name="Miner's Pick",   Rarity="Common",    Power=18,       Cost=2100,         Template="Pickaxe" },
+ { Id="Steel",    Name="Steel Pick",     Rarity="Uncommon",  Power=47,       Cost=6600,         Template="SteelPickaxe" },
+ { Id="Quartz",   Name="Quartz Pick",    Rarity="Uncommon",  Power=120,      Cost=20000,        Template="Quartz" },
+ { Id="Golden",   Name="Golden Pick",    Rarity="Uncommon",  Power=330,      Cost=66000,        Template="Golden" },
+ { Id="Magma",    Name="Magma Axe",      Rarity="Uncommon",  Power=850,      Cost=200000,       Template="Volcanic" },
+ { Id="Godly",    Name="Godly Pick",     Rarity="Rare",      Power=2200,     Cost=620000,       Template="Godly" },
+ { Id="Sunstone", Name="Sunstone Axe",   Rarity="Rare",      Power=5900,     Cost=2000000,      Template="Sunstone" },
+ { Id="Ember",    Name="Ember Pick",     Rarity="Rare",      Power=15000,    Cost=6000000,      Template="Ember" },
+ { Id="Frost",    Name="Frost Pick",     Rarity="Rare",      Power=40000,    Cost=19000000,     Template="Frost" },
+ { Id="Jade",     Name="Jade Hatchet",   Rarity="Epic",      Power=110000,   Cost=63000000,     Template="Jade" },
+ { Id="Storm",    Name="Storm Pick",     Rarity="Epic",      Power=280000,   Cost=190000000,    Template="Storm" },
+ { Id="Obsidian", Name="Obsidian Axe",   Rarity="Epic",      Power=730000,   Cost=580000000,    Template="Obsidian" },
+ { Id="Tempest",  Name="Tempest Axe",    Rarity="Legendary", Power=1900000,  Cost=1800000000,   Template="Tempest" },
+ { Id="Rose",     Name="Rose Gold Pick", Rarity="Legendary", Power=5000000,  Cost=5600000000,   Template="Rose" },
+ { Id="Void",     Name="Void Pick",      Rarity="Mythic",    Power=13000000, Cost=17000000000,  Template="Void" },
+ { Id="Aether",   Name="Aether Pick",    Rarity="Mythic",    Power=34000000, Cost=54000000000,  Template="Aether" },
+ { Id="Prism",    Name="Prism Pick",     Rarity="Celestial", Power=90000000, Cost=170000000000, Template="Prism" },
 }
 -- Premium tools are Robux game passes (GamePassId 0 until the owner creates the pass). Their power is never an absolute number: it is the
 -- player's best owned CASH tool times Multiplier (at most 1.5), so paying is a convenience and style boost, never a way past the economy.
@@ -198,11 +225,12 @@ Config.PremiumTools = {
  { Id="Laser",    Name="Laser Drill",     Multiplier=1.5,  ComingSoon=true, Template="Laser" },
 }
 Config.ArmModes = { "Right", "Left", "Both" }
-Config.ToolShop = { RequestGap = 0.4 } -- seconds between a player's shop requests
+Config.ToolShop = { RequestGap = 0.4, PremiumMinHits = 5 } -- seconds between a player's shop requests
 -- Mesh Bat: free combat tool in hotbar slot 2. Same cooldown, range, facing and line-of-sight rules as the pickaxe on players
 -- (only a player carrying a character can be hit); a hit makes the carrier drop it and knocks them back. It never damages.
 Config.Bat = { Name="Mesh Bat", Template="MeshBat", KnockbackSpeed=70, KnockbackUp=28, ToolTip="Knock a carrier back so they drop their player" }
-Config.AutoSwing = { Margin = 0.05 } -- Auto Swing waits SwingCooldown + Margin between swings
+-- Auto Swing waits SwingCooldown + Margin between swings, turns to the nearest cage in range and swings; ButtonSize is the bottom-centre button (pixels).
+Config.AutoSwing = { Margin = 0.05, ButtonSize = 92, ButtonRaise = 118 }
 Config.SwingCooldown = 0.7          -- seconds between hits (server enforced)
 Config.PickaxeRange = 12             -- max studs from player root to cube centre
 Config.PickaxeCloseRange = 6         -- cubes this close always count, even if not facing
@@ -220,7 +248,7 @@ Config.Axes = {
 
 -- Cards ---------------------------------------------------------------
 Config.CardSize = Vector3.new(3, 5, 2)
-Config.CardLabels = {Distance=60,HeadClearance=1.6,Width=230,Height=74,RefreshSeconds=0.25,StatusColor=Color3.fromRGB(255,190,90)}
+Config.CardLabels = {Distance=60,HeadClearance=1.6,Width=230,Height=92,RefreshSeconds=0.25,StatusColor=Color3.fromRGB(255,190,90),IncomeColor=Color3.fromRGB(120,255,150)}
 Config.DropPlayer = {Forward=4,RequestCooldown=.4,SafeCargoLimit=30}
 Config.CardRestHeight = 0.6          -- gap between dropped card and floor
 Config.CarryOffset = Vector3.new(0, 3.2, 0) -- above the Head
@@ -250,17 +278,20 @@ Config.LockBarrierColor = Color3.fromRGB(80, 170, 255)
 Config.LockExpelInset = 10            -- trespassers are moved this far inside the forecourt
 
 -- Guards (per stage, index = stage number) -------------------------------
-Config.GuardCountPerStage = { 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 2 }
+Config.GuardCountPerStage = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
 Config.GuardChaseSpeed    = { 12.8, 20.8, 33.6, 46.4, 60.8, 74.4, 87.2, 94.3, 112, 128.2, 144, 144 } -- 80% of the stage's recommended speed; Stages 8-12 trimmed (at most 10%) where the run clip cannot keep up at AnimSpeedMax
 Config.GuardPatrolSpeedFactor = 0.7   -- patrol speed = chase speed * factor
 Config.GuardSize = Vector3.new(3, 6, 2)
 Config.GuardHeadSize = 2
 Config.GuardColor = Color3.fromRGB(200, 40, 40)
-Config.GuardHit = { PerHeight = 0.3, Margin = 1.5, PlayerHalfHeight = 3 } -- touch = the player's body within PerHeight x the guard's visible height (+ Margin) of its axis, measured flat along the path it just walked
+Config.GuardMinimumHeight = 12
+Config.GuardVisualScale = 1.65
+Config.GuardPickupChaseMultiplier = 1.15
+Config.SecuredCarry = { GripSettleSeconds = 0.35, Grip = CFrame.new(0, -0.15, -1.5), VisualOffset = Vector3.new(0, .7, -1) }
+Config.GuardHit = { PerHeight = 0.3, Margin = 1.5, PlayerHalfHeight = 3 } -- touch = the player's body within PerHeight x the guard's pre-scale height (+ Margin) of its axis, measured flat along the path it just walked
 Config.GuardHitCooldownSeconds = 1.5  -- per-player immunity after a hit
 Config.GuardStunSeconds = 1           -- guard pauses after hitting
-Config.GuardKnockbackSpeed = 55
-Config.GuardKnockbackUp = 25
+Config.GuardFall = { Seconds = 1.5, Angle = math.pi/2 }
 Config.KnockbackStunSeconds = 0.4     -- hit client is ragdolled this long so the impulse is not cancelled by the Humanoid
 Config.GuardZoneMargin = 4            -- guards stay this far from the hallway walls
 Config.GuardWaypointReach = 2
@@ -286,7 +317,7 @@ Config.Environment = {
  GrassColumns = 3, GrassRowsPerHalf = 2, GrassHeight = 0.7, LabelClearLength = 18,
  GrassOverlap = 1.04, GrassColor = Color3.fromRGB(65, 106, 48),
  WallHeight = 32, WallDepth = 7, WallOutsideOffset = 0.2,
- StageSignSize = Vector3.new(0.25, 4, 18), StageSignHeight = 10,
+ StageSignSize = Vector3.new(0.25, 6, 24), StageSignHeight = 10,
  StageSignColor = Color3.fromRGB(30, 47, 30),
  PlotInset = 0.5, PlotSignSize = Vector3.new(0.2, 2, 29), PlotSignHeight = 6,
  PlotLockOffset = 13, SlotThickness = 0.18,
@@ -331,8 +362,15 @@ Config.CharacterPreview = { BodyHeight = 6.5, SlimWidthMultiplier = 1.4, SlimDep
 
 -- Display slots and server-validated character upgrades.
 Config.PlotSlots = {
- SlotsPerFloor = 10, EmptyText = "Now a player", PanelSize = Vector3.new(1.4, 0.12, 4), EarningsFootprint = Vector2.new(2.61, 3.17), UpgradeTiltDegrees = 30, EarningsTiltDegrees = 0,
- DisplayClearance = 0.1, UpgradeOffset = 0.6, PromptDistance = 5, InteractDistance = 8,
+ SlotsPerFloor = 10, EmptyText = "Now a player",
+ -- Per slot (templates in ServerStorage.SlotTemplates, scaled to these sizes): pedestal under the character, a collect pad in front
+ -- of it (pending cash is paid when the owner steps on it) and an upgrade button stand beside it.
+ PedestalDiameter = 3.4, CollectPadSize = 2.4, CollectPadOffset = 4.4, CollectCooldown = 0.5, CollectEffectSeconds = 0.35,
+ StandHeight = 3.2, StandSideOffset = 2.5, StandForwardOffset = 1.2, UpgradeButtonColor = Color3.fromRGB(255, 200, 30),
+ CollectSoundId = "rbxassetid://9083627113", CollectLightColor = Color3.fromRGB(40, 220, 70),
+ LabelWidth = 200, LabelHeight = 32, LabelDistance = 45,
+ PartBudgetPerSlot = 12, -- BaseParts per slot (pedestal, pad, stand, proxy); the builder asserts PartBudgetPerSlot x SlotsPerPlot per plot
+ DisplayClearance = 0.02, PromptDistance = 5, InteractDistance = 8,
  UpgradeKey = Enum.KeyCode.R, UpgradeCooldown = 0.4, UpgradePromptDistance = 4.5,
  MessageGap = 0.3, MessageSeconds = 1.6, CantAffordColor = Color3.fromRGB(255, 80, 80),
  Messages = {Cash = "Not enough cash", Far = "Too far away", Cooldown = "Wait a moment", Max = "Max level", NotOwner = "Not your slot"},
@@ -348,19 +386,22 @@ Config.MonsterGuards = {
 -- studs (one uniform scale, so proportions never stretch), Pack = key of Packs, optional Tint multiplies the colours. A design without a
 -- Pack is bone-driven (client clips). Stages 4, 8 and 11 use animated designs; their original bone-driven ones are kept in OriginalStages:
 -- copy them into Stages once they have a pack.
+ Eye = { Hover = 4, Range = 65, StandOff = 18, Speed = 6, ReportInterval = 0.1, ReportTimeout = 0.5 },
+ ProceduralHz = 24, StridePerHeight = 0.38, SandTurnRadius = 28,
+ SandRippleHeight = 0.18, SandRippleFrequency = 0.45,
  Stages = {
-  { { Design = "Noob",      Height = 7,    Pack = "DefaultR6" } },
-  { { Design = "Monster",   Height = 8,    Pack = "DefaultR6" } },
-  { { Design = "Teddy",     Height = 9,    Pack = "TeddyZombie" } },
-  { { Design = "Backrooms", Height = 10,   Pack = "ZombieR15" } },
-  { { Design = "RiggedNew", Height = 10.5, Pack = "ZombieR15" } },
-  { { Design = "RiggedNew", Height = 11.5, Pack = "ZombieR15" } },
-  { { Design = "Backrooms", Height = 12.5, Pack = "ZombieR15" } },
-  { { Design = "Teddy",     Height = 13,   Pack = "TeddyZombie" } },
-  { { Design = "Backrooms", Height = 14,   Pack = "WerewolfR15" } },
-  { { Design = "Teddy",     Height = 14.5, Pack = "TeddyZombie" } },
-  { { Design = "LongArm",   Height = 15.5, Pack = "LongArmZombie" } },
-  { { Design = "LongArm",   Height = 19,   Pack = "LongArmZombie" }, { Design = "RiggedNew", Height = 20, Pack = "WerewolfR15", Tint = Color3.fromRGB(135, 115, 155) } },
+  { { Design = "Stage01Noob", Height = 7, Pose = "Walk" } },
+  { { Design = "Stage02Monster", Height = 8, Pose = "Walk" } },
+  { { Design = "Stage03Bramble", Height = 9, Pose = "Bramble" } },
+  { { Design = "Stage04Backrooms", Height = 10, Pose = "Walk" } },
+  { { Design = "Stage05RiggedNew", Height = 10.5, Pack = "CustomR15" } },
+  { { Design = "Stage06Eye", Height = 11.5, Pose = "Still" } },
+  { { Design = "Stage07SCP096", Height = 12.5, Pose = "WalkIdle" } },
+  { { Design = "Stage08MonsterR15", Height = 13, Pose = "Walk" } },
+  { { Design = "Stage09Monster", Height = 14, Pose = "Walk" } },
+  { { Design = "Stage10NoobVariant", Height = 14.5, Pose = "Walk" } },
+  { { Design = "Stage11EarthWorm", Height = 15.5, Pose = "Earth" } },
+  { { Design = "Stage12SandWorm", Height = 20, Pose = "Sand" } },
  },
  OriginalStages = { [4] = { { Design = "Realistic", Height = 10 } }, [8] = { { Design = "Paranormica", Height = 13 } }, [11] = { { Design = "White", Height = 15.5 } } },
  -- Bone-driven designs keep the client-side bone clips.
@@ -372,6 +413,7 @@ Config.MonsterGuards = {
 -- sin(half the swing range) x cycles / length). Playback = ground speed / (Stride * height), capped by AnimSpeedMax; a patrol whose Walk
 -- would need more than the cap plays the Run clip instead.
  Packs = {
+  CustomR15 = { Idle="rbxassetid://507766388", Walk="rbxassetid://507777826", Run="rbxassetid://507767714", Attack="rbxassetid://522635514", Stride={Walk=3.2,Run=3.2} },
   ZombieR15 = { Idle="rbxassetid://616158929", IdleLook="rbxassetid://616160636", Walk="rbxassetid://616168032", Run="rbxassetid://616163682", Attack="rbxassetid://522635514", Stride={Walk=3.2,Run=3.2} },
   WerewolfR15 = { Idle="rbxassetid://1083195517", IdleLook="rbxassetid://1083214717", Walk="rbxassetid://1083178339", Run="rbxassetid://1083216690", Attack="rbxassetid://522635514", Stride={Walk=3.2,Run=3.2} },
   TeddyZombie = { Retarget="Forearm", Idle="rbxassetid://120512474902742", Walk="rbxassetid://128874772131770", Run="rbxassetid://75198745894759", Attack="rbxassetid://100225665383596", Stride={Walk=1.16,Run=2.55} },
@@ -399,7 +441,10 @@ Config.MonsterGuards = {
 -- Training points are distinct from studs/second. All 15 levels share one owned pad.
 Config.Treadmills = {
  BaseGain=5, TickSeconds=1, RequestCooldown=.5,
- RunAnimationR15="rbxassetid://507767714",RunAnimationR6="rbxassetid://180426354", MovementBase=16, PointsPerScale=60, MovementExponent=0.257, MaxWalkSpeed=200,
+ RunAnimationR15="rbxassetid://507767714",RunAnimationR6="rbxassetid://180426354",
+ -- Speed Points -> walking speed (studs/s), linear in log10(1 + points) between these points (fitted in tools/economy so the speed on arrival at each
+ -- stage matches the stage's recommended Speed Points; 200 is reached at Stage 11). The walking speed is never shown, only the points.
+ SpeedCurve={{0,16},{330,26},{2560,42},{4212,58},{72153,76},{251866,93},{1632903,109},{68517539,131},{827588229,149},{6071109646,178},{31944619545,200}},
  TemplateSize=Vector3.new(9,7,13), PlotOffset=24.5, EntrySideOffset=10, SensorSeconds=.1, BeltWidth=6, BeltLength=8, BeltCenter=2, BeltHeight=.8, EntryRun=4, GroundY=1.1,
  ParticleRate=2, EffectsDistance=65, LabelDistance=12, MaxLights=1,
  Catalog={
@@ -503,7 +548,7 @@ function Config.GetStageLength(stage: number): number
 	return Config.StageLengths[stage]
 end
 
---- Tier of the card a Golden Cube drops for a stage.
+--- Tier of the card a Golden Cage drops for a stage.
 function Config.GetTierAbove(stage: number, capTier: string): string
 	local index = table.find(Config.TierOrder, Config.StageTier[stage]) :: number
 	local cap = table.find(Config.TierOrder, capTier) :: number
@@ -512,5 +557,44 @@ end
 function Config.GetGoldenTier(stage: number): string
 	return Config.GetTierAbove(stage, Config.GoldenMaxTier)
 end
+
+Config.Leaderboards = {
+ RefreshSeconds=60, Top=10, ScorePrecision=1e9, StorePrefix="FootballerRank_v1_",
+ BoardSize=Vector3.new(22,18,1), BoardSpacing=25, EdgeInset=3,
+}
+
+Config.Trails = {
+ RequestGap=.4, Lifetime=.45, Height=.65, BackOffset=.55,
+ -- Multiplier = Speed Points gained per second on the treadmill (times the treadmill's own); bought in order.
+ Catalog={
+  {Id="None", Name="No Trail", Cost=0, Multiplier=1},
+  {Id="Spark", Name="Spark", Rarity="Common", Cost=2500, Multiplier=2, Color=Color3.fromRGB(255,236,150)},
+  {Id="Ripple", Name="Ripple", Rarity="Common", Cost=4800, Multiplier=4, Color=Color3.fromRGB(120,200,255)},
+  {Id="MintStreak", Name="Mint Streak", Rarity="Uncommon", Cost=9300, Multiplier=8, Color=Color3.fromRGB(117,255,199)},
+  {Id="EmberTrail", Name="Ember Trail", Rarity="Uncommon", Cost=18000, Multiplier=16, Color=Color3.fromRGB(255,146,67)},
+  {Id="Aurora", Name="Aurora", Rarity="Rare", Cost=43000, Multiplier=40, Color=Color3.fromRGB(140,157,255)},
+  {Id="CometTail", Name="Comet Tail", Rarity="Rare", Cost=100000, Multiplier=100, Color=Color3.fromRGB(150,230,255)},
+  {Id="PrismRibbon", Name="Prism Ribbon", Rarity="Epic", Cost=250000, Multiplier=250, Color=Color3.fromRGB(215,120,255)},
+  {Id="VoidWake", Name="Void Wake", Rarity="Epic", Cost=560000, Multiplier=600, Color=Color3.fromRGB(120,70,200)},
+  {Id="SolarFlare", Name="Solar Flare", Rarity="Legendary", Cost=2100000, Multiplier=4000, Color=Color3.fromRGB(255,190,60)},
+  {Id="Nebula", Name="Nebula", Rarity="Mythic", Cost=4900000, Multiplier=10000, Color=Color3.fromRGB(255,90,170)},
+  {Id="CelestialBlaze", Name="Celestial Blaze", Rarity="Celestial", Cost=12000000, Multiplier=25000, Color=Color3.fromRGB(120,240,255)},
+ },
+}
+
+
+Config.Football = {
+ KickRange = 9, KickSpeed = 58, KickLift = 4, KickCooldown = 0.4,
+ ResetMargin = 25, ResetBelow = 12, ResetInterval = 0.5,
+}
+
+Config.FootballLobby = {
+ Modes = {
+  ["4v4"] = { Starters = 4, RewardMultiplier = 1, Rows = {1, 2, 1} },
+  ["11v11"] = { Starters = 11, RewardMultiplier = 3, Rows = {1, 4, 3, 3} },
+ },
+ EntryRange = 12, LobbyRange = 35, InviteSeconds = 30, SelectionSeconds = 90,
+ StagingSeconds = 180, RequestGap = 0.25, TeamDepth = 0.42, TeamWidth = 0.8,
+}
 
 return Config

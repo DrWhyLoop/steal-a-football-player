@@ -26,6 +26,10 @@ local SlotService
 local function clock() return Workspace:GetServerTimeNow() end
 
 local cardsFolder = Workspace:WaitForChild("Greybox"):WaitForChild("Cards")
+local pockets = {} -- one secured footballer and its hotbar tool per player
+local storage = Instance.new("Folder")
+storage.Name = "SecuredFootballers"
+storage.Parent = game.ServerStorage
 local carried = {} -- [Player] = card part
 local lastPos = {} -- [Player] = Vector3 (last known position while carrying)
 local returnStolen -- fn(card): boolean, injected in Init; true if the card went back to its owner
@@ -50,7 +54,11 @@ function CardService.SetState(card: Part,state: string)
  if (state=="World" or state=="Revealing") and not card:GetAttribute("Escaped") and remaining then
   card:SetAttribute("WorldExpiresAt",clock()+remaining)
  end
- local visual=card:FindFirstChild("PlayerVisual") if visual then visual:SetAttribute("Moving",state=="Carried") end
+ local visual=card:FindFirstChild("PlayerVisual")
+ if visual then
+  visual:SetAttribute("Moving",false)
+  visual:SetAttribute("CarryPose",state=="Carried")
+ end
  local prompt=card:FindFirstChild("PickupPrompt") if prompt then prompt.Enabled=state=="World" or state=="Safe" end
 end
 
@@ -61,7 +69,9 @@ local function setCarryAttributes(player: Player, card: Part?)
 end
 
 function CardService.GetCarried(player: Player): Part?
-	return carried[player]
+	local pocket=pockets[player]
+ if pocket and pocket.tool and pocket.tool.Parent~=player.Character then return nil end
+ return carried[player]
 end
 
 --- Attach a card above the player's head. Returns true on success.
@@ -72,7 +82,7 @@ function CardService.Carry(player: Player, card: Part): boolean
  local deadline=card:GetAttribute("WorldExpiresAt")
  if deadline and deadline<=clock() then card:Destroy() return false end
  if card:GetAttribute("PickupOwnerUserId") and card:GetAttribute("PickupOwnerUserId")~=player.UserId then return false end
- if carried[player] or not head or not humanoid or humanoid.Health <= 0 then return false end
+ if pockets[player] or carried[player] or not head or not humanoid or humanoid.Health <= 0 then return false end
 
 	carried[player] = card
  card:SetAttribute("PickupOwnerUserId",nil)
@@ -96,18 +106,104 @@ end
 
 --- Detach the carried card (no drop). Returns the card, or nil. Caller decides what happens to it.
 function CardService.Release(player: Player): Part?
-	local card = carried[player]
+	local card = CardService.GetCarried(player)
 	if not card then return nil end
+ local pocket=pockets[player]
+ if pocket then pockets[player]=nil end
 	carried[player] = nil
 	lastPos[player] = nil
  safePending[player]=nil
-	card.CarryWeld:Destroy()
+	local weld=card:FindFirstChild("CarryWeld")
+ if weld then weld:Destroy() end
+ if pocket and pocket.tool then pocket.tool:Destroy() end
 	card.Anchored = true
 	card.Massless = false
 	local humanoid = getHumanoid(player)
 	if humanoid then humanoid.WalkSpeed = Config.BaseWalkSpeed end
 	setCarryAttributes(player, nil)
 	return card
+end
+
+local function stow(player, pocket)
+ local card=pocket.card
+ if carried[player]==card then
+  carried[player]=nil
+  lastPos[player]=nil
+  setCarryAttributes(player,nil)
+ end
+ local weld=card:FindFirstChild("CarryWeld")
+ if weld then weld:Destroy() end
+ card.Anchored=true
+ CardService.SetState(card,"Stored")
+ card.Parent=storage
+end
+
+local function givePocketTool(player, pocket, equip)
+ local backpack=player:FindFirstChildOfClass("Backpack")
+ local humanoid=getHumanoid(player)
+ if not backpack or not humanoid or humanoid.Health<=0 or pockets[player]~=pocket then return end
+ if pocket.tool and pocket.tool.Parent then
+  if equip then humanoid:EquipTool(pocket.tool) end
+  return
+ end
+ local tool=Instance.new("Tool")
+ tool.Name=pocket.card:GetAttribute("CardName")
+ tool.ToolTip="Secured footballer"
+ tool.CanBeDropped=false
+ tool.Grip=Config.SecuredCarry.Grip
+ local handle=Instance.new("Part")
+ handle.Name="Handle"
+ handle.Size=Vector3.one
+ handle.Transparency=1
+ handle.CanCollide=false
+ handle.CanTouch=false
+ handle.CanQuery=false
+ handle.Massless=true
+ handle.Parent=tool
+ pocket.tool=tool
+ tool.Equipped:Connect(function()
+  task.wait(Config.SecuredCarry.GripSettleSeconds)
+  if pockets[player]~=pocket or tool.Parent~=player.Character or humanoid.Health<=0 then return end
+  local character=player.Character
+  local hand=character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+  local root=getRoot(player)
+  if not hand or not root then return end
+  local card=pocket.card
+  local offset=root.CFrame:VectorToWorldSpace(Config.SecuredCarry.VisualOffset)
+  card.CFrame=CFrame.new(hand.Position+offset)*root.CFrame.Rotation
+  card.Anchored=false
+  card.Massless=true
+  local old=card:FindFirstChild("CarryWeld")
+  if old then old:Destroy() end
+  local weld=Instance.new("Weld")
+  weld.Name="CarryWeld"
+  -- Keep the held visual upright as the avatar's tool animation rotates its wrist.
+  weld.C0=root.CFrame:ToObjectSpace(card.CFrame)
+  weld.Part0=root
+  weld.Part1=card
+  weld.Parent=card
+  carried[player]=card
+  CardService.SetState(card,"Carried")
+  card.Parent=cardsFolder
+  setCarryAttributes(player,card)
+ end)
+ tool.Unequipped:Connect(function()
+  if pockets[player]==pocket and pocket.tool==tool then stow(player,pocket) end
+ end)
+ tool.Parent=backpack
+ if equip then humanoid:EquipTool(tool) end
+end
+
+local function pocketCard(player,card,equip)
+ local pocket={card=card}
+ pockets[player]=pocket
+ stow(player,pocket)
+ if equip then givePocketTool(player,pocket,true) end
+end
+
+function CardService.RefreshPocketTool(player)
+ local pocket=pockets[player]
+ if pocket then givePocketTool(player,pocket,false) end
 end
 
 local function dropOnGround(card: Part, position: Vector3, lifetime: number)
@@ -127,7 +223,7 @@ local function tryPickup(player: Player, card: Part)
 end
 
 -- Every attribute (including Variant/Giant) is set before the card is parented, so clients see them from the first frame.
-local function createCard(entry, tier: string, position: Vector3, variant: string?, giant: boolean?, eggSize: string?): Part
+local function createCard(entry, tier: string, position: Vector3, variant: string?, giant: boolean?, eggSize: string?, roll: number?, luckyBreak: boolean?): Part
  local name=entry.Name
 	local info = Config.Tiers[tier]
 	local card = Instance.new("Part")
@@ -145,7 +241,9 @@ local function createCard(entry, tier: string, position: Vector3, variant: strin
 	card.CanTouch = false
 	card:SetAttribute("CardName", name)
 	card:SetAttribute("Tier", tier)
-	card:SetAttribute("CashPerSecond", info.CashPerSecond*Reward.IncomeMultiplier(variant,giant))
+	card:SetAttribute("CashPerSecond", info.CashPerSecond*Reward.IncomeMultiplier(variant,giant)*(roll or 1))
+ card:SetAttribute("IncomeRoll",roll)
+ card:SetAttribute("LuckyBreak",luckyBreak) -- cosmetic: the burst that revealed it (clients only)
  card:SetAttribute("Variant",variant)
  card:SetAttribute("Giant",giant or nil)
  card:SetAttribute("EggSize",eggSize)
@@ -169,22 +267,26 @@ function CardService.SetIncome(card: Part, amount: number)
  card:SetAttribute("CashPerSecond",amount)
 end
 
---- Called when an egg breaks: the result is rolled NOW, nearby clients animate the still egg for SwellSeconds
---- (the egg is destroyed by CubeService at the same moment), then the card spawns at its final CFrame and clients
---- play the rise locally. The breaker has first pick for Reveal.BreakerPrioritySeconds.
+--- Called when a cage breaks: the result (footballer, luck, income roll, variants) is rolled NOW and never changes. CubeService destroys the cage
+--- at once; nearby clients show the glow and the luck counter for GlowSeconds, then the card spawns at its final CFrame in the burst. The breaker has
+--- first pick for Reveal.BreakerPrioritySeconds. Everything the cage supplies is read before the first yield (it is destroyed right after).
 function CardService.DropFromCube(tier: string,position: Vector3,breaker: Player?,lucky: boolean?,egg: BasePart)
  local entry=Reward.Pick(tier)
  local eggSize=egg:GetAttribute("Size")
+ local stage=egg:GetAttribute("Stage")
+ local radius=math.max(egg.Size.X,egg.Size.Y,egg.Size.Z)/2
  local variant,giant=Reward.Roll(lucky,Config.EggSizeById[eggSize].Odds)
  variant=variant or egg:GetAttribute("MinVariant") -- event and Secret eggs promise Gold or better
+ local luck=Reward.Luck(lucky)
+ local roll=Reward.IncomeRoll(entry,luck)
  for _,player in Players:GetPlayers() do
   local root=getRoot(player)
-  if root and (root.Position-position).Magnitude<=Config.Reveal.MaxDistance then Remotes.EggReveal:FireClient(player,egg,tier) end
+  if root and (root.Position-position).Magnitude<=Config.Reveal.MaxDistance then Remotes.EggReveal:FireClient(player,position,tier,luck,lucky==true,variant,giant==true,radius) end
  end
- task.wait(Config.Reveal.SwellSeconds)
- local card=createCard(entry,tier,position,variant,giant,eggSize)
+ task.wait(Config.Reveal.GlowSeconds)
+ local card=createCard(entry,tier,position,variant,giant,eggSize,roll,lucky)
  card:SetAttribute("EarnedFromEgg",true)
- card:SetAttribute("SourceStage",egg:GetAttribute("Stage")) -- guards only chase a carrier of a character taken from their own stage
+ card:SetAttribute("SourceStage",stage) -- guards only chase a carrier of a character taken from their own stage
  card:SetAttribute("RemainingLifetime",Config.CubeDropLifetime)
  if breaker then
   card:SetAttribute("BreakerUserId",breaker.UserId)
@@ -201,7 +303,8 @@ local function itemExists(id)
 end
 function CardService.Record(card)
  return {PlayerId=card:GetAttribute("PlayerId"),Level=card:GetAttribute("UpgradeLevel") or 0,ItemId=card:GetAttribute("ItemId"),
-  Variant=card:GetAttribute("Variant"),Giant=card:GetAttribute("Giant"),EggSize=card:GetAttribute("EggSize")}
+  Pocket=card:GetAttribute("SecuredHotbar")==true or nil,Variant=card:GetAttribute("Variant"),Giant=card:GetAttribute("Giant"),EggSize=card:GetAttribute("EggSize"),
+ IncomeRoll=card:GetAttribute("IncomeRoll")}
 end
 -- Only validated server-saved roster records can be restored. A saved ItemId that already exists live is a duplicate and is refused.
 function CardService.RestoreRecord(record,position)
@@ -215,7 +318,9 @@ function CardService.RestoreRecord(record,position)
  local variant=type(record.Variant)=="string" and Config.Variants[record.Variant] and record.Variant or nil
  local giant=record.Giant==true or nil
  local eggSize=type(record.EggSize)=="string" and Config.EggSizeById[record.EggSize] and record.EggSize or nil
- local card=createCard(entry,entry.Tier,position,variant,giant,eggSize)
+ local range=entry.IncomeRange or Config.IncomeRange[entry.Tier]
+ local roll=type(record.IncomeRoll)=="number" and record.IncomeRoll==record.IncomeRoll and math.clamp(record.IncomeRoll,range.Min,range.Max) or nil
+ local card=createCard(entry,entry.Tier,position,variant,giant,eggSize,roll)
  if validId then card:SetAttribute("ItemId",id) end
  local level=type(record.Level)=="number" and record.Level==record.Level and math.clamp(math.floor(record.Level),0,Config.PlotSlots.MaxLevel) or 0
  local base=card:GetAttribute("CashPerSecond")
@@ -240,6 +345,14 @@ end
 function CardService.DropCarried(player: Player,char: Model?)
  char=char or player.Character
  local root=char and char:FindFirstChild("HumanoidRootPart")
+ local pocket=pockets[player]
+ if pocket then
+  stow(player,pocket)
+  local tool=pocket.tool
+  local backpack=player:FindFirstChildOfClass("Backpack")
+  if tool and backpack and tool.Parent==char then tool.Parent=backpack end
+  return
+ end
  local position=root and root.Position or lastPos[player] or Config.FallbackDropPosition
  local card=CardService.Release(player)
  if not card then return end
@@ -251,15 +364,30 @@ function CardService.DropCarried(player: Player,char: Model?)
 end
 function CardService.ExportSecured(player)
  local records={}
+ local pocket=pockets[player]
+ if pocket and pocket.card.Parent then table.insert(records,CardService.Record(pocket.card)) end
  for _,card in CollectionService:GetTagged("Card") do
-  if card.Parent and not card:GetAttribute("OriginalOwnerUserId") and card:GetAttribute("Escaped") and (carried[player]==card or card:GetAttribute("PickupOwnerUserId")==player.UserId) then
+  if card.Parent and (not pocket or pocket.card~=card) and not card:GetAttribute("OriginalOwnerUserId") and card:GetAttribute("Escaped") and (carried[player]==card or card:GetAttribute("PickupOwnerUserId")==player.UserId) then
    table.insert(records,CardService.Record(card))
   end
  end
  return records
 end
 function CardService.RestoreSecured(player,records)
- for index,record in records do if index>Config.DropPlayer.SafeCargoLimit then break end local card=CardService.RestoreRecord(record,Config.FallbackDropPosition) if card then secureAtHome(player,card) end end
+ for index,record in records do
+  if index>Config.DropPlayer.SafeCargoLimit then break end
+  local card=CardService.RestoreRecord(record,Config.FallbackDropPosition)
+  if card then
+   if record.Pocket==true and not pockets[player] then
+    card:SetAttribute("Escaped",true)
+    card:SetAttribute("SecuredOwnerUserId",player.UserId)
+    card:SetAttribute("SecuredHotbar",true)
+    pocketCard(player,card,false)
+   else
+    secureAtHome(player,card)
+   end
+  end
+ end
 end
 local function currentStage(position)
  for _,zone in CollectionService:GetTagged("StageZone") do
@@ -289,7 +417,11 @@ end
 
 local function onPlayerAdded(player: Player)
 	player.CharacterAdded:Connect(function(char) onCharacterAdded(player, char) end)
-	player.CharacterRemoving:Connect(function(char) CardService.DropCarried(player, char) end)
+	player.CharacterRemoving:Connect(function(char)
+  CardService.DropCarried(player,char)
+  local pocket=pockets[player]
+  if pocket and pocket.tool then pocket.tool:Destroy() pocket.tool=nil end
+ end)
 	if player.Character then
 		task.spawn(onCharacterAdded, player, player.Character)
 	end
@@ -308,7 +440,15 @@ function CardService.Init(returnStolenFn,slotService)
 	end
 	Players.PlayerRemoving:Connect(function(player)
 		CardService.DropCarried(player)
-		lastPos[player] = nil
+		task.defer(function()
+   local pocket=pockets[player]
+   if pocket then
+    pockets[player]=nil
+    if pocket.tool then pocket.tool:Destroy() end
+    pocket.card:Destroy()
+   end
+  end)
+  lastPos[player] = nil
   dropCooldown[player]=nil
   for _,card in CollectionService:GetTagged("Card") do if card:GetAttribute("PickupOwnerUserId")==player.UserId then card:Destroy() end end
 	end)
@@ -332,6 +472,11 @@ function CardService.Init(returnStolenFn,slotService)
        card:SetAttribute("RemainingLifetime",nil) card:SetAttribute("WorldExpiresAt",nil)
        player:SetAttribute("CanDropPlayer",false)
        safePending[player]=nil
+       local released=CardService.Release(player)
+       if released then
+        released:SetAttribute("SecuredHotbar",true)
+        pocketCard(player,released,true)
+       end
        Remotes.SafeReturn:FireClient(player,card:GetAttribute("CardName"))
       end
      end

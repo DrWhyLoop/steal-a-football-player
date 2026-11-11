@@ -6,6 +6,7 @@ local Format=require(game.ReplicatedStorage.Shared.NumberFormat)
 local PlayerData=require(script.Parent.PlayerData)
 local Stats=require(script.Parent.PlayerStats)
 local Purchases=require(script.Parent.Purchases)
+local TrailShop=require(script.Parent.TrailShop)
 local Service={}
 local cfg=Config.Treadmills
 local pads={} local training={} local cooldown={} local nextGain={}
@@ -13,8 +14,17 @@ local PlotService,CardService
 local byId={}
 for i,tier in cfg.Catalog do byId[tier.Id]={tier=tier,index=i} end
 local function status(player,text) Remotes.TreadmillStatus:FireClient(player,text) end
+-- Walking speed from Speed Points: linear in log10(1 + points) between the SpeedCurve points (the last speed is the cap).
 local function speed(player)
- return math.min(cfg.MaxWalkSpeed,cfg.MovementBase*(1+Stats.Get(player,"Speed")/cfg.PointsPerScale)^cfg.MovementExponent)
+ local x,curve=math.log10(1+Stats.Get(player,"Speed")),cfg.SpeedCurve
+ local previous=curve[1]
+ for i=2,#curve do
+  local point=curve[i]
+  local x0,x1=math.log10(1+previous[1]),math.log10(1+point[1])
+  if x<=x1 then return previous[2]+(point[2]-previous[2])*(x-x0)/(x1-x0) end
+  previous=point
+ end
+ return previous[2]
 end
 function Service.UpdateSpeed(player)
  local char=player.Character local h=char and char:FindFirstChildOfClass("Humanoid")
@@ -22,7 +32,6 @@ function Service.UpdateSpeed(player)
   local card=CardService.GetCarried(player)
   h.WalkSpeed=speed(player)*(card and Config.Tiers[card:GetAttribute("Tier")].WalkSpeed/Config.BaseWalkSpeed or 1)
  end
- player:SetAttribute("MovementSpeed",speed(player))
 end
 local function stop(player)
  training[player]=nil nextGain[player]=nil player:SetAttribute("Training",false)
@@ -128,7 +137,7 @@ function Service.Init(plotService,cardService)
     if os.clock()>=(nextGain[player] or math.huge) then
      nextGain[player]=os.clock()+cfg.TickSeconds
      local tier=byId[player:GetAttribute("TreadmillId")].tier
-     Stats.Add(player,"Speed",cfg.BaseGain*tier.Multiplier)
+     Stats.Add(player,"Speed",cfg.BaseGain*tier.Multiplier*TrailShop.Multiplier(player))
      Service.UpdateSpeed(player)
     end
    elseif training[player] then stop(player) end

@@ -1,6 +1,7 @@
 --[[
 	CashService: adds income to the player's Cash balance (PlayerStats) and runs the per-second income tick.
-	Income each tick = sum of CashPerSecond of cards placed on the player's plot.
+	Each tick the plot's placed cards add their CashPerSecond to their own slot's pending cash (SlotService.Accrue);
+	the owner collects it from the slot's pad.
 	AddCash() is the entry point for shops/rewards.
 ]]
 
@@ -11,7 +12,6 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Stats = require(script.Parent.PlayerStats)
 
 local CashService = {}
-local remainder = {}
 
 local PlotService, SlotService -- injected in Init
 
@@ -29,7 +29,6 @@ function CashService.Init(plotService, slotService)
 	SlotService = slotService
 
 	Players.PlayerAdded:Connect(Stats.Setup)
- Players.PlayerRemoving:Connect(function(player) remainder[player]=nil end)
 	for _, p in ipairs(Players:GetPlayers()) do
 		Stats.Setup(p)
 	end
@@ -40,13 +39,7 @@ function CashService.Init(plotService, slotService)
 			for _, player in ipairs(Players:GetPlayers()) do
 				local plot = PlotService.GetPlot(player)
 				if plot and player:GetAttribute("DataReady")~=false then
-					local income = SlotService.GetPlotIncome(plot) * Config.CashTickSeconds * CashService.Boost(player)
-					if income > 0 then
-						local pending=(remainder[player] or 0)+income
-      local whole=math.floor(pending)
-      remainder[player]=pending-whole
-      CashService.AddCash(player, whole)
-					end
+					SlotService.Accrue(plot, Config.CashTickSeconds, CashService.Boost(player))
 				end
 			end
 		end

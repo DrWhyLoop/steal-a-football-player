@@ -42,13 +42,16 @@ def roll_mult(P, rnd, lucky, sz_odds):
 def run(P, tier_inc, pick_power, pick_cost, tread_cost, seed=1, minutes=720, celestial=0, income_mult=1, sample=None):
     global LAST
     rnd = random.Random(seed)
-    stats, reach, speed_at = {}, {}, {}
+    stats, reach, speed_at, pts_at, events = {}, {}, {}, {}, []
     t = 0; cash = 0; pts = 0; pick = 0; tread = 0; cards = []; broken = 0; income = 0
+    trail = 0; trails = P.get("trails", [(0, 1)])
     trip_left = None; trip = None; golden = None; next_golden = P['golden_interval']
     while t < minutes*60:
         changed = False
         while pick+1 < len(pick_power) and cash >= pick_cost[pick+1]: cash -= pick_cost[pick+1]; pick += 1
         while tread+1 < len(TREAD_MULT) and tread_cost[tread+1] <= cash*P['treadmill_buy_frac']: cash -= tread_cost[tread+1]; tread += 1
+        while trail+1 < len(trails) and trails[trail+1][0] <= cash*P["treadmill_buy_frac"]:
+            trail += 1; cash -= trails[trail][0]; events.append((t, trail, pts))
         if cards:
             for _ in range(5):
                 order = sorted(range(len(cards)), key=lambda i: (cards[i][1], -cards[i][0]))
@@ -106,7 +109,7 @@ def run(P, tier_inc, pick_power, pick_cost, tread_cost, seed=1, minutes=720, cel
             st['trips'] += 1; st['walk'] += walk*sc; st['mine'] += mine*sc; st['other'] += other*sc
             st['train'] += dur*P['train_share']; st['dur'] += dur; st['v'] += v
             trip_left = dur; trip = (stage, tier, mults)
-            if stage+1 not in reach: reach[stage+1] = t; speed_at[stage+1] = v
+            if stage+1 not in reach: reach[stage+1] = t; speed_at[stage+1] = v; pts_at[stage+1] = pts
         trip_left -= 1
         if trip_left <= 0:
             for m in trip[2]:
@@ -116,10 +119,10 @@ def run(P, tier_inc, pick_power, pick_cost, tread_cost, seed=1, minutes=720, cel
             trip_left = None; changed = True
         if changed or t % 30 == 0: income = sum(b*P['up_income']**l for b, l in cards)
         cash += income*income_mult
-        pts += P['train_share']*P['gain']*max(TREAD_MULT[tread], celestial)
+        pts += P['train_share']*P['gain']*max(TREAD_MULT[tread], celestial)*trails[trail][1]
         t += 1
-        if sample is not None and t % 300 == 0: sample.append((t//60, pts, tread+1, pick+1, cash, income, speed(pts)*P['walk_mult']))
-    LAST = {'stats': stats, 'pts': pts, 'speed': speed_at}
+        if sample is not None and t % P.get('sample_every', 300) == 0: sample.append((t//60, pts, tread+1, pick+1, cash, income, speed(pts)*P["walk_mult"], trail))
+    LAST = {'stats': stats, 'pts': pts, 'speed': speed_at, 'pts_at': pts_at, 'events': events}
     return reach
 
 def hm(s): return f"{int(s//3600)}h{int(s%3600//60):02d}m"

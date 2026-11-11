@@ -4,11 +4,13 @@
 -- Rigs with standard R6/R15 joint names are animated by a real Animator from an animation pack (Config.MonsterGuards.Packs); bone-driven
 -- designs have no pack and are posed by the client from their bone clips.
 local Config=require(game.ReplicatedStorage.Shared.Config)
+local Pose=require(game.ReplicatedStorage.Shared.MonsterPose)
 local G=Config.GuardAlign
+local settings=Config.MonsterGuards
 local M={}
-local function bounds(model)
+local function bounds(model,includeInvisible)
  local lo,hi
- for _,p in model:GetDescendants() do if p:IsA("BasePart") and p.Transparency<1 then
+ for _,p in model:GetDescendants() do if p:IsA("BasePart") and (includeInvisible or p.Transparency<1) then
   local cf=p.CFrame local half=p.Size/2
   for x=-1,1,2 do for y=-1,1,2 do for z=-1,1,2 do
    local v=cf*Vector3.new(half.X*x,half.Y*y,half.Z*z)
@@ -34,7 +36,7 @@ local function weldGroups(visual,root)
   while queue[index] do for _,next in adjacent[queue[index]] or {} do if not seen[next] then seen[next]=true table.insert(queue,next) end end index+=1 end
   local w=Instance.new("WeldConstraint") w.Part0=root w.Part1=start w.Parent=start
  end
- local main=visual:FindFirstChild("HumanoidRootPart",true)
+ local main=visual:FindFirstChild("HumanoidRootPart",true) or visual:FindFirstChild("Root",true)
  if not main then for _,p in visual:GetDescendants() do if p:IsA("BasePart") and (not main or p.Size.Magnitude>main.Size.Magnitude) then main=p end end end
  weld(main)
  for _,p in visual:GetDescendants() do if p:IsA("BasePart") and not seen[p] then weld(p) end end
@@ -74,40 +76,114 @@ local function prepareJoints(visual,spec,rest)
   if angles then m.C1=m.C1*CFrame.Angles(math.rad(angles.X),math.rad(angles.Y),math.rad(angles.Z)):Inverse() end
  end
 end
+local function facing(visual,mode)
+ if mode=="Sand" then return CFrame.Angles(0,math.pi/2,0) end
+ if mode=="Walk" or mode=="WalkIdle" or mode=="Bramble" then
+  local left=visual:FindFirstChild("LeftUpperArm",true) or visual:FindFirstChild("Left Arm",true)
+  local right=visual:FindFirstChild("RightUpperArm",true) or visual:FindFirstChild("Right Arm",true)
+  if left and right then
+   local forward=Vector3.yAxis:Cross(right.Position-left.Position)
+   if forward.Magnitude>0 then return CFrame.lookAt(Vector3.zero,forward) end
+  end
+ end
+ local main=visual:FindFirstChild("HumanoidRootPart",true)
+ return main and main.CFrame.Rotation or CFrame.identity
+end
+
+local function bindSand(visual,root)
+ local sections={}
+ local head=visual.HEAD:GetBoundingBox().Position
+ for _,name in {"HEAD","Face","BODY","TAIL"} do
+  local section=visual[name]
+  local center=(name=="HEAD" or name=="Face") and head or section:GetBoundingBox().Position
+  local distance=center.Z-head.Z
+  local rest=CFrame.new(root.Position+Vector3.zAxis*distance):ToObjectSpace(section:GetPivot())
+  table.insert(sections,{model=section,rest=rest,distance=distance})
+ end
+ return sections
+end
+
+local function moveSand(view)
+ local root=view.root
+ local position=root.Position
+ local trail=view.trail
+ local previous=trail[#trail]
+ local distance=previous and (position-previous.position).Magnitude or 0
+ if not previous then
+  local length=view.depth
+  trail[1]={position=position-root.CFrame.LookVector*length,distance=-length}
+  previous={position=position,distance=0}
+  trail[2]=previous
+ elseif distance>0.05 then
+  previous={position=position,distance=previous.distance+distance}
+  table.insert(trail,previous)
+  while #trail>2 and trail[2].distance<previous.distance-view.depth do table.remove(trail,1) end
+ end
+ local weight=math.clamp(root.AssemblyLinearVelocity.Magnitude/math.max(view.speed,1),0,1)
+ for _,section in view.sections do
+  local offset=previous.distance-section.distance
+  local frame=root.CFrame
+  if section.distance>0 then
+   for i=#trail-1,1,-1 do
+    local a,b=trail[i],trail[i+1]
+    if offset>=a.distance or i==1 then
+     local point=a.position:Lerp(b.position,math.clamp((offset-a.distance)/(b.distance-a.distance),0,1))
+     local direction=(b.position-a.position)*Vector3.new(1,0,1)
+     if direction.Magnitude>0 then frame=CFrame.lookAt(point,point+direction) end
+     break
+    end
+   end
+  end
+  local lift=(1+math.sin(offset*settings.SandRippleFrequency))*settings.SandRippleHeight*weight
+  section.model:PivotTo((frame+Vector3.yAxis*lift)*section.rest)
+ end
+end
+
 function M.Build(entry,position)
  local name=entry.Design
+ local eye=name=="Stage06Eye"
  local model=Instance.new("Model") model.Name=name
  local root=Instance.new("Part") root.Name="GuardRoot" root.Size=Config.GuardSize
  root.Transparency=1 root.CanCollide=false root.CanTouch=false root.CanQuery=false root.CastShadow=false
  root.CFrame=CFrame.new(position) root.Parent=model model.PrimaryPart=root
  local visual=game.ServerStorage.MonsterTemplates[name]:Clone() visual.Name="Visual" visual.PrimaryPart=nil visual.Parent=model
  -- Turn the rig so its HumanoidRootPart faces the way the guard walks (-Z).
- local main=visual:FindFirstChild("HumanoidRootPart",true)
- if main then local pivot=visual:GetPivot() visual:PivotTo(CFrame.new(pivot.Position)*main.CFrame.Rotation:Inverse()*pivot.Rotation) end
- local center,size=bounds(visual)
+ local pivot=visual:GetPivot()
+ visual:PivotTo(CFrame.new(pivot.Position)*facing(visual,entry.Pose):Inverse()*pivot.Rotation)
+ local center,size=bounds(visual,eye)
  -- Some supplied skinned runners were imported lying on their backs.
- if size.Y<size.Z/2 then visual:PivotTo(CFrame.new(center)*CFrame.Angles(math.pi/2,0,0)*CFrame.new(-center)*visual:GetPivot()) end
- center,size=bounds(visual)
+ if not entry.Pose and size.Y<size.Z/2 then visual:PivotTo(CFrame.new(center)*CFrame.Angles(math.pi/2,0,0)*CFrame.new(-center)*visual:GetPivot()) end
+ center,size=bounds(visual,eye)
  visual:ScaleTo(visual:GetScale()*entry.Height/size.Y)
- center,size=bounds(visual)
+ center,size=bounds(visual,eye)
  visual.WorldPivot=CFrame.new(center)
  local y=Config.GroundY+size.Y/2
  visual:PivotTo(CFrame.new(position.X,y,position.Z))
  local pack=Config.MonsterGuards.Packs[entry.Pack]
  local rest=Config.MonsterGuards.RestPoses[name]
- if pack and (pack.Retarget or rest) then prepareJoints(visual,pack.Retarget and Config.MonsterGuards.Retargets[pack.Retarget],rest) end
- center,size=bounds(visual) -- a rest pose can move the feet: put the lowest point exactly on the floor
+ if entry.Pose and entry.Pose~="Sand" and entry.Pose~="Still" then
+  prepareJoints(visual,nil,nil)
+ elseif pack and (pack.Retarget or rest) then prepareJoints(visual,pack.Retarget and Config.MonsterGuards.Retargets[pack.Retarget],rest) end
+ center,size=bounds(visual,eye) -- a rest pose can move the feet: put the lowest point exactly on the floor
  visual:PivotTo(visual:GetPivot()+Vector3.new(0,Config.GroundY-(center.Y-size.Y/2),0))
- y=Config.GroundY+size.Y/2
+ if eye then visual:PivotTo(visual:GetPivot()+Vector3.yAxis*settings.Eye.Hover) end
+ y=Config.GroundY+size.Y/2+(eye and settings.Eye.Hover or 0)
  root.CFrame=CFrame.new(position.X,y,position.Z)
- local effects={} local light
+ local effects={} local light,eyeVisual
  for _,p in visual:GetDescendants() do
   if p:IsA("BasePart") then
-   p.Anchored=false p.Massless=true p.CanCollide=false p.CanTouch=false p.CanQuery=false p.CastShadow=false
+   p.Anchored=entry.Pose=="Sand" p.Massless=true p.CanCollide=false p.CanTouch=false p.CanQuery=false p.CastShadow=false
    if entry.Tint and p.Transparency<1 then p.Color=multiply(p.Color,entry.Tint) end
   elseif p:IsA("SurfaceAppearance") and entry.Tint then p.Color=multiply(p.Color,entry.Tint)
-  elseif p:IsA("Humanoid") or p:IsA("Animator") or p:IsA("AnimationController") or p:IsA("Animation") then p:Destroy() -- imported animations are owned by other creators and fail to load
-  elseif p:IsA("ParticleEmitter") then p.Enabled=false p.Rate=math.min(p.Rate,Config.MonsterGuards.ParticleRate) table.insert(effects,p)
+  elseif p:IsA("LuaSourceContainer") or p:IsA("Humanoid") or p:IsA("Animator") or p:IsA("AnimationController") or p:IsA("Animation") then p:Destroy() -- imported animations are owned by other creators and fail to load
+  elseif p:IsA("ParticleEmitter") then
+   p.Enabled=false
+   if eye then
+    eyeVisual=p
+   else
+    p.Rate=math.min(p.Rate,Config.MonsterGuards.ParticleRate)
+    table.insert(effects,p)
+   end
   elseif p:IsA("Trail") or p:IsA("Beam") then p.Enabled=false table.insert(effects,p)
   elseif p:IsA("Light") then
    if Config.MonsterGuards.BodyGlowDesigns[name] or light then p:Destroy()
@@ -119,7 +195,7 @@ function M.Build(entry,position)
    end
   end
  end
- weldGroups(visual,root)
+ if entry.Pose~="Sand" then weldGroups(visual,root) end
  if Config.MonsterGuards.BodyGlowDesigns[name] then
   local glow=Instance.new("Highlight") glow.Name="BodyGlow" glow.Adornee=visual
   glow.DepthMode=Enum.HighlightDepthMode.Occluded glow.FillColor=Config.MonsterGuards.BodyGlowColor
@@ -139,8 +215,22 @@ function M.Build(entry,position)
  for _,p in visual:GetDescendants() do
   if p:IsA("BasePart") and p.Transparency<1 and (p.Name:lower():find("foot") or p.Name:lower():find("leg")) then table.insert(ground,p) end
  end
- if #ground==0 then for _,p in visual:GetDescendants() do if p:IsA("BasePart") and p.Transparency<1 then table.insert(ground,p) end end end
+ if #ground==0 then for _,p in visual:GetDescendants() do if p:IsA("BasePart") and (eye or p.Transparency<1) then table.insert(ground,p) end end end
  local view={model=model,root=root,visual=visual,ground=ground,design=name,height=size.Y,width=size.X,depth=size.Z,y=y,align=align,orient=orient,effects=effects,pack=pack,moving=false,running=false,animated=false,speed=0,attackUntil=0}
+ view.pose=entry.Pose
+ view.eyeVisual=eyeVisual
+ if view.pose=="Sand" then
+  view.sections=bindSand(visual,root)
+  view.trail={}
+ elseif view.pose and view.pose~="Still" then
+  view.motors={}
+  for _,joint in visual:GetDescendants() do
+   if joint:IsA("Motor6D") and joint.Part0 and joint.Part1 then
+    table.insert(view.motors,{joint=joint,rest=joint.C0,name=joint.Part1.Name:lower()})
+   end
+  end
+  view.phase=0
+ end
  M.Hold(view)
  return model,view
 end
@@ -156,7 +246,9 @@ local function lowest(view)
  return bottom
 end
 local function settle(view)
- view.y-=math.clamp(lowest(view)-Config.GroundY,-G.MaxSettle,G.MaxSettle)*G.SettleGain
+ if view.sections then return end
+ local floor=Config.GroundY+(view.eyeVisual and settings.Eye.Hover or 0)
+ view.y-=math.clamp(lowest(view)-floor,-G.MaxSettle,G.MaxSettle)*G.SettleGain
 end
 function M.Hold(view)
  settle(view)
@@ -219,6 +311,7 @@ end
 -- Animations only play while a player is close enough to see them.
 function M.SetAnimated(view,enabled)
  view.animated=enabled
+ if view.eyeVisual then view.eyeVisual.Enabled=enabled end
  refreshAnimation(view)
 end
 local function setMoving(view,moving,speed,running)
@@ -239,11 +332,31 @@ function M.Drive(view,destination,speed,running)
  view.align.MaxVelocity=speed
  view.align.Position=Vector3.new(destination.X,view.y,destination.Z)
  view.orient.CFrame=CFrame.lookAt(Vector3.zero,delta)
+ if view.sections then
+  view.orient.MaxAngularVelocity=speed/settings.SandTurnRadius
+  local forward=view.root.CFrame.LookVector
+  local advance=math.clamp(forward:Dot(delta.Unit),0,1)*math.min(delta.Magnitude,settings.SandTurnRadius)
+  view.align.Position=Vector3.new(position.X,view.y,position.Z)+forward*advance
+ end
  setMoving(view,true,speed,running)
 end
 -- A hit: play the attack animation (the caller stuns the guard for as long).
 function M.Attack(view)
  view.attackUntil=os.clock()+Config.MonsterGuards.AttackSeconds
  refreshAnimation(view)
+end
+function M.UpdatePose(view,dt)
+ if view.sections then
+  moveSand(view)
+ elseif view.motors and (view.animated or view.wasAnimated) then
+  local speed=(view.root.AssemblyLinearVelocity*Vector3.new(1,0,1)).Magnitude
+  local stride=Config.MonsterGuards.StridePerHeight*view.height
+  view.phase=(view.phase+speed*dt/stride*2*math.pi)%(2*math.pi)
+  local weight=view.animated and view.moving and math.clamp(speed/stride,0,1) or 0
+  for _,entry in view.motors do
+   entry.joint.C0=entry.rest*Pose.Joint(entry.name,view.phase,view.pose,weight)
+  end
+  view.wasAnimated=view.animated
+ end
 end
 return M

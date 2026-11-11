@@ -12,10 +12,10 @@ function UI.Init()
  local gui=Instance.new("ScreenGui") gui.Name="TreadmillShop" gui.ResetOnSpawn=false gui.Parent=player.PlayerGui
  local open=button(gui,"Treadmills",UDim2.fromOffset(118,42),UDim2.new(1,-130,.48,0))
  local support=button(gui,"Feedback",UDim2.fromOffset(118,36),UDim2.new(1,-130,.48,48))
- local panel,title,scroll=UIKit.Panel(gui,"Shop","TREADMILLS","Train for Speed points. Movement increases gradually, up to "..Config.Treadmills.MaxWalkSpeed.." studs/s. One treadmill per plot.",74)
+ local panel,title,scroll=UIKit.Panel(gui,"Shop","TREADMILLS","Train for Speed Points. More Speed Points make you walk faster. One treadmill per plot.",74)
  local hud=Instance.new("Frame") hud.Name="PlayerStats" hud.AnchorPoint=Vector2.new(0,1)
- hud.Position=UDim2.new(0,14,1,-22) hud.Size=UDim2.new(.24,0,0,104) hud.BackgroundColor3=Color3.fromRGB(18,31,45) hud.BackgroundTransparency=.12 hud.Parent=gui
- local hudSize=Instance.new("UISizeConstraint") hudSize.MinSize=Vector2.new(175,104) hudSize.MaxSize=Vector2.new(220,104) hudSize.Parent=hud
+ hud.Position=UDim2.new(0,14,1,-22) hud.Size=UDim2.new(.24,0,0,78) hud.BackgroundColor3=Color3.fromRGB(18,31,45) hud.BackgroundTransparency=.12 hud.Parent=gui
+ local hudSize=Instance.new("UISizeConstraint") hudSize.MinSize=Vector2.new(175,78) hudSize.MaxSize=Vector2.new(220,78) hudSize.Parent=hud
  local hudCorner=Instance.new("UICorner") hudCorner.CornerRadius=UDim.new(0,12) hudCorner.Parent=hud
  local stats=label(hud,"",UDim2.new(1,-20,1,-12),UDim2.fromOffset(10,6)) stats.TextXAlignment=Enum.TextXAlignment.Left stats.TextSize=16
  local rows={}
@@ -61,7 +61,7 @@ function UI.Init()
   lastCash,lastPoints=cash,points
   hud.Visible=not panel.Visible or workspace.CurrentCamera.ViewportSize.X>=1100
   title.Text="TREADMILLS  |  $"..Format.Compact(cash)
-  stats.Text=("CASH  $%s\nSPEED  %s points\nMOVE  %.1f studs/s"):format(Format.Compact(cash),Format.Compact(points),player:GetAttribute("MovementSpeed") or Config.BaseWalkSpeed)
+  stats.Text=("CASH  $%s\nSPEED  %s"):format(Format.Compact(cash),Format.Compact(points))
   local cashOwned=player:GetAttribute("PassOwned_"..cashPass.Id)
   local cashPrice,cashText=priceLabel(cashPass.Id)
   cashDetails.Text=cashOwned and "Owned" or cashText..(cashPrice>0 and "\nOpens Roblox's purchase window. Nothing is charged until you confirm there." or "")

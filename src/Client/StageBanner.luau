@@ -1,9 +1,10 @@
--- Stage banner: shown when the player walks into a stage. Names the stage and the recommended movement speed (studs/s),
--- in red when the player is slower than that.
+-- Stage banner: shown when the player walks into a stage. Names the stage with its difficulty and the recommended Speed Points,
+-- in red when the player has fewer Speed Points than that.
 local Players=game:GetService("Players")
 local CS=game:GetService("CollectionService")
 local TweenService=game:GetService("TweenService")
 local Config=require(game.ReplicatedStorage.Shared.Config)
+local Format=require(game.ReplicatedStorage.Shared.NumberFormat)
 local Banner={}
 local function stageAt(position)
  for _,floor in CS:GetTagged("StageZone") do
@@ -14,16 +15,16 @@ end
 function Banner.Init()
  local player=Players.LocalPlayer
  local gui=Instance.new("ScreenGui") gui.Name="StageBanner" gui.ResetOnSpawn=false gui.Parent=player.PlayerGui
- local label=Instance.new("TextLabel") label.AnchorPoint=Vector2.new(.5,0) label.Position=UDim2.new(.5,0,0,70) label.Size=UDim2.fromOffset(420,76)
+ local label=Instance.new("TextLabel") label.AnchorPoint=Vector2.new(.5,0) label.Position=UDim2.new(.5,0,0,70) label.Size=UDim2.fromOffset(560,76)
  label.BackgroundColor3=Color3.fromRGB(14,22,32) label.BackgroundTransparency=.25 label.TextColor3=Color3.new(1,1,1) label.Font=Enum.Font.GothamBold
  label.TextSize=22 label.RichText=true label.Visible=false label.Parent=gui
  local corner=Instance.new("UICorner") corner.CornerRadius=UDim.new(0,12) corner.Parent=label
  local token=0
  local function show(stage)
   local info=Config.StageInfo[stage]
-  local mine=player:GetAttribute("MovementSpeed") or Config.BaseWalkSpeed
-  local color=mine<info.Speed and "#FF7070" or "#7DFF9B"
-  label.Text=('STAGE %d  -  %s\n<font size="18" color="%s">Recommended speed: %d (yours: %.0f)</font>'):format(stage,info.Name,color,info.Speed,mine)
+  local mine=player:GetAttribute("Speed") or 0
+  local color=mine<info.Points and "#FF7070" or "#7DFF9B"
+  label.Text=('STAGE %d  -  %s  (%s)\n<font size="18" color="%s">%s - yours: %s</font>'):format(stage,info.Name,info.Difficulty,color,Format.Recommended(info.Points),Format.Compact(mine))
   token+=1 local mine_token=token
   label.TextTransparency=0 label.BackgroundTransparency=.25 label.Visible=true
   task.delay(Config.StageBanner.Seconds,function()

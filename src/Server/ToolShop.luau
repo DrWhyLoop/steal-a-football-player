@@ -8,20 +8,21 @@ local Stats=require(script.Parent.PlayerStats)
 local PlayerData=require(script.Parent.PlayerData)
 local Purchases=require(script.Parent.Purchases)
 local Shop={}
+local CardService
 local cashById,premiumById={},{}
 for _,def in Config.CashTools do cashById[def.Id]=def end
 for _,def in Config.PremiumTools do premiumById[def.Id]=def end
 local nextRequest={}
 local function status(player,text) Remotes.ToolStatus:FireClient(player,text) end
 local function bestCashPower(player)
- local best=0
+ local best=Config.CashTools[1].Power
  for id,def in cashById do if player:GetAttribute("ToolOwned_"..id) and def.Power>best then best=def.Power end end
  return best
 end
 function Shop.Power(player)
  local id=player:GetAttribute("ToolId")
  local premium=premiumById[id]
- if premium then return bestCashPower(player)*premium.Multiplier end
+ if premium then return bestCashPower(player)*premium.Multiplier, true end
  return (cashById[id] or Config.CashTools[1]).Power
 end
 -- Robot Arm Drill: Right = normal grip. Left / Both put a welded copy of the tool in the left hand (LeftHand on R15, Left Arm on R6,
@@ -58,6 +59,9 @@ local function give(player)
  local char,backpack=player.Character,player:FindFirstChildOfClass("Backpack")
  local humanoid=char and char:FindFirstChildOfClass("Humanoid")
  if not def or not backpack or not humanoid then return end
+ local templates=game.ServerStorage.AxeTemplates
+ local template=templates:FindFirstChild(def.Template)
+ if not template or not template:IsA("Tool") then return end
  local held
  for _,name in {Config.PickaxeName,Config.Bat.Name} do
   for _,container in {backpack,char} do
@@ -65,16 +69,17 @@ local function give(player)
    if old then if container==char then held=name end old:Destroy() end
   end
  end
- local templates=game.ServerStorage.AxeTemplates
- local tool=templates[def.Template]:Clone()
+ local tool=template:Clone()
  tool.Name=Config.PickaxeName tool.ToolTip=def.Name tool.Parent=backpack
  if def.Arms then armHooks(player,tool) end
  local bat=templates[Config.Bat.Template]:Clone()
  bat.Name=Config.Bat.Name bat.ToolTip=Config.Bat.ToolTip bat.Parent=backpack
  if held then humanoid:EquipTool(backpack:FindFirstChild(held)) end
+ CardService.RefreshPocketTool(player)
 end
 local function equip(player,def)
  local profile=PlayerData.Get(player)
+ if not profile or def.ComingSoon or not game.ServerStorage.AxeTemplates:FindFirstChild(def.Template) then return end
  profile.data.Tool=def.Id player:SetAttribute("ToolId",def.Id) give(player) status(player,def.Name.." equipped.")
 end
 local function request(player,action,id)
@@ -120,7 +125,8 @@ local function revoked(player,key)
  for _,def in Config.CashTools do if player:GetAttribute("ToolOwned_"..def.Id) and def.Power>best.Power then best=def end end
  equip(player,best)
 end
-function Shop.Init()
+function Shop.Init(cardService)
+ CardService=cardService
  Remotes.ToolRequest.OnServerEvent:Connect(request)
  Purchases.Granted.Event:Connect(function(player,key) if premiumById[key] then equip(player,premiumById[key]) end end)
  Purchases.Revoked.Event:Connect(function(player,key) if premiumById[key] then revoked(player,key) end end)

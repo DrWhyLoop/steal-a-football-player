@@ -79,7 +79,9 @@ local function onSwing(player: Player, tool: Tool)
 	task.delay(Config.Axes.ImpactTime,function()
 		if not char.Parent or tool.Parent~=char or humanoid.Health<=0 or not root.Parent then return end
 		local cube,victim=findTarget(player,root,bat)
-		if cube then CubeService.Damage(cube,ToolShop.Power(player),player)
+		if cube then
+   local power,premium=ToolShop.Power(player)
+   CubeService.Damage(cube,power,player,premium)
 		elseif victim then
    local victimRoot=victim.Character and victim.Character:FindFirstChild("HumanoidRootPart")
    if victim.Character then victim.Character:SetAttribute("HurtStart",workspace:GetServerTimeNow()) end

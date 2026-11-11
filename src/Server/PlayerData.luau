@@ -14,7 +14,7 @@ local store
 local session=game.JobId~="" and game.JobId or HttpService:GenerateGUID(false)
 local PlotService,SlotService,CardService
 local function defaults()
- return {Cash=0,SpeedPoints=0,Hatched=0,Tools={Default=true},Tool="Default",ArmMode="Right",CashTier=1,TreadmillId="Base",Slots={},SafeCargo={},PlaySeconds=0,Visits=0,FirstSeen=os.time(),PurchaseHistory={},Entitlements={},Receipts={},Index={},IndexClaimed={},Daily={LastDay=0,Streak=0}}
+ return {Cash=0,SpeedPoints=0,Hatched=0,Tools={Default=true},Tool="Default",ArmMode="Right",TrailTier=1,TrailIndex=1,CashTier=1,TreadmillId="Base",Slots={},SafeCargo={},PlaySeconds=0,Visits=0,FirstSeen=os.time(),PurchaseHistory={},Entitlements={},Receipts={},Index={},IndexClaimed={},Daily={LastDay=0,Streak=0}}
 end
 local function finite(n,maximum)
  return type(n)=="number" and n==n and n>=0 and n<=maximum
@@ -56,6 +56,8 @@ local function sanitize(d)
  local premium={} for _,def in Config.PremiumTools do premium[def.Id]=true end
  -- the equipped tool must be an owned cash tool or a premium tool whose pass the profile holds
  if type(d.Tool)=="string" and (clean.Tools[d.Tool] or (premium[d.Tool] and clean.Entitlements[d.Tool])) then clean.Tool=d.Tool end
+ if finite(d.TrailTier,#Config.Trails.Catalog) and d.TrailTier>=1 then clean.TrailTier=math.floor(d.TrailTier) end
+ if finite(d.TrailIndex,clean.TrailTier) and d.TrailIndex>=1 then clean.TrailIndex=math.floor(d.TrailIndex) end
  if table.find(Config.ArmModes,d.ArmMode) then clean.ArmMode=d.ArmMode end
  if type(d.PurchaseHistory)=="table" then
   for i=math.max(1,#d.PurchaseHistory-settings.MaxPurchaseHistory+1),#d.PurchaseHistory do table.insert(clean.PurchaseHistory,d.PurchaseHistory[i]) end

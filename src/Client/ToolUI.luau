@@ -34,13 +34,14 @@ function UI.Init()
     Remotes.ToolRequest:FireServer("Arm",modes[(table.find(modes,player:GetAttribute("ArmMode") or modes[1]) or 0)%#modes+1])
    end)
   end
-  return {def=def,details=details,button=buy,arm=arm}
+  return {def=def,name=name,details=details,button=buy,arm=arm}
  end
  local cashRows,premiumRows={},{}
  header("CASH TOOLS",0)
  for index,def in Config.CashTools do
   local row=makeRow(def,index,150)
-  row.details.Text=("Power %s\n%s"):format(Format.Compact(def.Power),def.Cost==0 and "Free" or "$"..Format.Compact(def.Cost))
+  row.name.TextColor3=Config.ToolRarity[def.Rarity]
+  row.details.Text=("%s | Power %s\n%s"):format(def.Rarity,Format.Compact(def.Power),def.Cost==0 and "Free" or "$"..Format.Compact(def.Cost))
   row.button.Activated:Connect(function() Remotes.ToolRequest:FireServer(player:GetAttribute("ToolOwned_"..def.Id) and "Equip" or "Buy",def.Id) end)
   table.insert(cashRows,row)
  end
@@ -58,12 +59,16 @@ function UI.Init()
    local owned,equipped=player:GetAttribute("ToolOwned_"..id),player:GetAttribute("ToolId")==id
    UIKit.State(row.button,equipped and "Equipped" or owned and "Equip" or "Buy $"..Format.Compact(row.def.Cost),equipped,not equipped and (owned or cash>=row.def.Cost))
   end
+  local best=Config.CashTools[1].Power
+  for _,def in Config.CashTools do
+   if player:GetAttribute("ToolOwned_"..def.Id) then best=math.max(best,def.Power) end
+  end
   for _,row in premiumRows do
    local def=row.def
    local owned,equipped=player:GetAttribute("PassOwned_"..def.Id),player:GetAttribute("ToolId")==def.Id
    local price,priceText=UIKit.PriceLabel(def.Id)
    local note=owned and "Owned" or def.ComingSoon and "Coming soon" or priceText..(price>0 and "\nOpens Roblox's purchase window. Nothing is charged until you confirm there." or "")
-   row.details.Text=("Power x%.2f of your best cash tool\n%s"):format(def.Multiplier,note)
+   row.details.Text=("Power %s (%sx your best tool)\n%s"):format(Format.Compact(best*def.Multiplier),def.Multiplier,note)
    UIKit.State(row.button,equipped and "Equipped" or owned and "Equip" or def.ComingSoon and "Coming soon" or price>0 and "Buy "..priceText or priceText,equipped,not equipped and (owned or (not def.ComingSoon and price>0)))
    if row.arm then row.arm.Visible=owned==true UIKit.State(row.arm,"Arm: "..(player:GetAttribute("ArmMode") or Config.ArmModes[1]),false,true) end
   end

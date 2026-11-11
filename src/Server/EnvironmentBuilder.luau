@@ -6,6 +6,7 @@ configCopy.Parent = SS
 local Config = require(configCopy)
 configCopy:Destroy()
 local E = Config.Environment
+local Format = require(game.ReplicatedStorage.Shared.NumberFormat)
 local Builder = {}
 local function folder(name, parent)
 	local f = parent:FindFirstChild(name)
@@ -71,6 +72,12 @@ local function smallAsset(source, name, position, scale, angle)
 	local size = b.Size * scale
 	return fit(source,name,CFrame.new(position+Vector3.new(0,size.Y/2,0))*CFrame.Angles(0,angle or 0,0),size)
 end
+-- Entrance sign text: stage name, difficulty word (coloured) and the recommended Speed Points.
+local function stageSignText(n)
+	local info=Config.StageInfo[n]
+	return ('STAGE %d - %s\n<font color="#%s">%s</font>\n%s'):format(n,info.Name,Config.DifficultyColor[info.Difficulty]:ToHex(),info.Difficulty:upper(),Format.Recommended(info.Points))
+end
+
 local function sign(parent,name,position,size,face,text,color)
 	local p=Instance.new("Part")
 	p.Name,p.Size,p.Position=name,size,position
@@ -81,9 +88,20 @@ local function sign(parent,name,position,size,face,text,color)
 	gui.Name="SurfaceGui" gui.Face=face gui.SizingMode=Enum.SurfaceGuiSizingMode.PixelsPerStud gui.PixelsPerStud=30 gui.Parent=p
 	local label=Instance.new("TextLabel")
 	label.Name="Label" label.Size=UDim2.fromScale(0.94,0.92) label.Position=UDim2.fromScale(0.03,0.04)
-	label.BackgroundTransparency=1 label.Text=text label.TextScaled=true label.Font=Enum.Font.GothamBold
+	label.BackgroundTransparency=1 label.Text=text label.RichText=true label.TextScaled=true label.Font=Enum.Font.GothamBold
 	label.TextColor3=Color3.fromRGB(243,241,210) label.Parent=gui
 	return p
+end
+
+-- Rewrites the size and text of the existing entrance signs (edit time, after Config.StageInfo or StageSignSize change).
+function Builder.UpdateStageSigns()
+	for n=1,Config.StageCount do
+		for _,side in {-1,1} do
+			local part=workspace.Greybox.Environment.Stages["Stage_"..n]["StageSign_"..side]
+			part.Size=E.StageSignSize
+			part.SurfaceGui.Label.RichText=true part.SurfaceGui.Label.Text=stageSignText(n)
+		end
+	end
 end
 
 function Builder.BuildStage(n)
@@ -117,7 +135,7 @@ function Builder.BuildStage(n)
 	for _, side in {-1,1} do
 		sign(group,"StageSign_"..side,Vector3.new(stage.Position.X+side*(stage.Size.X/2-0.35),top+E.StageSignHeight,stage.Position.Z-stage.Size.Z/2+18),
 			E.StageSignSize,side==1 and Enum.NormalId.Left or Enum.NormalId.Right,
-			"STAGE "..n.."\n"..Config.StageTier[n],E.StageSignColor)
+			stageSignText(n),E.StageSignColor)
 		for _, fraction in {-0.32,0.32} do
 			local position=Vector3.new(stage.Position.X+side*(stage.Size.X/2-E.EdgeInset),top,stage.Position.Z+stage.Size.Z*fraction)
 			smallAsset(sources.Bush,"EdgeBush",position,E.BushScale,rng:NextNumber(0,math.pi*2)).Parent=group
@@ -451,63 +469,88 @@ function Builder.BuildFences()
  return count
 end
 
--- Top-face SurfaceGui text runs along the part's LookVector with "up" along -X. The player stands on the +direction (Z)
--- side of the pad facing it, so their right is +X*direction: look that way (size = depth, thickness, width), then tilt
--- the panel about its Z axis so its top leans towards the player for a readable angle.
-local function facePlayer(part,position,size,direction,tiltDegrees)
- part.Size=size
- part.CFrame=CFrame.lookAt(position,position+Vector3.new(direction,0,0))*CFrame.Angles(0,0,-math.rad(tiltDegrees))
+-- Rebuild every display from ServerStorage.SlotTemplates (scaled to Config.PlotSlots): a pedestal standing on the floor where the old
+-- gray pad was, a collect pad in front of it and a yellow upgrade button stand beside it. The first run also removes the old pad,
+-- its plinth stack and the old green/brown panels; later runs reuse the pad position stored on each pedestal.
+local function scaled(template: Model, size: number): Model
+ local model=template:Clone()
+ model:ScaleTo(size/template:GetAttribute("SourceSize"))
+ return model
 end
 
--- Rebuild all three floors from the actual gray display surfaces, not the green plates.
+local function billboard(part: BasePart, offset: number, textColor: Color3)
+ local P=Config.PlotSlots
+ local gui=Instance.new("BillboardGui") gui.Name="InfoGui" gui.Size=UDim2.fromOffset(P.LabelWidth,P.LabelHeight) gui.StudsOffsetWorldSpace=Vector3.new(0,offset,0)
+ gui.MaxDistance=P.LabelDistance gui.LightInfluence=0 gui.Enabled=false gui.Adornee=part gui.Parent=part
+ local label=Instance.new("TextLabel") label.Name="Label" label.Size=UDim2.fromScale(1,1) label.BackgroundTransparency=1 label.Font=Enum.Font.GothamBold
+ label.TextScaled=true label.TextColor3=textColor label.TextStrokeTransparency=0.3 label.RichText=true label.Parent=gui
+end
+
 function Builder.BuildDisplaySlots(n)
  local plot=workspace.Greybox.Plots["Plot_"..n]
- local pads,greens={},{}
+ local P=Config.PlotSlots
+ local templates=SS.SlotTemplates
+ local pads,old={},{} -- pads[id]={CFrame,Size}; old = parts of the previous display to delete
  for _,p in plot.Visuals:GetDescendants() do if p:IsA("BasePart") then
   local id=tonumber(p.Name:match("^Slot(%d+)$"))
-  if id and p.Size.X>2 and p.Size.X<2.3 and p.Size.Y>0.045 and p.Size.Y<0.065 and p.Size.Z>3.3 then pads[id]=p
-  elseif id and p.Size.X>2.5 and p.Size.Y>0.07 and p.Size.Y<0.1 and p.Size.Z>3 then table.insert(greens,p) end
+  if id and p.Size.X>2 and p.Size.X<2.3 and p.Size.Y>0.045 and p.Size.Y<0.065 and p.Size.Z>3.3 then pads[id]={CFrame=p.CFrame,Size=p.Size} end
  end end
- local oldPanels=plot:FindFirstChild("EarningsPanels")
- if oldPanels then for _,p in oldPanels:GetChildren() do table.insert(greens,p) end end
- if not oldPanels then for _,p in plot.Slots:GetChildren() do table.insert(greens,p) end end
- local panels=Instance.new("Folder") panels.Name="NewEarningsPanels" panels.Parent=plot
- local upgrades=plot:FindFirstChild("UpgradePanels") if upgrades then upgrades:Destroy() end
- upgrades=Instance.new("Folder") upgrades.Name="UpgradePanels" upgrades.Parent=plot
- local slots=Instance.new("Folder") slots.Name="NewSlots" slots.Parent=plot
- local function label(part,text)
-  local gui=Instance.new("SurfaceGui") gui.Name="InfoGui" gui.Face=Enum.NormalId.Top gui.SizingMode=Enum.SurfaceGuiSizingMode.PixelsPerStud gui.PixelsPerStud=80 gui.Parent=part
-  local l=Instance.new("TextLabel") l.Name="Label" l.Size=UDim2.fromScale(1,1) l.BackgroundTransparency=1 l.Font=Enum.Font.GothamBold l.TextScaled=true l.TextColor3=Color3.new(1,1,1) l.TextStrokeTransparency=0.3 l.Text=text l.Parent=gui
+ for _,m in (plot:FindFirstChild("Pedestals") and plot.Pedestals:GetChildren() or {}) do
+  local id=tonumber(m.Name:match("%d+"))
+  if id and not pads[id] then pads[id]={CFrame=m:GetAttribute("PadCFrame"),Size=m:GetAttribute("PadSize")} end
  end
- local count=0
+ -- Old display: everything of the pad stack (pad, plinth slabs, frame lines, placeholder) within the pad footprint above the floor.
+ for _,p in plot.Visuals:GetDescendants() do if p:IsA("BasePart") and p.Size.X<6 and p.Size.Z<6 then
+  for _,pad in pads do
+   local d=pad.CFrame:PointToObjectSpace(p.Position)
+   if math.abs(d.X)<pad.Size.X/2+0.5 and math.abs(d.Z)<pad.Size.Z/2+1 and d.Y>-1.3 and d.Y<0.2 then table.insert(old,p) break end
+  end
+ end end
+ local groundParams=RaycastParams.new() groundParams.FilterType=Enum.RaycastFilterType.Include groundParams.FilterDescendantsInstances={plot.Visuals,plot.Base}
+ local function groundY(position: Vector3,fallback: number)
+  local hit=workspace:Raycast(position+Vector3.new(0,2,0),Vector3.new(0,-6,0),groundParams)
+  return hit and hit.Position.Y or fallback
+ end
+ for _,name in {"Pedestals","CollectPads","UpgradeStands","NewSlots"} do local f=plot:FindFirstChild(name) if f then f:Destroy() end end
+ local function newFolder(name) local f=Instance.new("Folder") f.Name=name f.Parent=plot return f end
+ local pedestals,collects,stands,slots=newFolder("Pedestals"),newFolder("CollectPads"),newFolder("UpgradeStands"),newFolder("NewSlots")
+ local count,parts=0,0
  for id=1,Config.SlotsPerPlot do
   local pad=assert(pads[id],"Missing gray display "..id)
-  local green,best
-  for _,p in greens do local dy=math.abs(p.Position.Y-pad.Position.Y) local flat=Vector2.new(p.Position.X-pad.Position.X,p.Position.Z-pad.Position.Z).Magnitude
-   if dy<2 and flat<6 and (not best or flat<best) then green,best=p,flat end
-  end
-  assert(green,"Missing earnings panel "..id)
-  local direction=pad.Position.Z<plot.Base.Position.Z and 1 or -1
-  local panel=green:Clone() panel:ClearAllChildren() for _,tag in CS:GetTags(panel) do CS:RemoveTag(panel,tag) end
-  panel.Name="Earnings_"..id panel.Anchored=true panel.CanCollide=false panel.CanTouch=false panel.CanQuery=false panel.Transparency=0 panel.Parent=panels label(panel,Config.PlotSlots.EmptyText)
-  local footprint=Config.PlotSlots.EarningsFootprint
-  facePlayer(panel,panel.Position,Vector3.new(footprint.X,green.Size.Y,footprint.Y),direction,Config.PlotSlots.EarningsTiltDegrees)
-  local upgrade=Instance.new("Part") upgrade.Name="Upgrade_"..id
-  facePlayer(upgrade,pad.Position+Vector3.new(0,0.12,direction*(pad.Size.Z/2+Config.PlotSlots.UpgradeOffset)),Config.PlotSlots.PanelSize,direction,Config.PlotSlots.UpgradeTiltDegrees)
-  upgrade.Color=Color3.fromRGB(200,145,30) upgrade.Material=Enum.Material.SmoothPlastic upgrade.Anchored=true upgrade.CanCollide=false upgrade.CanTouch=false upgrade.Parent=upgrades label(upgrade,"Place a player")
-  local slot=Instance.new("Part") slot.Name="Slot_"..id slot.Size=Vector3.new(pad.Size.X,E.SlotThickness,pad.Size.Z) slot.CFrame=pad.CFrame+Vector3.new(0,(pad.Size.Y+E.SlotThickness)/2,0)
-  slot.Anchored=true slot.Transparency=1 slot.CanCollide=false slot.CanTouch=false slot.CanQuery=false slot:SetAttribute("SlotIndex",id) slot:SetAttribute("Floor",math.ceil(id/Config.PlotSlots.SlotsPerFloor)) slot.Parent=slots CS:AddTag(slot,"Slot")
-  for name,target in {EarningsPanel=panel,UpgradePanel=upgrade} do local ref=Instance.new("ObjectValue") ref.Name=name ref.Value=target ref.Parent=slot end
-  for _,name in {"SlotPrompt","StealPrompt"} do local prompt=Instance.new("ProximityPrompt") prompt.Name=name prompt.MaxActivationDistance=Config.PlotSlots.PromptDistance prompt.HoldDuration=name=="StealPrompt" and Config.StealHoldSeconds or 0 prompt.RequiresLineOfSight=name=="StealPrompt" prompt.Parent=slot end
-  local prompt=Instance.new("ProximityPrompt") prompt.Name="UpgradePrompt" prompt.ActionText="Upgrade" prompt.KeyboardKeyCode=Config.PlotSlots.UpgradeKey prompt.MaxActivationDistance=Config.PlotSlots.UpgradePromptDistance prompt.RequiresLineOfSight=false prompt.Parent=upgrade
+  local center=pad.CFrame.Position
+  local direction=center.Z<plot.Base.Position.Z and 1 or -1
+  local floorY=groundY(center,center.Y-1.1)
+  local pedestal=scaled(templates.Pedestal,P.PedestalDiameter)
+  pedestal.Name="Pedestal_"..id pedestal:PivotTo(CFrame.new(center.X,floorY,center.Z))
+  pedestal:SetAttribute("PadCFrame",pad.CFrame) pedestal:SetAttribute("PadSize",pad.Size) pedestal.Parent=pedestals
+  local top=floorY+pedestal:GetAttribute("TopHeight")*pedestal:GetScale()
+  local slot=Instance.new("Part") slot.Name="Slot_"..id slot.Size=Vector3.new(pad.Size.X,E.SlotThickness,pad.Size.Z) slot.CFrame=CFrame.new(center.X,top-E.SlotThickness/2,center.Z)
+  slot.Anchored=true slot.Transparency=1 slot.CanCollide=false slot.CanTouch=false slot.CanQuery=false slot:SetAttribute("SlotIndex",id) slot:SetAttribute("Floor",math.ceil(id/P.SlotsPerFloor)) slot.Parent=slots CS:AddTag(slot,"Slot")
+  -- collect pad in front of the pedestal
+  local padPosition=center+Vector3.new(0,0,direction*P.CollectPadOffset)
+  local collect=scaled(templates.CollectPad,P.CollectPadSize)
+  collect.Name="CollectPad_"..id collect:PivotTo(CFrame.new(padPosition.X,groundY(padPosition,floorY),padPosition.Z)) collect.Parent=collects
+  collect.Light.Color=P.CollectLightColor
+  billboard(collect.Hitbox,collect.Hitbox.Size.Y/2+1,Color3.fromRGB(120,255,120))
+  -- yellow upgrade button stand beside it
+  local standPosition=center+Vector3.new(P.StandSideOffset,0,direction*P.StandForwardOffset)
+  local stand=scaled(templates.UpgradeStand,P.StandHeight)
+  stand.Name="UpgradeStand_"..id stand:PivotTo(CFrame.new(standPosition.X,groundY(standPosition,floorY),standPosition.Z)*CFrame.Angles(0,direction==1 and 0 or math.pi,0)) stand.Parent=stands
+  local button=stand.button button.Color=P.UpgradeButtonColor
+  billboard(button,1.4,Color3.new(1,1,1))
+  local prompt=Instance.new("ProximityPrompt") prompt.Name="UpgradePrompt" prompt.ActionText="Upgrade" prompt.KeyboardKeyCode=P.UpgradeKey prompt.MaxActivationDistance=P.UpgradePromptDistance prompt.RequiresLineOfSight=false prompt.Parent=button
+  for name,target in {CollectPad=collect.Hitbox,UpgradePanel=button} do local ref=Instance.new("ObjectValue") ref.Name=name ref.Value=target ref.Parent=slot end
+  for _,name in {"SlotPrompt","StealPrompt"} do local sp=Instance.new("ProximityPrompt") sp.Name=name sp.MaxActivationDistance=P.PromptDistance sp.HoldDuration=name=="StealPrompt" and Config.StealHoldSeconds or 0 sp.RequiresLineOfSight=name=="StealPrompt" sp.Parent=slot end
   count+=1
  end
- -- Remove only the old green surfaces; gray displays and their trim remain untouched.
- for _,p in greens do if p:IsDescendantOf(plot.Visuals) then p:Destroy() end end
+ for _,folder in {pedestals,collects,stands,slots} do for _,d in folder:GetDescendants() do if d:IsA("BasePart") then parts+=1 end end end
+ assert(parts<=P.PartBudgetPerSlot*Config.SlotsPerPlot,"Slot part budget exceeded: "..parts)
+ for _,p in old do local parent=p.Parent if parent then p:Destroy() while parent and parent~=plot.Visuals and parent:IsA("Model") and not parent:FindFirstChildWhichIsA("BasePart",true) do local up=parent.Parent parent:Destroy() parent=up end end end
  for _,s in plot.Slots:GetChildren() do for _,tag in CS:GetTags(s) do CS:RemoveTag(s,tag) end end
- plot.Slots:Destroy() if oldPanels then oldPanels:Destroy() end
- slots.Name="Slots" panels.Name="EarningsPanels"
- return count
+ plot.Slots:Destroy()
+ for _,name in {"EarningsPanels","UpgradePanels"} do local f=plot:FindFirstChild(name) if f then f:Destroy() end end
+ slots.Name="Slots"
+ return count,parts
 end
 
 return Builder

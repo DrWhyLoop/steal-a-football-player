@@ -1,0 +1,29 @@
+PICKAXES (power, cost): [(1, '0'), (3, '260'), (7, '700'), (18, '2.1K'), (47, '6.6K'), (120, '20K'), (330, '66K'), (850, '200K'), (2200, '620K'), (5900, '2M'), (15000, '6M'), (40000, '19M'), (110000, '63M'), (280000, '190M'), (730000, '580M'), (1900000, '1.8B'), (5000000, '5.6B'), (13000000, '17B'), (34000000, '54B'), (90000000, '170B')]
+TRAILS (mult, cost): [(1, '0'), (2, '2.5K'), (4, '6.1K'), (8, '15K'), (16, '37K'), (40, '120K'), (100, '400K'), (250, '1.3M'), (600, '4.1M'), (4000, '48M'), (10000, '160M'), (25000, '520M')]
+Stage 12 arrival: mean 3h38m min 3h27m max 3h53m
+stage arrival (mean): S1:0h00m S2:0h03m S3:0h13m S4:0h17m S5:0h36m S6:0h44m S7:0h53m S8:1h20m S9:1h42m S10:1h59m S11:2h55m S12:3h38m
+pickaxe bought at (min, mean): [(1, '0h05m'), (3, '0h05m'), (7, '0h09m'), (18, '0h16m'), (47, '0h19m'), (120, '0h27m'), (330, '0h37m'), (850, '0h46m'), (2200, '0h55m'), (5900, '1h08m'), (15000, '1h22m'), (40000, '1h44m'), (110000, '2h02m'), (280000, '2h30m'), (730000, '2h57m'), (1900000, '3h40m'), (5000000, '4h19m'), (13000000, '5h18m'), (34000000, '6h59m'), (90000000, '9h48m')]
+trail bought at (min, mean): [(2, '0h23m'), (4, '0h30m'), (8, '0h37m'), (16, '0h43m'), (40, '0h53m'), (100, '1h05m'), (250, '1h19m'), (600, '1h41m'), (4000, '2h33m'), (10000, '3h02m'), (25000, '3h57m')]
+hits to break a Normal cage at arrival (mean) / speed: S1:4h/29 S2:12h/29 S3:20h/39 S4:37h/45 S5:14h/82 S6:22h/106 S7:29h/153 S8:16h/200 S9:24h/200 S10:33h/200 S11:15h/200 S12:25h/200
+TRAILS (mult, price, bought at, speed at purchase -> +5 min):
+  x2      $2.5K   0h19m  60 -> 66
+  x4      $4.8K   0h22m  64 -> 70
+  x8      $9.3K   0h29m  71 -> 76
+  x16     $18K    0h37m  79 -> 92
+  x40     $43K    0h41m  89 -> 98
+  x100    $100K   0h49m  102 -> 110
+  x250    $250K   0h57m  112 -> 118
+  x600    $560K   1h07m  121 -> 127
+  x4000   $2.1M   1h30m  138 -> 146
+  x10000  $4.9M   1h44m  155 -> 163
+  x25000  $12M    1h56m  170 -> 177
+Stage 12 reached: mean 3h41m min 3h23m max 3h57m
+stage arrival: S1:0h00m S2:0h03m S3:0h12m S4:0h16m S5:0h36m S6:0h43m S7:0h53m S8:1h19m S9:1h41m S10:2h02m S11:2h58m S12:3h41m
+200 cap first hit at 2h58m; Stage 11 reached at 2h58m
+arrival speed vs recommended: S1:16/16 S2:26/26 S3:44/42 S4:57/58 S5:77/76 S6:93/93 S7:109/109 S8:131/131 S9:151/149 S10:177/178 S11:199/200 S12:200/200
+SPEED CURVE control points (Speed Points -> studs/s): [(0, 16), (330, 26), (2560, 42), (4212, 58), (72153, 76), (251866, 93), (1632903, 109), (68517539, 131), (827588229, 149), (6071109646, 178), (31944619545, 200)]
+guard check (carrier at recommended speed x carry penalty vs guard chase x1.15):
+  S9: carrier 121 vs guard 129 (guard catches); player at arrival speed 151 -> carrier 123
+  S10: carrier 134 vs guard 147 (guard catches); player at arrival speed 177 -> carrier 133
+  S11: carrier 150 vs guard 166 (guard catches); player at arrival speed 199 -> carrier 149
+  S12: carrier 138 vs guard 166 (guard catches); player at arrival speed 200 -> carrier 138

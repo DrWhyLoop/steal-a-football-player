@@ -11,6 +11,7 @@ local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 
 local Config = require(game:GetService("ReplicatedStorage").Shared.Config)
+local PlotWatch = require(script.Parent.PlotWatch)
 local PromptFilter = {}
 
 local player = Players.LocalPlayer
@@ -37,8 +38,7 @@ local function refreshPlot(plot: Model)
 end
 
 function PromptFilter.Init()
-	local plots = CollectionService:GetTagged("Plot")
-	for _, plot in ipairs(plots) do
+	PlotWatch.Each(function(plot)
 		for _, attribute in ipairs({ "OwnerUserId", "LockState" }) do
 			plot:GetAttributeChangedSignal(attribute):Connect(function() refreshPlot(plot) end)
 		end
@@ -48,9 +48,9 @@ function PromptFilter.Init()
 			end
 		end
 		refreshPlot(plot)
-	end
+	end)
 	player:GetAttributeChangedSignal("CarriedCard"):Connect(function()
-		for _, plot in ipairs(plots) do refreshPlot(plot) end
+		for _, plot in ipairs(CollectionService:GetTagged("Plot")) do refreshPlot(plot) end
 	end)
 end
 

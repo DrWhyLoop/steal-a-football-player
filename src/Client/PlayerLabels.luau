@@ -1,9 +1,10 @@
 -- One BillboardGui per character, adorned to its head bone so it moves with the animation.
--- Shows name (+ GIANT / variant tags) and tier-colored rarity; a status line only while the character is in the world or carried.
+-- Shows name (+ GIANT / variant tags), tier-colored rarity, income per second and a status line only while the character is in the world or carried.
 local CS=game:GetService("CollectionService")
 local Players=game:GetService("Players")
 local TweenService=game:GetService("TweenService")
 local Config=require(game.ReplicatedStorage.Shared.Config)
+local Format=require(game.ReplicatedStorage.Shared.NumberFormat)
 local Labels={}
 local STATUS_STATES={World=true,Revealing=true,Carried=true,Safe=true}
 local function addLine(gui,y,height,color)
@@ -25,9 +26,9 @@ function Labels.Init()
    local variant=card:GetAttribute("Variant")
    local size=Config.EggSizeById[card:GetAttribute("EggSize") or "Normal"]
    local tag=(size.Label and size.Label.." " or "")..(card:GetAttribute("Giant") and "GIANT " or "")..(variant and variant:upper().." " or "")
-   addLine(gui,0,.4,variant and Config.Variants[variant].Tint or Color3.new(1,1,1)).Text=tag..card:GetAttribute("CardName")
-   addLine(gui,.4,.32,Config.Tiers[card:GetAttribute("Tier")].Color).Text=card:GetAttribute("Tier")
-   entries[card]={status=addLine(gui,.72,.28,Config.CardLabels.StatusColor)}
+   addLine(gui,0,.3,variant and Config.Variants[variant].Tint or Color3.new(1,1,1)).Text=tag..card:GetAttribute("CardName")
+   addLine(gui,.3,.24,Config.Tiers[card:GetAttribute("Tier")].Color).Text=card:GetAttribute("Tier")
+   entries[card]={income=addLine(gui,.54,.24,Config.CardLabels.IncomeColor),status=addLine(gui,.78,.22,Config.CardLabels.StatusColor)}
    if card:GetAttribute("State")=="Revealing" then -- name and rarity pop in as the character rises
     gui.Size=UDim2.fromOffset(0,0)
     TweenService:Create(gui,TweenInfo.new(Config.Reveal.RiseSeconds,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Size=full}):Play()
@@ -43,6 +44,7 @@ function Labels.Init()
    for card,e in entries do
     if not card.Parent then entries[card]=nil
     else
+     e.income.Text="$"..Format.Compact(card:GetAttribute("CashPerSecond")).."/s"
      local expiry=card:GetAttribute("WorldExpiresAt")
      local remaining=expiry and math.max(0,expiry-workspace:GetServerTimeNow()) or card:GetAttribute("RemainingLifetime")
      local reserved=card:GetAttribute("BreakerUserId")~=Players.LocalPlayer.UserId and workspace:GetServerTimeNow()<(card:GetAttribute("PriorityUntil") or 0)

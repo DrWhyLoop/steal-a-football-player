@@ -29,6 +29,8 @@ local slotCards = {} -- [slotPart] = card part
 local homeSlot = {} -- [stolen card] = reserved original slot
 local reserved = {} -- [slot] = stolen card
 local upgradeUntil = {} -- [slot] = next purchase time
+local pending = {} -- [slot] = cash waiting on the slot's collect pad; it belongs to the slot, so it stays when the character is stolen or picked up
+local collectUntil = {} -- [slot] = next collect time
 local messageUntil = setmetatable({}, {__mode = "k"}) -- [player] = next feedback message time
 
 local function upgradeCost(card)
@@ -42,6 +44,13 @@ local function slotBoost(slot: BasePart): number
 	return CashService.Boost(plot and PlotService.GetOwner(plot))
 end
 
+local function showPending(slot: BasePart)
+	local gui = slot.CollectPad.Value.InfoGui
+	local amount = math.floor(pending[slot] or 0)
+	gui.Enabled = amount > 0
+	gui.Label.Text = "$" .. Format.Money(amount)
+end
+
 local function refreshSlot(slot: BasePart, card: Part?)
 	local boost = slotBoost(slot)
 	local name = card and card:GetAttribute("CardName")
@@ -52,7 +61,7 @@ local function refreshSlot(slot: BasePart, card: Part?)
 	slot.SlotPrompt.ActionText = card and "Pick up" or "Place player"
 	slot.SlotPrompt.ObjectText = beingStolen and "BEING STOLEN" or name or Config.PlotSlots.EmptyText
 	slot.StealPrompt.ObjectText = name or Config.PlotSlots.EmptyText
- slot.EarningsPanel.Value.InfoGui.Label.Text=beingStolen and "BEING STOLEN" or card and ("$%s/s"):format(Format.Money(card:GetAttribute("CashPerSecond")*boost)) or Config.PlotSlots.EmptyText
+	showPending(slot)
  local upgrade=slot.UpgradePanel.Value
  local level=card and card:GetAttribute("UpgradeLevel") or 0
  local cost=card and level<Config.PlotSlots.MaxLevel and upgradeCost(card) or nil
@@ -75,6 +84,7 @@ local function clearStolen(card: Part)
 end
 
 local function occupy(slot: BasePart, card: Part)
+ card:SetAttribute("SecuredHotbar",nil)
  if card:GetAttribute("UpgradeLevel")==nil then card:SetAttribute("UpgradeLevel",0) card:SetAttribute("BaseCashPerSecond",card:GetAttribute("CashPerSecond")) end
 	card.CFrame = slot.CFrame * CFrame.new(0, (slot.Size.Y + card.Size.Y) / 2 + Config.PlotSlots.DisplayClearance, 0)
 	card:SetAttribute("Escaped",true)
@@ -138,6 +148,7 @@ local function onOwnerTriggered(player: Player, slot: BasePart)
 
 	local placed = slotCards[slot]
 	if placed then
+		if placed:GetAttribute("FootballReserved") then return end
 		if CardService.Carry(player, placed) then
 			slotCards[slot] = nil
 			refreshSlot(slot, nil)
@@ -153,7 +164,7 @@ local function onStealTriggered(thief: Player, slot: BasePart)
 	local plot = PlotService.GetPlotOfInstance(slot)
 	local owner = plot and PlotService.GetOwner(plot)
 	local card = slotCards[slot]
-	if not owner or owner == thief or not card or LockService.IsLocked(plot) or not isAliveAndNear(thief, slot) then return end
+	if not owner or owner == thief or not card or card:GetAttribute("FootballReserved") or LockService.IsLocked(plot) or not isAliveAndNear(thief, slot) then return end
 	if not LineOfSight.IsClear(thief.Character, slot, slot.Position) then return end
 	if not CardService.Carry(thief, card) then return end
 
@@ -179,20 +190,34 @@ function SlotService.ReturnStolen(card: Part): boolean
 	return true
 end
 
---- Total cash/sec of all cards placed on a plot.
-function SlotService.GetPlotIncome(plot: Model): number
-	local total = 0
+--- Income of every placed card accumulates on its own slot's collect pad (the 2x Cash pass applies here).
+function SlotService.Accrue(plot: Model, seconds: number, boost: number)
 	for _, slot in ipairs(plot.Slots:GetChildren()) do
 		local card = slotCards[slot]
-		if card then total += card:GetAttribute("CashPerSecond") end
+		if card then
+			pending[slot] = (pending[slot] or 0) + card:GetAttribute("CashPerSecond") * seconds * boost
+			showPending(slot)
+		end
 	end
-	return total
+end
+
+-- The owner stepping on the pad moves the slot's pending cash into the wallet.
+local function onCollect(player: Player, slot: BasePart)
+	local plot = PlotService.GetPlotOfInstance(slot)
+	local amount = math.floor(pending[slot] or 0)
+	if amount <= 0 or not plot or PlotService.GetOwner(plot) ~= player or os.clock() < (collectUntil[slot] or 0) or not isAliveAndNear(player, slot) then return end
+	collectUntil[slot] = os.clock() + Config.PlotSlots.CollectCooldown
+	pending[slot] -= amount
+	CashService.AddCash(player, amount)
+	showPending(slot)
+	Remotes.CollectResult:FireClient(player, slot, amount)
 end
 
 --- Remove all placed cards from a plot (used when the owner leaves).
 local function clearPlot(plot: Model)
 	for _, slot in ipairs(plot.Slots:GetChildren()) do
 		if reserved[slot] then clearStolen(reserved[slot]) end
+		pending[slot] = nil
 		local card = slotCards[slot]
 		if card then
 			slotCards[slot] = nil
@@ -208,12 +233,27 @@ function SlotService.PlaceSecured(player,card)
  return false
 end
 -- A card being stolen is still the victim's until placed, except when the victim is leaving: the thief keeps it.
+function SlotService.GetFootballCards(plot)
+ local cards = {}
+ for _,slot in plot.Slots:GetChildren() do
+  local card = slotCards[slot]
+  local id = card and card:GetAttribute("ItemId")
+  if id and card.Parent and not reserved[slot] and not card:GetAttribute("FootballReserved") then
+   cards[id] = card
+  end
+ end
+ return cards
+end
+
 function SlotService.Export(plot,leaving)
  local records={}
  for _,slot in plot.Slots:GetChildren() do
   local card=slotCards[slot] or (not leaving and reserved[slot] or nil)
-  if card and card.Parent then
-   local record=CardService.Record(card) record.Slot=slot.Name
+  local cash=pending[slot] or 0
+  local record=card and card.Parent and CardService.Record(card) or cash>=1 and {} or nil -- pending cash is saved even with no character on the slot
+  if record then
+   record.Slot=slot.Name
+   record.Pending=cash>0 and ("%.17g"):format(cash) or nil
    table.insert(records,record)
   end
  end
@@ -224,6 +264,8 @@ function SlotService.Restore(plot,records)
   local record=records[i]
   local slot=type(record)=="table" and type(record.Slot)=="string" and plot.Slots:FindFirstChild(record.Slot)
   if slot and not slotCards[slot] and not reserved[slot] then
+   local cash=tonumber(record.Pending)
+   if cash and cash>0 then pending[slot]=math.min(cash,Config.PlayerData.MaxCash) showPending(slot) end
    local card=CardService.RestoreRecord(record,slot.Position)
    if card then occupy(slot,card) end
   end
@@ -254,10 +296,19 @@ function SlotService.Init(plotService, cardService, lockService)
 		refreshSlot(slot, slotCards[slot])
 		slot.StealPrompt.RequiresLineOfSight = true
 		slot.SlotPrompt.Triggered:Connect(function(player) onOwnerTriggered(player, slot) end)
-  local panel=slot.UpgradePanel.Value
-  local click=Instance.new("ClickDetector") click.MaxActivationDistance=Config.PlotSlots.InteractDistance click.Parent=panel
-  click.MouseClick:Connect(function(player) onUpgrade(player,slot) end)
-  panel.UpgradePrompt.Triggered:Connect(function(player) onUpgrade(player,slot) end)
+  local button=slot.UpgradePanel.Value
+  for _,part in button.Parent:GetChildren() do -- the whole button head is clickable
+   if part.Name=="button" or part.Name=="ButtonHolder" then
+    local click=Instance.new("ClickDetector") click.MaxActivationDistance=Config.PlotSlots.InteractDistance click.Parent=part
+    click.MouseClick:Connect(function(player) onUpgrade(player,slot) end)
+   end
+  end
+  button.UpgradePrompt.Triggered:Connect(function(player) onUpgrade(player,slot) end)
+  slot.CollectPad.Value.Touched:Connect(function(hit)
+   local character=hit:FindFirstAncestorOfClass("Model")
+   local player=character and Players:GetPlayerFromCharacter(character)
+   if player then onCollect(player,slot) end
+  end)
 		slot.StealPrompt.HoldDuration = Config.StealHoldSeconds
 		slot.StealPrompt.Triggered:Connect(function(player) onStealTriggered(player, slot) end)
 	end

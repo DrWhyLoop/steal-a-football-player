@@ -14,7 +14,7 @@ end
 
 local function build(egg,parent)
  local rowHeight=B.TextHeight+B.BarHeight
- local gui=Instance.new("BillboardGui") gui.Name="EggBar" gui.Adornee=egg gui.AlwaysOnTop=false gui.LightInfluence=0 gui.MaxDistance=B.MaxDistance
+ local gui=Instance.new("BillboardGui") gui.Name="EggBar" gui.Adornee=egg gui.AlwaysOnTop=false gui.LightInfluence=0 gui.MaxDistance=math.huge
  gui.Size=UDim2.fromScale(math.max(egg.Size.X,egg.Size.Z)*B.LabelWidth,rowHeight)
  gui.StudsOffsetWorldSpace=Vector3.new(0,egg.Size.Y/2+B.Gap+rowHeight/2,0)
  local text=Instance.new("TextLabel") text.Name="Text" text.BackgroundTransparency=1 text.Size=UDim2.fromScale(1,B.TextHeight/rowHeight)
@@ -69,8 +69,9 @@ function EggBars.Init()
    local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
    for egg,gui in bars do
     if not egg.Parent or not gui.Parent then gui:Destroy() bars[egg]=nil continue end
-    local damaged=egg:GetAttribute("HP")<egg:GetAttribute("MaxHP")
-    gui.Enabled=root~=nil and not egg:GetAttribute("Dead") and (damaged or (egg.Position-root.Position).Magnitude<=B.ShowDistance)
+    local recentHit=egg:GetAttribute("LastHitUserId")==player.UserId
+     and workspace:GetServerTimeNow()-(egg:GetAttribute("LastHitAt") or -math.huge)<=B.HitShowSeconds
+    gui.Enabled=root~=nil and not egg:GetAttribute("Dead") and (recentHit or (egg.Position-root.Position).Magnitude<=B.ShowDistance)
     if gui.Enabled then fit(gui.Text) end
    end
   end

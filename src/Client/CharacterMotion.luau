@@ -5,6 +5,7 @@ local RunService=game:GetService('RunService')
 local Shared=game.ReplicatedStorage.Shared
 local Config=require(Shared.Config)
 local Rig=require(Shared.RigAnimation)
+local Remotes=require(Shared.Remotes)
 local Motion={}
 function Motion.Init()
     local avatars={} local models={}
@@ -36,6 +37,10 @@ function Motion.Init()
         CS:GetInstanceRemovedSignal(tag):Connect(function(m) models[m]=nil end)
         for _,m in CS:GetTagged(tag) do addModel(m) end
     end
+    local eyeSettings=Config.MonsterGuards.Eye
+    local nextEyeReport=0
+    local sight=RaycastParams.new()
+    sight.RespectCanCollide=true
     RunService.PreSimulation:Connect(function()
         local me=Players.LocalPlayer.Character
         local observer=me and me:FindFirstChild('HumanoidRootPart')
@@ -51,13 +56,30 @@ function Motion.Init()
                 Rig.PoseHurt(a.rig,near and hurt and now-hurt or nil)
             end
         end
+        local reportEye=observer and workspace.CurrentCamera and now>=nextEyeReport
+        if reportEye then nextEyeReport=now+eyeSettings.ReportInterval end
         for model,view in models do
             local root=model.PrimaryPart
             if not model.Parent then models[model]=nil
             elseif root then
+                if reportEye and model:GetAttribute("MonsterDesign")=="Stage06Eye" then
+                    local offset=root.Position-observer.Position
+                    if Vector3.new(offset.X,0,offset.Z).Magnitude<=eyeSettings.Range then
+                        local emitter=model:FindFirstChildWhichIsA("ParticleEmitter",true)
+                        if emitter and emitter.Parent:IsA("Attachment") then
+                            local camera=workspace.CurrentCamera
+                            local point=emitter.Parent.WorldPosition
+                            local _,onScreen=camera:WorldToViewportPoint(point)
+                            sight.FilterDescendantsInstances={me,model}
+                            local origin=camera.CFrame.Position
+                            local watching=onScreen and not workspace:Raycast(origin,point-origin,sight)
+                            Remotes.EyeLook:FireServer(watching)
+                        end
+                    end
+                end
                 local near=observer and (root.Position-observer.Position).Magnitude<=Config.MonsterGuards.EffectsDistance
                 local moving=near and model:GetAttribute('Moving')==true
-                if near or view.active then Rig.PoseBones(view.rig,model:GetAttribute('AnimationClip') or 'RunR6',now,moving,model:GetAttribute('AnimationScale')) end
+                if near or view.active then Rig.PoseBones(view.rig,model:GetAttribute('AnimationClip') or 'RunR6',now,moving,model:GetAttribute('AnimationScale'),model:GetAttribute('CarryPose')) end
                 view.active=near
             end
         end
