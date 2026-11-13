@@ -12,6 +12,12 @@ function Controller.Init()
  local skies=RS:WaitForChild("WeatherSkies")
  local atmosphere=Lighting:FindFirstChildOfClass("Atmosphere")
  local lightTween,atmosphereTween
+ local function tweenAtmosphere() -- the stage mood scales the fog; its attributes are set by StageMood
+  local preset=W.Presets[state:GetAttribute("Current")]
+  if not preset or not atmosphere then return end
+  if atmosphereTween then atmosphereTween:Cancel() end
+  atmosphereTween=TweenService:Create(atmosphere,TweenInfo.new(W.TransitionSeconds),{Density=preset.Density*(Lighting:GetAttribute("StageDensityScale") or 1),Haze=preset.Haze*(Lighting:GetAttribute("StageHazeScale") or 1),Color=preset.Color}) atmosphereTween:Play()
+ end
  local function apply()
   local preset=W.Presets[state:GetAttribute("Current")]
   if not preset then return end
@@ -19,12 +25,11 @@ function Controller.Init()
   local sky=skies[preset.Sky]:Clone() sky.Name="ActiveWeatherSky" sky.Parent=Lighting
   if lightTween then lightTween:Cancel() end
   lightTween=TweenService:Create(Lighting,TweenInfo.new(W.TransitionSeconds),{Brightness=preset.Brightness,Ambient=preset.Ambient,OutdoorAmbient=preset.OutdoorAmbient}) lightTween:Play()
-  if atmosphere then
-   if atmosphereTween then atmosphereTween:Cancel() end
-   atmosphereTween=TweenService:Create(atmosphere,TweenInfo.new(W.TransitionSeconds),{Density=preset.Density,Haze=preset.Haze,Color=preset.Color}) atmosphereTween:Play()
-  end
+  tweenAtmosphere()
  end
  state:GetAttributeChangedSignal("Current"):Connect(apply) apply()
+ Lighting:GetAttributeChangedSignal("StageDensityScale"):Connect(tweenAtmosphere)
+ Lighting:GetAttributeChangedSignal("StageHazeScale"):Connect(tweenAtmosphere)
  local rainPart=Instance.new("Part") rainPart.Name="LocalWeatherRain" rainPart.Size=Vector3.new(W.RainArea,0.1,W.RainArea)
  rainPart.Transparency=1 rainPart.Anchored=true rainPart.CanCollide=false rainPart.CanTouch=false rainPart.CanQuery=false rainPart.CastShadow=false rainPart.Parent=workspace
  local rain=Instance.new("ParticleEmitter") rain.Name="Rain" rain.Texture=W.RainTexture rain.EmissionDirection=Enum.NormalId.Bottom
@@ -68,7 +73,7 @@ function Controller.Init()
    local position=characterRoot and characterRoot.Position or camera and camera.CFrame.Position
    local phase=state:GetAttribute("Current")
    params.FilterDescendantsInstances=character and {character} or {}
-   rain.Enabled=phase=="Rain" and position~=nil and not sheltered(position)
+   rain.Enabled=(phase=="Rain" or Lighting:GetAttribute("StageRain")==true) and position~=nil and not sheltered(position)
    local night=phase=="Night"
    for v in glow do if v:IsDescendantOf(workspace) then v.Enabled=night else glow[v]=nil end end -- streamed-out instances leave the set; they register again when they stream in
    task.wait(Config.Environment.VisibilityUpdateSeconds)

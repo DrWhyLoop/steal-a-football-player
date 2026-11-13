@@ -13,6 +13,7 @@ require(script.Parent.Knockback).Init()
 
 require(script.Parent.LandscapeController).Init()
 require(script.Parent.WeatherController).Init()
+task.spawn(require(script.Parent.StageMood).Init)
 require(script.Parent.AnimalMotion).Init()
 require(script.Parent.NpcMotion).Init()
 require(script.Parent.CharacterMotion).Init()

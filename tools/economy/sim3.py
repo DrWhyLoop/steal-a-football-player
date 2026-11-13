@@ -45,6 +45,7 @@ def run(P, tier_inc, pick_power, pick_cost, tread_cost, seed=1, minutes=720, cel
     stats, reach, speed_at, pts_at, events = {}, {}, {}, {}, []
     t = 0; cash = 0; pts = 0; pick = 0; tread = 0; cards = []; broken = 0; income = 0; earned = 0
     trail = 0
+    sets = P.get('sets'); owned = {}; set_mult = 1.0; set_times = {}   # collection sets: tier -> (roster weights, bonus)
     if state:  # rebirth: keep cash, owned items and cards; Speed Points restart at 0 and the onboarding is over
         cash = state['cash']; pick = state['pick']; tread = state['tread']; trail = state['trail']; cards = [list(c) for c in state['cards']]
         broken = P['onboarding_eggs']; income = sum(b*P['up_income']**l for b, l in cards)
@@ -121,17 +122,21 @@ def run(P, tier_inc, pick_power, pick_cost, tread_cost, seed=1, minutes=720, cel
         if trip_left <= 0:
             for m in trip[2]:
                 cards.append([tier_inc[trip[1]]*m, 0]); broken += 1
+                if sets and trip[1] in sets and trip[1] not in set_times:
+                    weights, bonus = sets[trip[1]]
+                    owned.setdefault(trip[1], set()).add(rnd.choices(range(len(weights)), weights)[0])
+                    if len(owned[trip[1]]) == len(weights): set_times[trip[1]] = t; set_mult += bonus
                 if len(cards) > P['slots']:
                     i = min(range(len(cards)), key=lambda k: cards[k][0]*P['up_income']**cards[k][1]); cards.pop(i)
             trip_left = None; changed = True
         if changed or t % 30 == 0: income = sum(b*P['up_income']**l for b, l in cards)
-        cash += income*income_mult; earned += income*income_mult
+        cash += income*income_mult*set_mult; earned += income*income_mult*set_mult
         pts += P['train_share']*P['gain']*max(TREAD_MULT[tread], celestial)*trails[trail][1]*gain_mult
         t += 1
         if stop12 and 12 in reach: break
         if stop_pts and pts >= stop_pts: break
         if sample is not None and t % P.get('sample_every', 300) == 0: sample.append((t//60, pts, tread+1, pick+1, cash, income, speed(pts)*P["walk_mult"], trail))
-    LAST = {'state': dict(cash=cash, pick=pick, tread=tread, trail=trail, cards=[list(c) for c in cards], t=t, income=income, earned=earned), 'stats': stats, 'pts': pts, 'speed': speed_at, 'pts_at': pts_at, 'events': events}
+    LAST = {'state': dict(cash=cash, pick=pick, tread=tread, trail=trail, cards=[list(c) for c in cards], t=t, income=income, earned=earned), 'stats': stats, 'pts': pts, 'speed': speed_at, 'pts_at': pts_at, 'events': events, 'set_times': set_times}
     return reach
 
 def hm(s): return f"{int(s//3600)}h{int(s%3600//60):02d}m"

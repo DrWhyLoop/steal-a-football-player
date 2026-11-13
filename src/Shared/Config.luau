@@ -175,14 +175,103 @@ Config.CubeCountPerStage = { 6, 6, 7, 7, 8, 8, 9, 10, 10, 11, 12, 4 }    -- per 
 -- that keeps a round trip to that stage's cages near 75 s; Stage 12 is the average arrival in the sim). Guard chase speeds are 80% of that walking speed.
 Config.StageBanner = { Seconds = 3.5, CheckSeconds = 0.25 }
 Config.DifficultyColor = { Easy = Color3.fromRGB(110, 230, 120), Medium = Color3.fromRGB(255, 225, 90), Hard = Color3.fromRGB(255, 160, 60), Insane = Color3.fromRGB(255, 80, 80), Impossible = Color3.fromRGB(190, 90, 255) }
+-- Per stage: Name/Difficulty/Points (signs and banner), Look (floor, walls, kept plants, decor; built by tools/BuildStageLooks.luau at edit time) and Mood
+-- (client-side lighting tween, Client/StageMood). Look.Walls: Material/Color = wall blocks, Top = hedge top, Vine = hanging vines (omit to hide). Decor entries:
+-- {Layout, Count, Material, Colors, ...}: Stripes = alternating bands along the stage, Cross = thin lines across, Edge = lines along both edges (Width),
+-- Long = lines along the stage (Width), Scatter = Shape (Disc/Block) with a size range. The sum of Count must stay within Config.StageLook.PartBudget.
 Config.StageInfo = {
- { Name = "Training Grounds", Difficulty = "Easy", Points = 0 }, { Name = "Clover Park", Difficulty = "Easy", Points = 330 },
- { Name = "Sandlot Yard", Difficulty = "Medium", Points = 2560 }, { Name = "Stone Quarry", Difficulty = "Medium", Points = 4210 },
- { Name = "Lantern Alley", Difficulty = "Medium", Points = 72200 }, { Name = "Mossy Ruins", Difficulty = "Hard", Points = 252000 },
- { Name = "Rust Harbor", Difficulty = "Hard", Points = 1630000 }, { Name = "Ember Works", Difficulty = "Hard", Points = 68500000 },
- { Name = "Frost Terrace", Difficulty = "Insane", Points = 828000000 }, { Name = "Neon Arcade", Difficulty = "Insane", Points = 6070000000 },
- { Name = "Storm Dome", Difficulty = "Impossible", Points = 31900000000 }, { Name = "Golden Colosseum", Difficulty = "Impossible", Points = 50400000000 },
+ { Name = "Training Grounds", Difficulty = "Easy", Points = 0,
+  Look = { Floor = { Material = Enum.Material.Grass, Color = Color3.fromRGB(88,138,63) }, Walls = { Material = Enum.Material.Ground, Color = Color3.fromRGB(112,84,52), Top = Color3.fromRGB(70,150,50), Vine = Color3.fromRGB(40,90,40) }, Keep = { Tuft = true, Bush = true, Bamboo = true },
+   Decor = {
+    { Layout = "Stripes", Count = 12, Material = Enum.Material.Grass, Colors = {Color3.fromRGB(78,128,56), Color3.fromRGB(98,150,70)} },
+    { Layout = "Cross", Count = 5, Material = Enum.Material.SmoothPlastic, Colors = {Color3.fromRGB(245,245,245)}, Width = 0.8 },
+    { Layout = "Edge", Count = 2, Material = Enum.Material.SmoothPlastic, Colors = {Color3.fromRGB(245,245,245)}, Width = 0.8 },
+   } },
+  Mood = { Tint = Color3.fromRGB(255,255,255), Saturation = 0.05, Contrast = 0.02, Brightness = 0.02, Decay = Color3.fromRGB(106,112,125), Glare = 0, Offset = 0.25, DensityScale = 0.9, HazeScale = 1, Bloom = 1 } }, -- 1
+ { Name = "Clover Park", Difficulty = "Easy", Points = 330,
+  Look = { Floor = { Material = Enum.Material.LeafyGrass, Color = Color3.fromRGB(70,125,55) }, Walls = { Material = Enum.Material.Ground, Color = Color3.fromRGB(96,84,52), Top = Color3.fromRGB(80,170,60), Vine = Color3.fromRGB(50,110,45) }, Keep = { Grass = true, Tuft = true, Bush = true, Bamboo = true },
+   Decor = {
+    { Layout = "Scatter", Count = 24, Material = Enum.Material.SmoothPlastic, Colors = {Color3.fromRGB(240,130,170), Color3.fromRGB(250,220,90), Color3.fromRGB(245,245,245), Color3.fromRGB(190,140,230)}, Shape = "Disc", Size = {2.5, 5} },
+   } },
+  Mood = { Tint = Color3.fromRGB(255,240,215), Saturation = 0.15, Contrast = 0.02, Brightness = 0.02, Decay = Color3.fromRGB(140,120,90), Glare = 0, Offset = 0.25, DensityScale = 1, HazeScale = 1, Bloom = 1 } }, -- 2
+ { Name = "Sandlot Yard", Difficulty = "Medium", Points = 2560,
+  Look = { Floor = { Material = Enum.Material.Sand, Color = Color3.fromRGB(214,176,112) }, Walls = { Material = Enum.Material.Sandstone, Color = Color3.fromRGB(196,150,95), Top = Color3.fromRGB(200,170,90), Vine = Color3.fromRGB(120,90,50) }, Keep = { Tuft = true, Bush = true }, Plant = Color3.fromRGB(190,170,90),
+   Decor = {
+    { Layout = "Scatter", Count = 16, Material = Enum.Material.Ground, Colors = {Color3.fromRGB(140,100,60), Color3.fromRGB(160,118,70)}, Shape = "Block", Size = {12, 30} },
+    { Layout = "Scatter", Count = 6, Material = Enum.Material.Slate, Colors = {Color3.fromRGB(120,110,100)}, Shape = "Disc", Size = {4, 8} },
+   } },
+  Mood = { Tint = Color3.fromRGB(255,214,170), Saturation = 0, Contrast = 0.05, Brightness = 0, Decay = Color3.fromRGB(170,120,70), Glare = 0.1, Offset = 0.3, DensityScale = 1.3, HazeScale = 1.4, Bloom = 1 } }, -- 3
+ { Name = "Stone Quarry", Difficulty = "Medium", Points = 4210,
+  Look = { Floor = { Material = Enum.Material.Slate, Color = Color3.fromRGB(100,106,116) }, Walls = { Material = Enum.Material.Slate, Color = Color3.fromRGB(95,100,110), Top = Color3.fromRGB(115,128,105), Vine = Color3.fromRGB(80,85,95) }, Keep = { Tuft = true, Bush = true }, Plant = Color3.fromRGB(110,125,100),
+   Decor = {
+    { Layout = "Scatter", Count = 14, Material = Enum.Material.Rock, Colors = {Color3.fromRGB(80,86,96), Color3.fromRGB(96,100,108)}, Shape = "Block", Size = {8, 20} },
+   } },
+  Mood = { Tint = Color3.fromRGB(200,212,228), Saturation = -0.25, Contrast = 0.08, Brightness = -0.02, Decay = Color3.fromRGB(100,110,125), Glare = 0, Offset = 0.25, DensityScale = 1.1, HazeScale = 1.1, Bloom = 0.8 } }, -- 4
+ { Name = "Lantern Alley", Difficulty = "Medium", Points = 72200,
+  Look = { Floor = { Material = Enum.Material.Cobblestone, Color = Color3.fromRGB(116,100,96) }, Walls = { Material = Enum.Material.Brick, Color = Color3.fromRGB(120,78,66), Top = Color3.fromRGB(60,90,50), Vine = Color3.fromRGB(60,45,45) }, Keep = { Tuft = true, Bush = true }, Plant = Color3.fromRGB(60,90,55),
+   Decor = {
+    { Layout = "Stripes", Count = 8, Material = Enum.Material.Cobblestone, Colors = {Color3.fromRGB(96,80,78), Color3.fromRGB(130,115,108)} },
+    { Layout = "Edge", Count = 2, Material = Enum.Material.Slate, Colors = {Color3.fromRGB(60,55,60)}, Width = 3 },
+   } },
+  Mood = { Tint = Color3.fromRGB(255,185,150), Saturation = 0.05, Contrast = 0.08, Brightness = -0.06, Decay = Color3.fromRGB(120,70,80), Glare = 0.2, Offset = 0.35, DensityScale = 1.3, HazeScale = 1.3, Bloom = 1.2 } }, -- 5
+ { Name = "Mossy Ruins", Difficulty = "Hard", Points = 252000,
+  Look = { Floor = { Material = Enum.Material.Slate, Color = Color3.fromRGB(84,104,82) }, Walls = { Material = Enum.Material.Rock, Color = Color3.fromRGB(80,100,80), Top = Color3.fromRGB(70,120,60), Vine = Color3.fromRGB(50,90,55) }, Keep = { Grass = true, Tuft = true, Bush = true, Bamboo = true }, Plant = Color3.fromRGB(70,110,80),
+   Decor = {
+    { Layout = "Scatter", Count = 20, Material = Enum.Material.Grass, Colors = {Color3.fromRGB(60,110,70), Color3.fromRGB(80,130,70)}, Shape = "Disc", Size = {4, 10} },
+   } },
+  Mood = { Tint = Color3.fromRGB(215,245,210), Saturation = -0.05, Contrast = 0, Brightness = -0.02, Decay = Color3.fromRGB(90,130,100), Glare = 0, Offset = 0.3, DensityScale = 1.3, HazeScale = 1.5, Bloom = 0.9 } }, -- 6
+ { Name = "Rust Harbor", Difficulty = "Hard", Points = 1630000,
+  Look = { Floor = { Material = Enum.Material.WoodPlanks, Color = Color3.fromRGB(104,84,64) }, Walls = { Material = Enum.Material.CorrodedMetal, Color = Color3.fromRGB(150,95,60), Top = Color3.fromRGB(150,80,40), Vine = Color3.fromRGB(90,60,40) }, Keep = {},
+   Decor = {
+    { Layout = "Scatter", Count = 10, Material = Enum.Material.DiamondPlate, Colors = {Color3.fromRGB(120,124,128)}, Shape = "Block", Size = {10, 22} },
+    { Layout = "Cross", Count = 4, Material = Enum.Material.CorrodedMetal, Colors = {Color3.fromRGB(140,90,60)}, Width = 3 },
+   } },
+  Mood = { Tint = Color3.fromRGB(205,208,212), Saturation = -0.35, Contrast = 0.05, Brightness = -0.05, Decay = Color3.fromRGB(95,100,105), Glare = 0, Offset = 0.3, DensityScale = 1.5, HazeScale = 1.6, Bloom = 0.8 } }, -- 7
+ { Name = "Ember Works", Difficulty = "Hard", Points = 68500000,
+  Look = { Floor = { Material = Enum.Material.Basalt, Color = Color3.fromRGB(38,34,38) }, Walls = { Material = Enum.Material.Basalt, Color = Color3.fromRGB(45,40,45), Top = Color3.fromRGB(120,30,20), Vine = Color3.fromRGB(70,25,20) }, Keep = {},
+   Decor = {
+    { Layout = "Scatter", Count = 18, Material = Enum.Material.CrackedLava, Colors = {Color3.fromRGB(255,110,40)}, Shape = "Block", Size = {6, 26} },
+    { Layout = "Long", Count = 2, Material = Enum.Material.CrackedLava, Colors = {Color3.fromRGB(255,90,30)}, Width = 2 },
+   } },
+  Mood = { Tint = Color3.fromRGB(255,170,150), Saturation = 0.1, Contrast = 0.12, Brightness = -0.04, Decay = Color3.fromRGB(160,60,40), Glare = 0.3, Offset = 0.35, DensityScale = 1.4, HazeScale = 1.5, Bloom = 1.5 } }, -- 8
+ { Name = "Frost Terrace", Difficulty = "Insane", Points = 828000000,
+  Look = { Floor = { Material = Enum.Material.Snow, Color = Color3.fromRGB(236,244,252) }, Walls = { Material = Enum.Material.Glacier, Color = Color3.fromRGB(170,210,235), Top = Color3.fromRGB(245,250,255) }, Keep = {},
+   Decor = {
+    { Layout = "Scatter", Count = 12, Material = Enum.Material.Ice, Colors = {Color3.fromRGB(150,205,235)}, Shape = "Disc", Size = {5, 12} },
+    { Layout = "Scatter", Count = 8, Material = Enum.Material.Glacier, Colors = {Color3.fromRGB(190,225,245)}, Shape = "Block", Size = {6, 14} },
+   } },
+  Mood = { Tint = Color3.fromRGB(190,215,255), Saturation = -0.1, Contrast = 0.05, Brightness = 0.04, Decay = Color3.fromRGB(100,140,190), Glare = 0.1, Offset = 0.25, DensityScale = 1.2, HazeScale = 1.4, Bloom = 1.1 } }, -- 9
+ { Name = "Neon Arcade", Difficulty = "Insane", Points = 6070000000,
+  Look = { Floor = { Material = Enum.Material.Metal, Color = Color3.fromRGB(36,36,54) }, Walls = { Material = Enum.Material.Metal, Color = Color3.fromRGB(42,42,62), Top = Color3.fromRGB(0,230,255), Vine = Color3.fromRGB(200,40,220), TopNeon = true }, Keep = {},
+   Decor = {
+    { Layout = "Long", Count = 4, Material = Enum.Material.Neon, Colors = {Color3.fromRGB(0,230,255), Color3.fromRGB(255,40,200), Color3.fromRGB(255,230,40), Color3.fromRGB(80,255,120)}, Width = 1.2 },
+    { Layout = "Cross", Count = 12, Material = Enum.Material.Neon, Colors = {Color3.fromRGB(0,230,255), Color3.fromRGB(255,40,200), Color3.fromRGB(255,230,40), Color3.fromRGB(80,255,120)}, Width = 0.8 },
+   } },
+  Mood = { Tint = Color3.fromRGB(170,170,255), Saturation = 0.25, Contrast = 0.15, Brightness = -0.06, Decay = Color3.fromRGB(70,40,110), Glare = 0, Offset = 0.4, DensityScale = 1.2, HazeScale = 1.2, Bloom = 1.8 } }, -- 10
+ { Name = "Storm Dome", Difficulty = "Impossible", Points = 31900000000,
+  Look = { Floor = { Material = Enum.Material.DiamondPlate, Color = Color3.fromRGB(78,86,102) }, Walls = { Material = Enum.Material.Metal, Color = Color3.fromRGB(72,80,96), Top = Color3.fromRGB(60,66,80), Vine = Color3.fromRGB(55,60,75) }, Keep = {},
+   Decor = {
+    { Layout = "Scatter", Count = 12, Material = Enum.Material.Metal, Colors = {Color3.fromRGB(96,104,122), Color3.fromRGB(84,92,110)}, Shape = "Block", Size = {8, 20} },
+   } },
+  Mood = { Tint = Color3.fromRGB(160,170,190), Saturation = -0.3, Contrast = 0.12, Brightness = -0.05, Decay = Color3.fromRGB(60,65,80), Glare = 0, Offset = 0.4, DensityScale = 1.4, HazeScale = 1.5, Bloom = 0.8, Rain = true, Lightning = { Min = 6, Max = 14, Flash = 0.45 } } }, -- 11
+ { Name = "Golden Colosseum", Difficulty = "Impossible", Points = 50400000000,
+  Look = { Floor = { Material = Enum.Material.Marble, Color = Color3.fromRGB(236,226,204) }, Walls = { Material = Enum.Material.Marble, Color = Color3.fromRGB(235,230,215), Top = Color3.fromRGB(230,185,60), TopMetal = true }, Keep = {},
+   Decor = {
+    { Layout = "Edge", Count = 2, Material = Enum.Material.Metal, Colors = {Color3.fromRGB(230,185,60)}, Width = 4 },
+    { Layout = "Cross", Count = 6, Material = Enum.Material.Metal, Colors = {Color3.fromRGB(230,185,60)}, Width = 2 },
+    { Layout = "Scatter", Count = 8, Material = Enum.Material.Metal, Colors = {Color3.fromRGB(230,185,60)}, Shape = "Disc", Size = {6, 12} },
+   } },
+  Mood = { Tint = Color3.fromRGB(255,245,215), Saturation = 0.1, Contrast = 0.05, Brightness = 0.06, Decay = Color3.fromRGB(180,150,90), Glare = 0.15, Offset = 0.25, DensityScale = 0.8, HazeScale = 0.8, Bloom = 1.3 } }, -- 12
 }
+-- Stage looks: PartBudget = new decor Parts per stage (non-colliding, CanQuery false). Organic props a stage does not Keep move to ServerStorage.StageLookBackup.
+Config.StageLook = { PartBudget = 40, EndMargin = 20, DecorHeight = 0.06, DecorLift = 0.03, Seed = 20261113, BackupFolder = "StageLookBackup", FolderName = "StageLook" }
+-- Stage mood (client): the lighting tween when a stage is entered. Lightning is a client-only brightness flash (Flash = ColorCorrection brightness added).
+Config.StageMood = { TweenSeconds = 2.5, CheckSeconds = 0.25, FlashSeconds = 0.12, FlashDecay = 0.35,
+ Neutral = { Tint = Color3.new(1, 1, 1), Saturation = 0, Contrast = 0, Brightness = 0, Glare = 0, Offset = 0, DensityScale = 1, HazeScale = 1, Bloom = 1 } } -- outside the stages
+-- Stage props (tools/PlaceStageProps.luau): templates in ServerStorage.StageProps.StageN are placed along both stage edges (offsets from the centre line).
+-- Props never collide, stay EndClear studs from each stage end and SpawnClear studs from any cage spawn marker, and stop at PartBudget Parts per stage.
+Config.StageProps = { PartBudget = 40, BandInner = 12, BandOuter = 2, EndClear = 24, SpawnClear = 8, MinGap = 8, Seed = 20261114, Attempts = 40, FolderName = "StageProps" }
+
 Config.CubeColumnX = { -72, 72, -40, 40 } -- spawn columns (fill order); centre lane stays free
 
 -- GOAT event cube: the only source of GOAT cards. One cube per interval + announcement.

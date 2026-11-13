@@ -1,18 +1,12 @@
 -- Stage banner: shown when the player walks into a stage. Names the stage with its difficulty and the recommended Speed Points,
 -- in red when the player has fewer Speed Points than that.
 local Players=game:GetService("Players")
-local CS=game:GetService("CollectionService")
 local TweenService=game:GetService("TweenService")
 local Config=require(game.ReplicatedStorage.Shared.Config)
 local Format=require(game.ReplicatedStorage.Shared.NumberFormat)
 local UIKit=require(script.Parent.UIKit)
+local StageZone=require(script.Parent.StageZone)
 local Banner={}
-local function stageAt(position)
- for _,floor in CS:GetTagged("StageZone") do
-  local p=floor.CFrame:PointToObjectSpace(position)
-  if math.abs(p.X)<=floor.Size.X/2 and math.abs(p.Z)<=floor.Size.Z/2 then return floor:GetAttribute("Stage") end
- end
-end
 function Banner.Init()
  local player=Players.LocalPlayer
  local gui=Instance.new("ScreenGui") gui.Name="StageBanner" gui.ResetOnSpawn=false gui.Parent=player.PlayerGui
@@ -44,7 +38,7 @@ function Banner.Init()
  while gui.Parent do
   task.wait(Config.StageBanner.CheckSeconds)
   local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-  local stage=root and stageAt(root.Position)
+  local stage=root and StageZone.At(root.Position)
   if stage~=current then current=stage if stage then show(stage) end end
  end
 end
