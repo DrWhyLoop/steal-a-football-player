@@ -25,14 +25,40 @@ RMAX = RMIN + SPREAD
 
 def install_income_roll(enabled=True):
     base_roll = sim3.roll_mult.__wrapped__ if hasattr(sim3.roll_mult, '__wrapped__') else sim3.roll_mult
-    def roll(P, rnd, lucky, sz_odds):
-        m = base_roll(P, rnd, lucky, sz_odds)
+    def roll(P, rnd, lucky, sz_odds, tier=0):
+        m = base_roll(P, rnd, lucky, sz_odds, tier)
         if enabled:
             L = luck(rnd, lucky)
             m *= RMIN + (RMAX - RMIN) * rnd.random() ** (1 / L)
         return m
     roll.__wrapped__ = base_roll
     sim3.roll_mult = roll
+
+# --- the shipped reward roll (Config.Luck + Shared/RewardMath, 2026-11-13) ---------------------------------------------------
+# L is rolled as above (rounded to Step) plus the Cage luck upgrade, clamped at LuckyMax. L weights the size and variant tables
+# (weight * L^(index*LuckExponent)) and the per-tier income roll; the card's multiplier is RewardMath.Multiplier (soft cap above 6x).
+SIZES = [(.8, 8), (.9, 17), (1, 60), (1.12, 8), (1.28, 4), (1.5, 1.6), (1.8, .8), (2.2, .4), (2.7, .15), (3.3, .05)]
+VARIANTS = [(1, 89), (1.5, 6), (2, 2), (2.4, .9), (2.8, .65), (3.2, .5), (3.8, .35), (4.5, .25), (5.5, .2), (7, .15)]
+INCOME_RANGE = [(.79, 1.19), (.73, 1.23), (.68, 1.28), (.62, 1.32), (.57, 1.37), (.46, 1.46)]   # Common..GOAT
+LUCK_EXPONENT, SOFT_START, ABS_MAX, LUCKY_MAX = .2, 6, 20, 4
+
+def pick(rnd, table, L):
+    weights = [w * L ** (i * LUCK_EXPONENT) for i, (_, w) in enumerate(table)]
+    r = rnd.random() * sum(weights)
+    for (value, _), w in zip(table, weights):
+        r -= w
+        if r <= 0: return value
+    return table[-1][0]
+
+def reward_multiplier(rnd, tier, lucky, luck_bonus=0.0):
+    L = (3 + rnd.random()) if lucky else 1 + 0.5 * rnd.random() ** 2
+    L = min(LUCKY_MAX, round(L, 1) + luck_bonus)
+    lo, hi = INCOME_RANGE[tier]
+    raw = pick(rnd, SIZES, L) * pick(rnd, VARIANTS, L) * (lo + (hi - lo) * rnd.random() ** (1 / L))
+    return min(ABS_MAX, raw if raw <= SOFT_START else SOFT_START + math.sqrt(raw - SOFT_START))
+
+def install_reward_roll(luck_bonus=0.0):
+    sim3.roll_mult = lambda P, rnd, lucky, sz_odds, tier=0: reward_multiplier(rnd, tier, lucky, luck_bonus)
 
 def vals(power, pcost, tcost=TREAD_COST):
     return dict(tier_income=TIER_INC, pick_power=power, pick_cost=pcost, tread_cost=tcost)

@@ -2,7 +2,7 @@
 	SlotService: placing, picking up and stealing cards on plot slots (parts tagged "Slot").
 	- Owner + empty slot + carrying      -> place (SlotPrompt).
 	- Owner + filled slot + hands free   -> pick back up (SlotPrompt).
-	- Non-owner + filled slot + hands free + plot not locked -> steal (StealPrompt, hold).
+	- Non-owner + filled slot + hands free -> steal (StealPrompt, hold).
 	  The thief carries the card; placing it in their own slot transfers ownership.
 	- A stolen card that gets dropped goes back to its owner (ReturnStolen).
 	The client hides prompts that do not apply (PromptFilter), but every rule is enforced here.
@@ -21,10 +21,13 @@ local PlayerData = require(script.Parent.PlayerData)
 local Stats = require(script.Parent.PlayerStats)
 local IndexService = require(script.Parent.IndexService)
 local CashService = require(script.Parent.CashService)
+local Quests = require(script.Parent.QuestService)
+local UpgradeShop = require(script.Parent.UpgradeShop)
 
+local Reward=require(script.Parent.PlayerReward)
 local SlotService = {}
 
-local PlotService, CardService, LockService -- injected in Init
+local PlotService, CardService -- injected in Init
 local slotCards = {} -- [slotPart] = card part
 local homeSlot = {} -- [stolen card] = reserved original slot
 local reserved = {} -- [slot] = stolen card
@@ -47,7 +50,7 @@ end
 local function showPending(slot: BasePart)
 	local gui = slot.CollectPad.Value.InfoGui
 	local amount = math.floor(pending[slot] or 0)
-	gui.Enabled = amount > 0
+	gui.Enabled = false
 	gui.Label.Text = "$" .. Format.Money(amount)
 end
 
@@ -83,7 +86,7 @@ local function clearStolen(card: Part)
 	end
 end
 
-local function occupy(slot: BasePart, card: Part)
+local function occupy(slot: BasePart, card: Part, placedBy: Player?) -- placedBy: the player who put it down (counts for quests)
  card:SetAttribute("SecuredHotbar",nil)
  if card:GetAttribute("UpgradeLevel")==nil then card:SetAttribute("UpgradeLevel",0) card:SetAttribute("BaseCashPerSecond",card:GetAttribute("CashPerSecond")) end
 	card.CFrame = slot.CFrame * CFrame.new(0, (slot.Size.Y + card.Size.Y) / 2 + Config.PlotSlots.DisplayClearance, 0)
@@ -93,9 +96,15 @@ local function occupy(slot: BasePart, card: Part)
  card:SetAttribute("SecuredOwnerUserId",owner and owner.UserId)
  if owner then IndexService.Record(owner,card) end
  CardService.SetState(card, "Placed")
+ Reward.Resize(card,Reward.DisplayScale(slot,card:GetAttribute("SizeTier")))
 	slotCards[slot] = card
 	clearStolen(card)
 	refreshSlot(slot, card)
+ if placedBy and placedBy==owner then
+  if not card:GetAttribute("QuestPlaced") then card:SetAttribute("QuestPlaced",true) Quests.Track(owner,"Place",1) end -- picking up and re-placing is not a new placement
+  local victim=victimId and Players:GetPlayerByUserId(victimId)
+  if victim and victim~=owner and victim.AccountAge>Config.Quests.MinAccountAgeDays then Quests.Track(owner,"Steal",1,victimId) end
+ end
  if victimId and owner then -- ownership transfer: persist the victim's loss before the thief's gain
   task.spawn(function()
    local victim=Players:GetPlayerByUserId(victimId)
@@ -108,12 +117,12 @@ local function occupy(slot: BasePart, card: Part)
  end
 end
 
-local function isAliveAndNear(player: Player, slot: BasePart): boolean
+local function isAliveAndNear(player: Player, slot: BasePart, extraReach: number?): boolean
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 	return player:GetAttribute("DataReady")~=false and root ~= nil and humanoid ~= nil and humanoid.Health > 0
-		and (root.Position - slot.Position).Magnitude <= Config.PlotSlots.InteractDistance
+		and (root.Position - slot.Position).Magnitude <= Config.PlotSlots.InteractDistance + (extraReach or 0)
 end
 
 local function reject(player: Player,reason: string) -- short feedback for the clicking player only
@@ -157,14 +166,14 @@ local function onOwnerTriggered(player: Player, slot: BasePart)
 	end
 
 	local card = CardService.Release(player)
-	if card then occupy(slot, card) end
+	if card then occupy(slot, card, player) end
 end
 
 local function onStealTriggered(thief: Player, slot: BasePart)
 	local plot = PlotService.GetPlotOfInstance(slot)
 	local owner = plot and PlotService.GetOwner(plot)
 	local card = slotCards[slot]
-	if not owner or owner == thief or not card or card:GetAttribute("FootballReserved") or LockService.IsLocked(plot) or not isAliveAndNear(thief, slot) then return end
+	if not owner or owner == thief or not card or card:GetAttribute("FootballReserved") or not isAliveAndNear(thief, slot) then return end
 	if not LineOfSight.IsClear(thief.Character, slot, slot.Position) then return end
 	if not CardService.Carry(thief, card) then return end
 
@@ -201,16 +210,27 @@ function SlotService.Accrue(plot: Model, seconds: number, boost: number)
 	end
 end
 
+--- Income per second of every card on the plot (before boosts).
+function SlotService.Income(plot: Model): number
+	local sum = 0
+	for _, slot in ipairs(plot.Slots:GetChildren()) do
+		local card = slotCards[slot]
+		if card then sum += card:GetAttribute("CashPerSecond") end
+	end
+	return sum
+end
+
 -- The owner stepping on the pad moves the slot's pending cash into the wallet.
-local function onCollect(player: Player, slot: BasePart)
+local function onCollect(player: Player, slot: BasePart, extraReach: number?)
 	local plot = PlotService.GetPlotOfInstance(slot)
 	local amount = math.floor(pending[slot] or 0)
-	if amount <= 0 or not plot or PlotService.GetOwner(plot) ~= player or os.clock() < (collectUntil[slot] or 0) or not isAliveAndNear(player, slot) then return end
+	if amount <= 0 or not plot or PlotService.GetOwner(plot) ~= player or os.clock() < (collectUntil[slot] or 0) or not isAliveAndNear(player, slot, extraReach) then return end
 	collectUntil[slot] = os.clock() + Config.PlotSlots.CollectCooldown
 	pending[slot] -= amount
 	CashService.AddCash(player, amount)
 	showPending(slot)
 	Remotes.CollectResult:FireClient(player, slot, amount)
+		Quests.Track(player, "Collect", amount)
 end
 
 --- Remove all placed cards from a plot (used when the owner leaves).
@@ -272,10 +292,9 @@ function SlotService.Restore(plot,records)
  end
 end
 
-function SlotService.Init(plotService, cardService, lockService)
+function SlotService.Init(plotService, cardService)
 	PlotService = plotService
 	CardService = cardService
-	LockService = lockService
 
 	for _, slot in ipairs(CollectionService:GetTagged("Slot")) do
 		local gui = Instance.new("BillboardGui")
@@ -313,11 +332,31 @@ function SlotService.Init(plotService, cardService, lockService)
 		slot.StealPrompt.Triggered:Connect(function(player) onStealTriggered(player, slot) end)
 	end
 	PlotService.PlotFreed.Event:Connect(clearPlot)
+	task.spawn(function() -- the Collect pad range upgrade: the owner collects without touching the pad, within PadBaseReach + the bonus
+		local cfg = Config.Upgrades
+		while true do
+			task.wait(cfg.PadPollSeconds)
+			for _, player in Players:GetPlayers() do
+				local bonus = UpgradeShop.Bonus(player, "Pad")
+				local plot = bonus > 0 and PlotService.GetPlot(player)
+				local root = plot and player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+				if root then
+					for _, slot in ipairs(plot.Slots:GetChildren()) do
+						if (pending[slot] or 0) >= 1 and (root.Position - slot.CollectPad.Value.Position).Magnitude <= cfg.PadBaseReach + bonus then
+							onCollect(player, slot, bonus)
+						end
+					end
+				end
+			end
+		end
+	end)
 	local function watch(player)
-		player:GetAttributeChangedSignal("PassOwned_" .. Config.CashPass.Id):Connect(function()
-			local plot = PlotService.GetPlot(player)
-			if plot then for _, slot in plot.Slots:GetChildren() do refreshSlot(slot, slotCards[slot]) end end
-		end)
+		for _, name in { "PassOwned_" .. Config.CashPass.Id, "Rebirths" } do -- the boxes show the owner's effective income
+			player:GetAttributeChangedSignal(name):Connect(function()
+				local plot = PlotService.GetPlot(player)
+				if plot then for _, slot in plot.Slots:GetChildren() do refreshSlot(slot, slotCards[slot]) end end
+			end)
+		end
 	end
 	Players.PlayerAdded:Connect(watch)
 	for _, player in Players:GetPlayers() do watch(player) end

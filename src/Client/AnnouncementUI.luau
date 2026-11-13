@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 
+local UIKit=require(script.Parent.UIKit)
 local AnnouncementUI = {}
 
 function AnnouncementUI.Init()
@@ -28,9 +29,9 @@ function AnnouncementUI.Init()
 	banner.Size = UDim2.new(0.8, 0, 0, 56)
 	banner.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 	banner.BackgroundTransparency = 0.25
-	banner.TextColor3 = Config.Tiers.GOAT.Color
+	banner.TextColor3 = Config.UITheme.Text
 	banner.TextScaled = true
-	banner.Font = Enum.Font.GothamBlack
+	banner.Font = Enum.Font.FredokaOne
 	banner.Visible = false
 	banner.Parent = gui
 
@@ -41,7 +42,12 @@ function AnnouncementUI.Init()
 	limit.MaxTextSize = 34
 	limit.Parent = banner
 
-	local token = 0
+ UIKit.Card(banner)
+ banner.TextWrapped=true
+ UIKit.OnResize(function(view)
+  banner.Size=UDim2.fromOffset(math.min(680,view.X-32),view.X<Config.UITheme.CompactWidth and 86 or 56)
+ end)
+ local token = 0
 	Remotes.Announcement.OnClientEvent:Connect(function(text: string)
 		token += 1
 		local mine = token

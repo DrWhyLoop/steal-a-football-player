@@ -227,20 +227,12 @@ function Builder.BuildPlot(n)
 	spawn.Transparency=1
 	spawn.Position=Vector3.new(base.Position.X-side*(base.Size.X/2-4),top+0.8,base.Position.Z)
 	spawn.CFrame=CFrame.lookAt(spawn.Position,spawn.Position+Vector3.new(side,0,0))
-	local button=plot.LockButton
-	button.Position=Vector3.new(base.Position.X-side*(base.Size.X/2-2.5),top+1.1,base.Position.Z+E.PlotLockOffset)
-	button.Size=Vector3.new(2,0.6,2)
 	local ownerSign=plot.Sign
 	ownerSign.Size=E.PlotSignSize
 	ownerSign.Position=Vector3.new(base.Position.X-side*(base.Size.X/2-0.2),top+E.PlotSignHeight,base.Position.Z)
 	ownerSign.Color=E.StageSignColor ownerSign.Transparency=0 ownerSign.CanCollide=false
 	ownerSign.SurfaceGui.Face=side==1 and Enum.NormalId.Left or Enum.NormalId.Right
 	ownerSign.SurfaceGui.Label.Size=UDim2.fromScale(0.95,0.9)
-	for _,wall in plot.Barrier:GetChildren() do
-		wall.Size=Vector3.new(wall.Size.X,Config.LockBarrierHeight,wall.Size.Z)
-		wall.Position=Vector3.new(wall.Position.X,top+Config.LockBarrierHeight/2,wall.Position.Z)
-	end
-	plot.LockStatus.Position=Vector3.new(base.Position.X,top+Config.LockBarrierHeight+4,base.Position.Z)
 	visual:SetAttribute("FittedSize",size)
  Builder.BuildDisplaySlots(n)
 	return {Plot=n,VisualParts=count-padCount,Slots=padCount,Height=size.Y}

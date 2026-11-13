@@ -28,7 +28,7 @@ def speed_current(p): return min(120, 16 + 12*math.log10(1 + p/100))
 speed = speed_current            # replace with a curve to test another design
 LAST = {}
 
-def roll_mult(P, rnd, lucky, sz_odds):
+def roll_mult(P, rnd, lucky, sz_odds, tier=0):
     g = (P['lucky_gold'] if lucky else P['gold_p'])*sz_odds
     dm = (P['lucky_diamond'] if lucky else P['diamond_p'])*sz_odds
     gi = (P['lucky_giant'] if lucky else P['giant_p'])*sz_odds
@@ -39,12 +39,16 @@ def roll_mult(P, rnd, lucky, sz_odds):
     if rnd.random() < gi: mult *= P['giant_m']
     return mult
 
-def run(P, tier_inc, pick_power, pick_cost, tread_cost, seed=1, minutes=720, celestial=0, income_mult=1, sample=None):
+def run(P, tier_inc, pick_power, pick_cost, tread_cost, seed=1, minutes=720, celestial=0, income_mult=1, sample=None, state=None, gain_mult=1, stop12=False, stop_pts=None):
     global LAST
     rnd = random.Random(seed)
     stats, reach, speed_at, pts_at, events = {}, {}, {}, {}, []
-    t = 0; cash = 0; pts = 0; pick = 0; tread = 0; cards = []; broken = 0; income = 0
-    trail = 0; trails = P.get("trails", [(0, 1)])
+    t = 0; cash = 0; pts = 0; pick = 0; tread = 0; cards = []; broken = 0; income = 0; earned = 0
+    trail = 0
+    if state:  # rebirth: keep cash, owned items and cards; Speed Points restart at 0 and the onboarding is over
+        cash = state['cash']; pick = state['pick']; tread = state['tread']; trail = state['trail']; cards = [list(c) for c in state['cards']]
+        broken = P['onboarding_eggs']; income = sum(b*P['up_income']**l for b, l in cards)
+    trails = P.get("trails", [(0, 1)])
     trip_left = None; trip = None; golden = None; next_golden = P['golden_interval']
     while t < minutes*60:
         changed = False
@@ -71,6 +75,8 @@ def run(P, tier_inc, pick_power, pick_cost, tread_cost, seed=1, minutes=720, cel
             stage = 0
             for s in range(12):
                 if P['hp_base']*P['hp_growth']**s/pick_power[pick] <= P['max_hits']: stage = s
+            if P.get('gate'):  # optional: a stage needs the speed recommended for it (Config.StageInfo)
+                while stage > 0 and P['gate'][stage] > v: stage -= 1
             onboarding = broken < P['onboarding_eggs']
             is_golden = False; lucky = False
             if onboarding:
@@ -81,7 +87,8 @@ def run(P, tier_inc, pick_power, pick_cost, tread_cost, seed=1, minutes=720, cel
                     if ghp/pick_power[pick] <= P['golden_max_hits']: stage = golden-1; is_golden = True; golden = None
                 hp = P['hp_base']*P['hp_growth']**stage*(P['golden_hp_mult'] if is_golden else 1)
                 d = P['base_to_stage1'] + STAGE_START[stage] + STAGE_LEN[stage]*P['egg_depth']
-                lucky = stage < 11 and not is_golden and rnd.random() < P['lucky_p']
+                lp = P['storm_lucky'] if (P.get('storm') and (t % P['storm'][0]) < P['storm'][1]) else P['lucky_p']  # event: higher Lucky chance in a wave
+                lucky = stage < 11 and not is_golden and rnd.random() < lp
             tier = STAGE_TIER[stage]
             if is_golden: tier = min(P['golden_max_tier'], tier+1)
             mults, hits_total, extra = [], 0, 0.0
@@ -96,7 +103,7 @@ def run(P, tier_inc, pick_power, pick_cost, tread_cost, seed=1, minutes=720, cel
                         if math.ceil(hp*sz_hp/pick_power[pick]) <= P['size_skip_hits']: break
                         extra += P['skip_seconds']; sz_hp, sz_odds = 1, 1
                 hits_total += max(1, math.ceil(hp*sz_hp/pick_power[pick]))
-                mults.append(1 if onboarding else roll_mult(P, rnd, lucky, sz_odds))
+                mults.append(1 if onboarding else roll_mult(P, rnd, lucky, sz_odds, tier))
             n = len(mults)
             carry_v = v*P['carry_walk'][tier]/16          # the heavier (here: the same tier) card sets the penalty
             walk = d/v + d/carry_v + (n-1)*P['detour']/v   # the detour to the second egg is walked at full speed
@@ -118,11 +125,13 @@ def run(P, tier_inc, pick_power, pick_cost, tread_cost, seed=1, minutes=720, cel
                     i = min(range(len(cards)), key=lambda k: cards[k][0]*P['up_income']**cards[k][1]); cards.pop(i)
             trip_left = None; changed = True
         if changed or t % 30 == 0: income = sum(b*P['up_income']**l for b, l in cards)
-        cash += income*income_mult
-        pts += P['train_share']*P['gain']*max(TREAD_MULT[tread], celestial)*trails[trail][1]
+        cash += income*income_mult; earned += income*income_mult
+        pts += P['train_share']*P['gain']*max(TREAD_MULT[tread], celestial)*trails[trail][1]*gain_mult
         t += 1
+        if stop12 and 12 in reach: break
+        if stop_pts and pts >= stop_pts: break
         if sample is not None and t % P.get('sample_every', 300) == 0: sample.append((t//60, pts, tread+1, pick+1, cash, income, speed(pts)*P["walk_mult"], trail))
-    LAST = {'stats': stats, 'pts': pts, 'speed': speed_at, 'pts_at': pts_at, 'events': events}
+    LAST = {'state': dict(cash=cash, pick=pick, tread=tread, trail=trail, cards=[list(c) for c in cards], t=t, income=income, earned=earned), 'stats': stats, 'pts': pts, 'speed': speed_at, 'pts_at': pts_at, 'events': events}
     return reach
 
 def hm(s): return f"{int(s//3600)}h{int(s%3600//60):02d}m"

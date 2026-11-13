@@ -11,6 +11,12 @@ local RunService = game:GetService("RunService")
 
 local NAMES = {
  "EyeLook",
+ "RebirthRequest", -- client -> server: rebirth (validated against the Speed Points requirement)
+ "RebirthStatus",  -- server -> client: message text
+ "QuestRequest",   -- client -> server: ("Sync") or ("Claim", "Daily"|"Weekly", index)
+ "QuestSync",      -- server -> client: {Tokens, DayLeft, WeekLeft, Daily, Weekly} (seconds left until the UTC resets)
+ "UpgradeRequest", -- client -> server: ("Buy", upgrade id); levels reach the client as Player attributes Upgrade_<id>
+ "UpgradeStatus",  -- server -> client: message text
  "FootballRequest",
  "FootballLobby",
  "DropPlayer",
@@ -22,7 +28,7 @@ local NAMES = {
  "ToolStatus",  -- server -> client: message text
  "FeedbackRequest",
  "FeedbackStatus",
- "EggReveal", -- server -> nearby clients: (position, tier, luck, lucky, variant, giant, radius); cosmetic only, the reward is selected on the server
+ "EggReveal", -- server -> nearby clients: (cage, luck, duration, serverStart, revealId); cosmetic only
  "SafeReturn",
  "UpgradeResult", -- server -> clicking client: (reason key, see Config.PlotSlots.Messages)
  "CollectResult", -- server -> collecting client: (slot, amount) for the press effect and the floating +$X

@@ -19,7 +19,7 @@ end
 -- Bit number for a card's variant attributes, or nil for an unknown variant.
 function K.Bit(variant,giant)
  local materialIndex=0
- if variant then
+ if variant and variant~="Normal" then
   local found=table.find(Config.Index.VariantOrder,variant)
   if not found then return nil end
   materialIndex=found

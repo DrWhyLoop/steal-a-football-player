@@ -10,25 +10,22 @@ local UI={}
 function UI.Init()
  local player=Players.LocalPlayer
  local gui=Instance.new("ScreenGui") gui.Name="ToolShop" gui.ResetOnSpawn=false gui.Parent=player.PlayerGui
- local open=UIKit.Button(gui,"Tools",UDim2.fromOffset(118,36),UDim2.new(1,-130,.48,-92))
- local panel,title,scroll=UIKit.Panel(gui,"Shop","TOOLS","Cash tools hit harder the more you pay. A premium tool is only ever a little stronger than your best cash tool.",44)
+ local open=UIKit.Nav(gui,"Tools","key",2)
+ local panel,title,scroll=UIKit.Panel(gui,"Shop","TOOLS","Choose your next tool. Compare power, unlock it, then equip.",44)
  local message=UIKit.Label(panel,"",UDim2.new(1,-24,0,32),UDim2.new(0,12,1,-38)) message.TextSize=14
  local previews=RS:WaitForChild("ToolPreviewTemplates")
  local function header(text,order)
   local label=UIKit.Label(scroll,text,UDim2.new(1,-8,0,28),UDim2.new()) label.Font=Enum.Font.GothamBold label.LayoutOrder=order
  end
  -- One row: picture, name, details text and the main button (plus an optional arm button for the Robot Arm Drill).
- local function makeRow(def,order,height,withArm)
-  local row=Instance.new("Frame") row.Name=def.Id row.Size=UDim2.new(1,-8,0,height) row.BackgroundColor3=Color3.fromRGB(35,53,70) row.LayoutOrder=order row.Parent=scroll
-  local thumb=Instance.new("Frame") thumb.Name="ToolPicture" thumb.Size=UDim2.new(.42,-8,0,104) thumb.Position=UDim2.fromOffset(8,6) thumb.BackgroundColor3=Color3.fromRGB(185,211,227) thumb.Parent=row
+ local function makeRow(def,order,withArm)
+  local row,thumb,name,details,buy=UIKit.Product(scroll,def.Id,order,withArm)
   local preview=previews:FindFirstChild(def.Id)
-  if preview then Viewport.Create(thumb,preview,false) end
-  local name=UIKit.Label(row,def.Name,UDim2.new(.58,-16,0,40),UDim2.new(.42,4,0,8)) name.TextXAlignment=Enum.TextXAlignment.Left name.Font=Enum.Font.GothamBold
-  local details=UIKit.Label(row,"",UDim2.new(.58,-16,0,56),UDim2.new(.42,4,0,50)) details.TextXAlignment=Enum.TextXAlignment.Left details.TextSize=14
-  local buy=UIKit.Button(row,"",UDim2.new(1,-16,0,32),UDim2.new(0,8,1,-38))
+  if preview then Viewport.Create(thumb,preview,false,false,"Spin") end
+  name.Text=def.Name
   local arm
   if withArm then
-   arm=UIKit.Button(row,"",UDim2.new(.58,-16,0,28),UDim2.new(.42,4,0,112))
+   arm=UIKit.Button(row,"",UDim2.new(1,-24,0,44),UDim2.new(0,12,1,-106))
    arm.Activated:Connect(function()
     local modes=Config.ArmModes
     Remotes.ToolRequest:FireServer("Arm",modes[(table.find(modes,player:GetAttribute("ArmMode") or modes[1]) or 0)%#modes+1])
@@ -39,15 +36,15 @@ function UI.Init()
  local cashRows,premiumRows={},{}
  header("CASH TOOLS",0)
  for index,def in Config.CashTools do
-  local row=makeRow(def,index,150)
-  row.name.TextColor3=Config.ToolRarity[def.Rarity]
+  local row=makeRow(def,index)
+  row.name.TextColor3=Config.UITheme.Text
   row.details.Text=("%s | Power %s\n%s"):format(def.Rarity,Format.Compact(def.Power),def.Cost==0 and "Free" or "$"..Format.Compact(def.Cost))
   row.button.Activated:Connect(function() Remotes.ToolRequest:FireServer(player:GetAttribute("ToolOwned_"..def.Id) and "Equip" or "Buy",def.Id) end)
   table.insert(cashRows,row)
  end
  header("PREMIUM TOOLS",100)
  for index,def in Config.PremiumTools do
-  local row=makeRow(def,100+index,def.Arms and 190 or 160,def.Arms)
+  local row=makeRow(def,100+index,def.Arms)
   row.button.Activated:Connect(function() Remotes.ToolRequest:FireServer(player:GetAttribute("PassOwned_"..def.Id) and "Equip" or "Premium",def.Id) end)
   table.insert(premiumRows,row)
  end
@@ -67,7 +64,7 @@ function UI.Init()
    local def=row.def
    local owned,equipped=player:GetAttribute("PassOwned_"..def.Id),player:GetAttribute("ToolId")==def.Id
    local price,priceText=UIKit.PriceLabel(def.Id)
-   local note=owned and "Owned" or def.ComingSoon and "Coming soon" or priceText..(price>0 and "\nOpens Roblox's purchase window. Nothing is charged until you confirm there." or "")
+   local note=owned and "Owned" or def.ComingSoon and "Coming soon" or priceText
    row.details.Text=("Power %s (%sx your best tool)\n%s"):format(Format.Compact(best*def.Multiplier),def.Multiplier,note)
    UIKit.State(row.button,equipped and "Equipped" or owned and "Equip" or def.ComingSoon and "Coming soon" or price>0 and "Buy "..priceText or priceText,equipped,not equipped and (owned or (not def.ComingSoon and price>0)))
    if row.arm then row.arm.Visible=owned==true UIKit.State(row.arm,"Arm: "..(player:GetAttribute("ArmMode") or Config.ArmModes[1]),false,true) end

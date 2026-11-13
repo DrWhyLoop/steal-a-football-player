@@ -9,15 +9,19 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Rebirth = require(ReplicatedStorage.Shared.Rebirth)
 local Stats = require(script.Parent.PlayerStats)
+local UpgradeShop = require(script.Parent.UpgradeShop)
 
 local CashService = {}
 
 local PlotService, SlotService -- injected in Init
 
--- Income multiplier from the 2x Cash pass (the attribute is set by Purchases).
+-- Income multiplier: the 2x Cash pass (attribute set by Purchases) times the permanent rebirth multiplier and the Income upgrade.
 function CashService.Boost(player: Player?): number
-	return player and player:GetAttribute("PassOwned_" .. Config.CashPass.Id) and Config.CashPass.Multiplier or 1
+	if not player then return 1 end
+	local pass = player:GetAttribute("PassOwned_" .. Config.CashPass.Id) and Config.CashPass.Multiplier or 1
+	return pass * Rebirth.Income(player:GetAttribute("Rebirths") or 0) * (1 + UpgradeShop.Bonus(player, "Income"))
 end
 
 function CashService.AddCash(player: Player, amount: number)

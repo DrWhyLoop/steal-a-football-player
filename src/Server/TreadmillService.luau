@@ -3,10 +3,12 @@ local Players=game:GetService("Players")
 local Config=require(game.ReplicatedStorage.Shared.Config)
 local Remotes=require(game.ReplicatedStorage.Shared.Remotes)
 local Format=require(game.ReplicatedStorage.Shared.NumberFormat)
+local Rebirth=require(game.ReplicatedStorage.Shared.Rebirth)
 local PlayerData=require(script.Parent.PlayerData)
 local Stats=require(script.Parent.PlayerStats)
 local Purchases=require(script.Parent.Purchases)
 local TrailShop=require(script.Parent.TrailShop)
+local UpgradeShop=require(script.Parent.UpgradeShop)
 local Service={}
 local cfg=Config.Treadmills
 local pads={} local training={} local cooldown={} local nextGain={}
@@ -95,7 +97,7 @@ local function added(player)
   rebuild(player) Service.UpdateSpeed(player)
  end
  player:GetAttributeChangedSignal("DataReady"):Connect(ready)
- player:GetAttributeChangedSignal("CarriedCard"):Connect(function() Service.UpdateSpeed(player) end)
+ for _,key in {"CarriedCard","Speed"} do player:GetAttributeChangedSignal(key):Connect(function() Service.UpdateSpeed(player) end) end
  player.CharacterAdded:Connect(function(char)
   char:WaitForChild("Humanoid") char:WaitForChild("HumanoidRootPart") stop(player) Service.UpdateSpeed(player)
  end)
@@ -137,8 +139,7 @@ function Service.Init(plotService,cardService)
     if os.clock()>=(nextGain[player] or math.huge) then
      nextGain[player]=os.clock()+cfg.TickSeconds
      local tier=byId[player:GetAttribute("TreadmillId")].tier
-     Stats.Add(player,"Speed",cfg.BaseGain*tier.Multiplier*TrailShop.Multiplier(player))
-     Service.UpdateSpeed(player)
+     Stats.Add(player,"Speed",cfg.BaseGain*tier.Multiplier*TrailShop.Multiplier(player)*Rebirth.Gain(player:GetAttribute("Rebirths") or 0)*(1+UpgradeShop.Bonus(player,"Speed")))
     end
    elseif training[player] then stop(player) end
   end

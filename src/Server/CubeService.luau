@@ -16,6 +16,7 @@ local Workspace = game:GetService("Workspace")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
 local PlayerData = require(script.Parent.PlayerData)
+local Quests = require(script.Parent.QuestService)
 
 local CubeService = {}
 
@@ -110,6 +111,7 @@ local function makeCube(stage: number, position: Vector3, golden: boolean, event
 	local hit = workspace:Raycast(position + Vector3.new(0, Config.EggSpawning.RayUp, 0), Vector3.new(0, -Config.EggSpawning.RayDown, 0), floorParams)
 	local ground = hit and hit.Position.Y or floor.Position.Y + floor.Size.Y / 2
 	cube.CFrame = CFrame.new(position.X, ground + cube.Size.Y / 2, position.Z)
+ cube:SetAttribute("CageGroundY",ground)
  visual:PivotTo(visual:GetPivot()+cube.Position-bounds)
 	cube:SetAttribute("Stage", stage)
 	cube:SetAttribute("Event", event)
@@ -197,11 +199,13 @@ local function onBroken(cube: BasePart, breaker: Player?)
 	local marker = cubeMarker[cube]
 	local dropTier, position = cube:GetAttribute("DropTier"), cube.Position
 	cubeMarker[cube] = nil
- table.insert(revealReservations,{position=position,untilTime=os.clock()+Config.Reveal.GlowSeconds+Config.Reveal.RiseSeconds+Config.EggSpawning.RetrySeconds})
+ table.insert(revealReservations,{position=position,untilTime=os.clock()+Config.Reveal.BreakSeconds+Config.Reveal.GrowthMaxSeconds+Config.Reveal.FlashSeconds+Config.Reveal.RiseSeconds+Config.EggSpawning.RetrySeconds})
+ cube.CanCollide=false cube.CanQuery=false
  -- The result is rolled at once (the callbacks read the cage before their first yield); clients show the glow in its place.
  for _, callback in ipairs(brokenCallbacks) do
   task.spawn(callback, dropTier, position, breaker, cube:GetAttribute("Lucky"), cube)
  end
+ task.wait(cube:GetAttribute("RevealDuration") or (Config.Reveal.BreakSeconds+Config.Reveal.GrowthMaxSeconds+Config.Reveal.FlashSeconds))
  cube:Destroy()
 	if marker then
 		task.delay(Config.CubeRespawnSeconds, function()
@@ -225,8 +229,12 @@ function CubeService.Damage(cube: BasePart, amount: number, breaker: Player?, pr
 	end
 	local hp = cube:GetAttribute("HP") - amount
 	if hp <= cube:GetAttribute("MaxHP") * 1e-12 then
-		cube:SetAttribute("Dead", true)
-		if profile then profile.data.Hatched = math.min(Config.PlayerData.MaxCounter, profile.data.Hatched + 1) end
+		cube:SetAttribute("HP",0)
+  cube:SetAttribute("Dead", true)
+		if profile then
+			profile.data.Hatched = math.min(Config.PlayerData.MaxCounter, profile.data.Hatched + 1)
+			Quests.Track(breaker, "Break", 1)
+		end
 		onBroken(cube, breaker)
 	else
 		cube:SetAttribute("HP", hp)

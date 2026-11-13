@@ -2,7 +2,7 @@
 	BuildGreybox: Studio-side tool (NOT game code). Rebuilds Workspace/Greybox from Config.
 	Run it in EDIT mode (command bar / MCP execute_luau). Layout numbers come from
 	ReplicatedStorage/Shared/Config; only builder-local geometry lives here.
-	Tags used by the game scripts: StageZone, CubeSpawn, Plot, Slot, LockButton.
+	Tags used by the game scripts: StageZone, CubeSpawn, Plot, Slot.
 ]]
 
 local CS = game:GetService("CollectionService")
@@ -150,7 +150,6 @@ spawn.Neutral = true
 spawn.Duration = 0
 
 -- Plots: 2 sides x 3 rows, flush against the forecourt
-local H = Config.LockBarrierHeight
 local index = 0
 for _, side in ipairs({ 1, -1 }) do
 	for r = 1, ROWS do
@@ -191,48 +190,6 @@ for _, side in ipairs({ 1, -1 }) do
 			prompt(slot, "SlotPrompt", "Place card", "Slot " .. s, 10)
 			prompt(slot, "StealPrompt", "Steal", "Slot " .. s, 10)
 		end
-
-		-- Base lock: button, barrier walls (collision toggled at runtime), countdown anchor
-		local button = part("LockButton", Vector3.new(3, 1, 3), Vector3.new(side * (HALF + 5), 1.5, cz + 9), Color3.fromRGB(220, 60, 60), plot)
-		button.Material = Enum.Material.Neon
-		CS:AddTag(button, "LockButton")
-		prompt(button, "LockPrompt", "Lock base", "Base lock", 8)
-
-		local barrier = newFolder("Barrier", plot)
-		local function barrierWall(name, size, pos)
-			local w = part(name, size, pos, Config.LockBarrierColor, barrier)
-			w.Material = Enum.Material.Neon
-			w.Transparency = 1
-			w.CanCollide = false
-			w.CanTouch = false
-			w.CanQuery = false
-			w.CastShadow = false
-		end
-		local y = 1 + H / 2
-		barrierWall("Front", Vector3.new(1, H, PLOT + 1), Vector3.new(side * HALF, y, cz))
-		barrierWall("Back", Vector3.new(1, H, PLOT + 1), Vector3.new(side * (HALF + PLOT), y, cz))
-		barrierWall("Left", Vector3.new(PLOT + 1, H, 1), Vector3.new(cx, y, cz - PLOT / 2))
-		barrierWall("Right", Vector3.new(PLOT + 1, H, 1), Vector3.new(cx, y, cz + PLOT / 2))
-
-		local status = part("LockStatus", Vector3.one, Vector3.new(cx, H + 6, cz), DARK, plot)
-		status.Transparency = 1
-		status.CanCollide = false
-		status.CanQuery = false
-		local gui = Instance.new("BillboardGui")
-		gui.Name = "StatusGui"
-		gui.Size = UDim2.fromOffset(240, 60)
-		gui.AlwaysOnTop = true
-		gui.Enabled = false
-		gui.Parent = status
-		local text = Instance.new("TextLabel")
-		text.Name = "Label"
-		text.Size = UDim2.fromScale(1, 1)
-		text.BackgroundTransparency = 1
-		text.TextScaled = true
-		text.Font = Enum.Font.GothamBlack
-		text.TextColor3 = Config.LockBarrierColor
-		text.TextStrokeTransparency = 0.2
-		text.Parent = gui
 
 		plot.Parent = folders.Plots
 	end

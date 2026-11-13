@@ -5,3 +5,7 @@
 outputs/
 player_images/
 player_models/
+
+animatio_reference/
+*.mp4
+*.mov

@@ -16,7 +16,9 @@ local Config = require(ReplicatedStorage.Shared.Config)
 
 local Remotes=require(ReplicatedStorage.Shared.Remotes)
 local Reward=require(script.Parent.PlayerReward)
+local RewardMath=require(ReplicatedStorage.Shared.RewardMath)
 local IndexService=require(script.Parent.IndexService)
+local UpgradeShop=require(script.Parent.UpgradeShop)
 local Announcer=require(script.Parent.Announcer)
 local CardService = {}
 local safeBoundary
@@ -51,11 +53,12 @@ function CardService.SetState(card: Part,state: string)
  card:SetAttribute("WorldExpiresAt",nil)
  card:SetAttribute("State",state)
  local remaining=card:GetAttribute("RemainingLifetime")
- if (state=="World" or state=="Revealing") and not card:GetAttribute("Escaped") and remaining then
+ if state=="World" and not card:GetAttribute("Escaped") and remaining then
   card:SetAttribute("WorldExpiresAt",clock()+remaining)
  end
  local visual=card:FindFirstChild("PlayerVisual")
  if visual then
+  if state~="Placed" then Reward.Resize(card) end
   visual:SetAttribute("Moving",false)
   visual:SetAttribute("CarryPose",state=="Carried")
  end
@@ -223,13 +226,14 @@ local function tryPickup(player: Player, card: Part)
 end
 
 -- Every attribute (including Variant/Giant) is set before the card is parented, so clients see them from the first frame.
-local function createCard(entry, tier: string, position: Vector3, variant: string?, giant: boolean?, eggSize: string?, roll: number?, luckyBreak: boolean?): Part
+local function createCard(entry, tier: string, position: Vector3, variant: string?, giant: boolean?, eggSize: string?, roll: number?, luckyBreak: boolean?, sizeTier: string?, revealId: string?, groundY: number?): Part
  local name=entry.Name
 	local info = Config.Tiers[tier]
 	local card = Instance.new("Part")
 	card.Name = "Card_" .. name
 	card.Size = Config.CardSize
- card.CFrame=CFrame.new(position.X,Config.GroundY+Config.CardSize.Y/2+Config.CardRestHeight,position.Z)
+ card.CFrame=CFrame.new(position.X,(groundY or Config.GroundY+Config.CardRestHeight)+Config.CardSize.Y/2,position.Z)
+ card:SetAttribute("CageRevealId",revealId)
 	card.Color = info.Color
  card.Transparency=1
  card.CanQuery=false
@@ -241,14 +245,16 @@ local function createCard(entry, tier: string, position: Vector3, variant: strin
 	card.CanTouch = false
 	card:SetAttribute("CardName", name)
 	card:SetAttribute("Tier", tier)
-	card:SetAttribute("CashPerSecond", info.CashPerSecond*Reward.IncomeMultiplier(variant,giant)*(roll or 1))
- card:SetAttribute("IncomeRoll",roll)
+	card:SetAttribute("CashPerSecond", info.CashPerSecond*Reward.IncomeMultiplier(sizeTier or "Normal",variant or "Normal",roll or 1))
+ card:SetAttribute("IncomeRoll",roll or 1)
  card:SetAttribute("LuckyBreak",luckyBreak) -- cosmetic: the burst that revealed it (clients only)
- card:SetAttribute("Variant",variant)
+ card:SetAttribute("SizeTier",sizeTier or "Normal")
+ card:SetAttribute("RewardVersion",2)
+ card:SetAttribute("Variant",variant or "Normal")
  card:SetAttribute("Giant",giant or nil)
  card:SetAttribute("EggSize",eggSize)
 	CollectionService:AddTag(card, "Card")
- Reward.Attach(card,entry.Id,variant,giant,eggSize)
+ Reward.Attach(card,entry.Id,variant or "Normal")
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "PickupPrompt"
@@ -267,31 +273,37 @@ function CardService.SetIncome(card: Part, amount: number)
  card:SetAttribute("CashPerSecond",amount)
 end
 
---- Called when a cage breaks: the result (footballer, luck, income roll, variants) is rolled NOW and never changes. CubeService destroys the cage
---- at once; nearby clients show the glow and the luck counter for GlowSeconds, then the card spawns at its final CFrame in the burst. The breaker has
---- first pick for Reveal.BreakerPrioritySeconds. Everything the cage supplies is read before the first yield (it is destroyed right after).
+-- Lock the reward before the reveal, then start its pickup window and ground timer after the character flashes into its footballer.
 function CardService.DropFromCube(tier: string,position: Vector3,breaker: Player?,lucky: boolean?,egg: BasePart)
  local entry=Reward.Pick(tier)
  local eggSize=egg:GetAttribute("Size")
  local stage=egg:GetAttribute("Stage")
- local radius=math.max(egg.Size.X,egg.Size.Y,egg.Size.Z)/2
- local variant,giant=Reward.Roll(lucky,Config.EggSizeById[eggSize].Odds)
- variant=variant or egg:GetAttribute("MinVariant") -- event and Secret eggs promise Gold or better
- local luck=Reward.Luck(lucky)
+ local luck=Reward.Luck(lucky,UpgradeShop.Bonus(breaker,"Luck"))
+ local variant,sizeTier=Reward.Roll(luck,egg:GetAttribute("MinVariant"))
  local roll=Reward.IncomeRoll(entry,luck)
+ local duration=RewardMath.Reveal(luck)
+ local ground=egg:GetAttribute("CageGroundY") or position.Y-egg.Size.Y/2
+ egg:SetAttribute("RevealDuration",duration)
+ local revealId=HttpService:GenerateGUID(false)
+ local started=Workspace:GetServerTimeNow()
+ egg:SetAttribute("RevealId",revealId)
+ egg:SetAttribute("RevealStart",started)
+ egg:SetAttribute("RevealSeed",Random.new():NextInteger(1,1000000000))
  for _,player in Players:GetPlayers() do
   local root=getRoot(player)
-  if root and (root.Position-position).Magnitude<=Config.Reveal.MaxDistance then Remotes.EggReveal:FireClient(player,position,tier,luck,lucky==true,variant,giant==true,radius) end
+  if root and (root.Position-position).Magnitude<=Config.Reveal.MaxDistance then
+   Remotes.EggReveal:FireClient(player,egg,luck,duration,started,revealId)
+  end
  end
- task.wait(Config.Reveal.GlowSeconds)
- local card=createCard(entry,tier,position,variant,giant,eggSize,roll,lucky)
+ task.wait(duration)
+ local card=createCard(entry,tier,position,variant,nil,eggSize,roll,lucky,sizeTier,revealId,ground)
  card:SetAttribute("EarnedFromEgg",true)
  card:SetAttribute("SourceStage",stage) -- guards only chase a carrier of a character taken from their own stage
  card:SetAttribute("RemainingLifetime",Config.CubeDropLifetime)
  if breaker then
   card:SetAttribute("BreakerUserId",breaker.UserId)
   card:SetAttribute("PriorityUntil",clock()+Config.Reveal.BreakerPrioritySeconds)
-  Announcer.Hatched(breaker,entry,tier,variant,giant)
+  Announcer.Hatched(breaker,entry,tier,variant,sizeTier=="Giant" or sizeTier=="Colossal" or sizeTier=="Mega" or sizeTier=="Monumental")
  end
  CardService.SetState(card,"Revealing")
  task.delay(Config.Reveal.RiseSeconds,function() if card.Parent and card:GetAttribute("State")=="Revealing" then CardService.SetState(card,"World") end end)
@@ -304,7 +316,8 @@ end
 function CardService.Record(card)
  return {PlayerId=card:GetAttribute("PlayerId"),Level=card:GetAttribute("UpgradeLevel") or 0,ItemId=card:GetAttribute("ItemId"),
   Pocket=card:GetAttribute("SecuredHotbar")==true or nil,Variant=card:GetAttribute("Variant"),Giant=card:GetAttribute("Giant"),EggSize=card:GetAttribute("EggSize"),
- IncomeRoll=card:GetAttribute("IncomeRoll")}
+ IncomeRoll=card:GetAttribute("IncomeRoll"),SizeTier=card:GetAttribute("SizeTier"),RewardVersion=2,
+ LegacyBaseIncome=card:GetAttribute("LegacyBaseIncome")}
 end
 -- Only validated server-saved roster records can be restored. A saved ItemId that already exists live is a duplicate and is refused.
 function CardService.RestoreRecord(record,position)
@@ -320,7 +333,17 @@ function CardService.RestoreRecord(record,position)
  local eggSize=type(record.EggSize)=="string" and Config.EggSizeById[record.EggSize] and record.EggSize or nil
  local range=entry.IncomeRange or Config.IncomeRange[entry.Tier]
  local roll=type(record.IncomeRoll)=="number" and record.IncomeRoll==record.IncomeRoll and math.clamp(record.IncomeRoll,range.Min,range.Max) or nil
- local card=createCard(entry,entry.Tier,position,variant,giant,eggSize,roll)
+ local sizeTier=type(record.SizeTier)=="string" and Config.RewardSizeById[record.SizeTier] and record.SizeTier or "Normal"
+ local card=createCard(entry,entry.Tier,position,variant,giant,eggSize,roll,nil,sizeTier)
+ local legacy=record.LegacyBaseIncome
+ if record.RewardVersion~=2 then
+  local oldVariant=variant=="Gold" and 2 or variant=="Diamond" and 5 or 1
+  legacy=Config.Tiers[entry.Tier].CashPerSecond*oldVariant*(giant and 3 or 1)*(roll or 1)
+ end
+ if type(legacy)=="number" and legacy==legacy and legacy>0 and legacy<math.huge then
+  card:SetAttribute("LegacyBaseIncome",legacy)
+  card:SetAttribute("CashPerSecond",legacy)
+ end
  if validId then card:SetAttribute("ItemId",id) end
  local level=type(record.Level)=="number" and record.Level==record.Level and math.clamp(math.floor(record.Level),0,Config.PlotSlots.MaxLevel) or 0
  local base=card:GetAttribute("CashPerSecond")

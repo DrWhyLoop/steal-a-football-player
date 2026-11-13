@@ -5,6 +5,7 @@ local CS=game:GetService("CollectionService")
 local TweenService=game:GetService("TweenService")
 local Config=require(game.ReplicatedStorage.Shared.Config)
 local Format=require(game.ReplicatedStorage.Shared.NumberFormat)
+local UIKit=require(script.Parent.UIKit)
 local Banner={}
 local function stageAt(position)
  for _,floor in CS:GetTagged("StageZone") do
@@ -16,14 +17,20 @@ function Banner.Init()
  local player=Players.LocalPlayer
  local gui=Instance.new("ScreenGui") gui.Name="StageBanner" gui.ResetOnSpawn=false gui.Parent=player.PlayerGui
  local label=Instance.new("TextLabel") label.AnchorPoint=Vector2.new(.5,0) label.Position=UDim2.new(.5,0,0,70) label.Size=UDim2.fromOffset(560,76)
- label.BackgroundColor3=Color3.fromRGB(14,22,32) label.BackgroundTransparency=.25 label.TextColor3=Color3.new(1,1,1) label.Font=Enum.Font.GothamBold
+ label.BackgroundColor3=Color3.fromRGB(14,22,32) label.BackgroundTransparency=.25 label.TextColor3=Config.UITheme.Text label.Font=Enum.Font.FredokaOne
  label.TextSize=22 label.RichText=true label.Visible=false label.Parent=gui
  local corner=Instance.new("UICorner") corner.CornerRadius=UDim.new(0,12) corner.Parent=label
+ UIKit.Card(label)
+ label.TextWrapped=true
+ UIKit.OnResize(function(view)
+  label.Size=UDim2.fromOffset(math.min(560,view.X-32),view.X<Config.UITheme.CompactWidth and 100 or 76)
+  label.Position=UDim2.new(.5,0,0,20)
+ end)
  local token=0
  local function show(stage)
   local info=Config.StageInfo[stage]
   local mine=player:GetAttribute("Speed") or 0
-  local color=mine<info.Points and "#FF7070" or "#7DFF9B"
+  local color=mine<info.Points and "#AD3429" or "#28733F"
   label.Text=('STAGE %d  -  %s  (%s)\n<font size="18" color="%s">%s - yours: %s</font>'):format(stage,info.Name,info.Difficulty,color,Format.Recommended(info.Points),Format.Compact(mine))
   token+=1 local mine_token=token
   label.TextTransparency=0 label.BackgroundTransparency=.25 label.Visible=true

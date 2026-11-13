@@ -12,7 +12,7 @@ function UI.Init()
  gui.Name = "TrailShop"
  gui.ResetOnSpawn = false
  gui.Parent = player.PlayerGui
- local open = Kit.Button(gui,"Trails",UDim2.fromOffset(118,36),UDim2.new(1,-130,.48,-138))
+ local open = Kit.Nav(gui,"Trails","star",1,true)
  local panel,title,list = Kit.Panel(gui,"Shop","TRAILS","Equip one trail to earn more Speed points on your treadmill.",44)
  local status = Kit.Label(panel,"",UDim2.new(1,-24,0,32),UDim2.new(0,12,1,-38))
  local buttons = {}
@@ -20,13 +20,15 @@ function UI.Init()
   local row = Instance.new("Frame")
   row.Name = def.Id
   row.LayoutOrder = index
-  row.Size = UDim2.new(1,-8,0,72)
-  row.BackgroundColor3 = Color3.fromRGB(35,53,70)
+  row.Size = UDim2.new(1,-8,0,152)
   row.Parent = list
-  local label = Kit.Label(row,("%s  |  x%s Speed Points  |  %s"):format(def.Name,Format.Compact(def.Multiplier),def.Rarity or "Starter"),UDim2.new(.60,-12,1,0),UDim2.fromOffset(8,0))
-  label.TextXAlignment = Enum.TextXAlignment.Left
-  if def.Color then label.TextColor3 = def.Color end
-  local button = Kit.Button(row,"",UDim2.new(.38,0,0,38),UDim2.new(.61,0,.5,-19))
+  Kit.Card(row)
+  local swatch=Instance.new("Frame") swatch.Name="TrailSwatch" swatch.Size=UDim2.fromOffset(54,54) swatch.Position=UDim2.fromOffset(12,14) swatch.Rotation=-8 swatch.Parent=row Kit.Card(swatch)
+  swatch.BackgroundColor3=def.Color or Config.UITheme.Accent
+  local icon=Kit.Icon(swatch,"star",UDim2.fromOffset(30,30),UDim2.fromOffset(12,12)) icon.ImageColor3=Color3.new(1,1,1)
+  local name=Kit.Label(row,def.Name,UDim2.new(1,-92,0,30),UDim2.fromOffset(80,12)) name.TextXAlignment=Enum.TextXAlignment.Left name.Font=Enum.Font.FredokaOne
+  local details=Kit.Label(row,("x%s Speed Points | %s"):format(Format.Compact(def.Multiplier),def.Rarity or "Starter"),UDim2.new(1,-92,0,38),UDim2.fromOffset(80,42)) details.TextXAlignment=Enum.TextXAlignment.Left details.TextSize=14 details.TextColor3=Config.UITheme.Muted
+  local button = Kit.Button(row,"",UDim2.new(1,-24,0,44),UDim2.new(0,12,1,-56))
   buttons[index] = button
   button.Activated:Connect(function()
    local owned = player:GetAttribute("TrailTier") or 1

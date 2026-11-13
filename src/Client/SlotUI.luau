@@ -13,7 +13,7 @@ local function render(slot)
  local level=slot:GetAttribute("UpgradeLevel") or 0
  local cost=slot:GetAttribute("UpgradeCost")
  local owner=slot:FindFirstAncestorOfClass("Model"):GetAttribute("OwnerUserId")==player.UserId
- gui.Enabled=slot:GetAttribute("CardName")~=nil
+ gui.Enabled=false
  if not owner then gui.Label.Text=("LV %d"):format(level)
  elseif not cost then gui.Label.Text=("LV %d · MAX"):format(level)
  else
@@ -55,7 +55,7 @@ function SlotUI.Init()
  Remotes.CollectResult.OnClientEvent:Connect(collectEffect)
 
  local gui=Instance.new("ScreenGui") gui.Name="SlotMessages" gui.ResetOnSpawn=false gui.DisplayOrder=50 gui.Parent=player:WaitForChild("PlayerGui")
- local text=Instance.new("TextLabel") text.AnchorPoint=Vector2.new(.5,1) text.Position=UDim2.fromScale(.5,.82) text.Size=UDim2.fromOffset(280,44)
+ local text=Instance.new("TextLabel") text.AnchorPoint=Vector2.new(.5,1) text.Position=UDim2.new(.5,0,1,-225) text.Size=UDim2.fromOffset(280,44)
  text.BackgroundColor3=Color3.fromRGB(20,20,20) text.BackgroundTransparency=.2 text.TextColor3=Color3.new(1,1,1) text.TextScaled=true text.Font=Enum.Font.GothamBold text.Visible=false text.Parent=gui
  Instance.new("UICorner",text).CornerRadius=UDim.new(0,10)
  local token=0

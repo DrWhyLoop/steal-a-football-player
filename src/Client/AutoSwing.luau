@@ -22,13 +22,24 @@ end
 function AutoSwing.Init()
  local player=Players.LocalPlayer
  local gui=Instance.new("ScreenGui") gui.Name="AutoSwing" gui.ResetOnSpawn=false gui.DisplayOrder=-1 gui.Parent=player.PlayerGui
- local size=Config.AutoSwing.ButtonSize
- local button=UIKit.Button(gui,"",UDim2.fromOffset(size,size),UDim2.new(.5,-size/2,1,-size-Config.AutoSwing.ButtonRaise))
- button.TextSize=18
+ local layout=Config.FocusUI
+ local button=UIKit.Button(gui,"",UDim2.fromOffset(layout.ActionWidth,layout.ActionHeight),UDim2.new(0,16,1,-layout.ActionBottom))
+ button.AnchorPoint=Vector2.new(0,1)
+ button.TextSize=16
+ UIKit.OnResize(function(view)
+  button.Size=UDim2.fromOffset(view.Y<500 and 120 or layout.ActionWidth,layout.ActionHeight)
+  button.Position=UDim2.new(0,16,1,-(view.Y<500 and 110 or 235))
+ end)
  local params=RaycastParams.new()
  params.RespectCanCollide=true
  local on=false
- local function show() UIKit.State(button,on and "AUTO\nSWING\nON" or "AUTO\nSWING\nOFF",on,true) end
+ local function show()
+  gui.Enabled=not player.PlayerGui:GetAttribute("MenuOpen")
+  button.Visible=not player:GetAttribute("CarriedCard")
+  UIKit.State(button,on and "Auto Swing · ON" or "Auto Swing · OFF",on,true)
+ end
+ player:GetAttributeChangedSignal("CarriedCard"):Connect(show)
+ player.PlayerGui:GetAttributeChangedSignal("MenuOpen"):Connect(show)
  button.Activated:Connect(function() on=not on show() end)
  show()
  while gui.Parent do

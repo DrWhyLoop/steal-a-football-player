@@ -56,30 +56,67 @@ Config.PlayerRoster = {
  {Id="Player_02",Name="Crimson Ace",Tier="GOAT",Weight=30},
  {Id="Player_01",Name="Pocket Wizard",Tier="GOAT",Weight=20},
 }
--- Cage break: the server rolls the result at once and destroys the cage. Nearby clients show a glowing blob in its place for GlowSeconds (it swells
--- to GlowScale, pulses and jitters harder towards the end) with a luck counter ticking up to the rolled luck, then a burst; the character
--- appears when the glow ends. Everything here is cosmetic and runs on the client.
-Config.Reveal = { GlowSeconds=4.5, GlowScale=1.6, PulseStart=2, PulseEnd=9, JitterStart=.02, JitterEnd=.14, SparkRateStart=8, SparkRateEnd=60,
- TickStart=2, TickEnd=14, TickSoundId="rbxasset://sounds/electronicpingshort.wav", TickVolume=.35, CounterHeight=3, CounterColor=Color3.fromRGB(110,255,140),
- PopSeconds=.3, PopSize=16, LuckyPopSize=26, ConfettiCount=45, RayCount=12, LuckyRayCount=22, RayLength=26, RayColorLucky=Color3.fromRGB(255,215,0),
- RiseSeconds=.35, StartScale=.9, LuckyScale=1.25, PopTextSeconds=1.4, PopTextHeight=7,
- BeamSeconds=.9, BeamHeight=60, BeamWidth=3, PopSoundId="rbxasset://sounds/impact_explosion_03.mp3", PopSoundVolume=.9, BreakerPrioritySeconds=3,
- ShakeSeconds=.35, ShakeDistance=90, ShakeStrength={Rare=.15,Epic=.25,Legendary=.4,Mythic=.55,GOAT=.8},
- DisplayHeight=5, SafeCelebrationSeconds=1.4, SafeCheckSeconds=0.2, SafeMargin=2,
- MaxDistance=100, MaxConcurrent=3, SafeColor=Color3.fromRGB(100,255,165) }
+-- One cage falls apart; its white occupant grows and flashes into the locked server reward.
+Config.Reveal = {
+ BreakSeconds=.6, GrowthMinSeconds=1.5, GrowthMaxSeconds=2.9,
+ GrowthMinScale=1.1, GrowthMaxScale=1.6, FlashSeconds=.25,
+ TickStart=2, TickEnd=14,
+ TickSoundId="rbxasset://sounds/electronicpingshort.wav", TickVolume=.25,
+ CounterHeight=3, CounterColor=Color3.fromRGB(110,255,140),
+ RiseSeconds=.35, PopSoundId="rbxasset://sounds/impact_explosion_03.mp3", PopSoundVolume=.5,
+ BreakerPrioritySeconds=3, DisplayHeight=5, SafeCelebrationSeconds=1.4,
+ SafeCheckSeconds=.2, SafeMargin=2, MaxDistance=100, MaxConcurrent=3,
+ SafeColor=Color3.fromRGB(100,255,165),
+ DebrisDistance=5,DebrisLift=2,DebrisFall=5,DebrisTurns=1.2,DebrisFadeStart=.45,
+ ShellFraction=.65,ShellFragments=10,MaxDebrisParts=96,MaxLightDebrisParts=8,FragmentScale=Vector3.new(.13,.28,.13),
+ OccupantDistance=105,MaxIdleOccupants=12,OccupantCheckSeconds=.4,RevealGraceSeconds=1,TransformFadeSeconds=.12,
+}
+Config.EvolutionVFX = {
+ Distance=100,MaxConcurrent=3,Duration=1.05,Height=.25,
+ SmokeCount=5,RareSmokeCount=8,RingCount=1,RareScale=1.15,
+ SmokeLifetime=NumberRange.new(.45,.75),RingLifetime=NumberRange.new(.5,.65),
+ SmokeSize={.35,1.4,2.2},RingSize={.4,3.2,5.6},
+ SmokeTransparency={.5,.65,1},RingTransparency={.4,.2,1},
+ SmokeSpeed=NumberRange.new(.8,1.6),SmokeRotation=NumberRange.new(0,360),SmokeSpin=NumberRange.new(-30,30),
+ SmokeSpread=Vector2.new(150,150),SmokeLift=1,SmokeDrag=2,RingSpeed=.01,
+ SmokeEmission=.08,RingEmission=.85,SmokeColor=Color3.fromRGB(225,230,235),RingColor=Color3.fromRGB(255,240,201),VariantBlend=.35,
+}
+Config.RewardSizes = {
+ {Id="Tiny",Scale=.6,Income=.8,Weight=8},
+ {Id="Small",Scale=.8,Income=.9,Weight=17},
+ {Id="Normal",Scale=1,Income=1,Weight=60},
+ {Id="Tall",Scale=1.2,Income=1.12,Weight=8},
+ {Id="Large",Scale=1.4,Income=1.28,Weight=4},
+ {Id="Huge",Scale=1.6,Income=1.5,Weight=1.6},
+ {Id="Giant",Scale=1.9,Income=1.8,Weight=.8},
+ {Id="Colossal",Scale=2.2,Income=2.2,Weight=.4},
+ {Id="Mega",Scale=2.6,Income=2.7,Weight=.15},
+ {Id="Monumental",Scale=3,Income=3.3,Weight=.05},
+}
+Config.RewardSizeById={}
+for _,size in Config.RewardSizes do Config.RewardSizeById[size.Id]=size end
+Config.RewardVariantOrder={"Normal","Gold","Diamond","Ruby","Shadow","Emerald","Fire","Lightning","Void","Rainbow"}
+Config.Variants = {
+ Normal={Income=1,Weight=89,Tint=Color3.new(1,1,1)},
+ Gold={Income=1.5,Weight=6,Tint=Color3.fromRGB(255,215,110)},
+ Diamond={Income=2,Weight=2,Tint=Color3.fromRGB(180,235,255)},
+ Ruby={Income=2.4,Weight=.9,Tint=Color3.fromRGB(255,145,165)},
+ Shadow={Income=2.8,Weight=.65,Tint=Color3.fromRGB(170,175,205)},
+ Emerald={Income=3.2,Weight=.5,Tint=Color3.fromRGB(145,255,190)},
+ Fire={Income=3.8,Weight=.35,Tint=Color3.fromRGB(255,185,115)},
+ Lightning={Income=4.5,Weight=.25,Tint=Color3.fromRGB(170,210,255)},
+ Void={Income=5.5,Weight=.2,Tint=Color3.fromRGB(210,165,255)},
+ Rainbow={Income=7,Weight=.15,Tint=Color3.fromRGB(255,205,240)},
+}
+Config.RewardRoll={LuckExponent=.2,SoftStart=6,AbsoluteMax=20,TintBlend=.2}
+Config.RewardDisplay={SpacingFraction=.85,MinimumRatio=.45,FloorGap=1,SameFloorTolerance=1}
+Config.VariantEffects={Near=60,Far=80,MaxVisible=8,Rate=2,RefreshSeconds=.2,FootOffset=.2,RainbowSeconds=6}
 
--- Card variants. Gold/Diamond are exclusive (Diamond checked first); Giant is an independent roll. Income multipliers stack.
-Config.Variants = { Gold={Income=2,Tint=Color3.fromRGB(255,200,60)}, Diamond={Income=5,Tint=Color3.fromRGB(235,250,255),Glow=Color3.fromRGB(120,220,255),GlowFill=0.5}, SparkleRate=2 }
-Config.GiantVariant = { Income=3, Size=1.5 }
-Config.VariantOdds = { Gold=0.05, Diamond=0.005, Giant=0.02 }
 -- Luck: every break rolls a luck value L (the counter on screen). A normal cage rolls Min + (Max - Min) * r^Power; a Lucky Cage rolls LuckyMin..LuckyMax.
 -- The income roll is u = random()^(1/L) (L = 1 is uniform, more luck pushes towards 1) and the card's income factor is Min + (Max - Min) * u from its
 -- IncomeRange (a roster entry may set its own IncomeRange = {Min=, Max=}; otherwise the tier's). Each tier range averages 1.0 at normal luck.
 Config.Luck = { Min=1, Max=1.5, Power=2, LuckyMin=3, LuckyMax=4, Step=.1 } -- Step: the counter shows one decimal, so L is rounded to it
 Config.IncomeRange = { Common={Min=.79,Max=1.19}, Rare={Min=.73,Max=1.23}, Epic={Min=.68,Max=1.28}, Legendary={Min=.62,Max=1.32}, Mythic={Min=.57,Max=1.37}, GOAT={Min=.46,Max=1.46} }
--- Pop text in the burst: LUCKY! only for a Lucky Cage; the variants have their own.
-Config.PopText = { Lucky={Text="LUCKY!",Color=Color3.fromRGB(255,215,0)}, Gold={Text="GOLD!",Color=Config.Variants.Gold.Tint},
- Diamond={Text="DIAMOND!",Color=Config.Variants.Diamond.Glow}, Giant={Text="GIANT!",Color=Color3.fromRGB(255,140,40)} }
 -- Lucky Egg: occasionally replaces a normal egg (never the GOAT or Golden egg) and boosts the variant odds.
 Config.LuckyEgg = { Chance=0.03, Odds={ Gold=0.20, Diamond=0.03, Giant=0.08 }, Color=Color3.fromRGB(80,255,120), Label="LUCKY CAGE",
  OddsDistance=35, LookDot=0.97 }
@@ -102,10 +139,14 @@ Config.CubeSize = 6
 -- egg width (room for the one-line text). Shown within MaxDistance, and only on a damaged egg or one within ShowDistance of the player.
 -- Decorative lights tagged Tag flicker: their Range jumps to a random whole number between Min and Max every Step seconds (client only).
 Config.LightFlicker = { Tag = "Flicker", Min = 5, Max = 10, Step = 0.1 }
+-- Blinking fixture (tag Tag on the bulb part, which carries a PointLight): off Off1, on On, off Off2, then on for a random whole number of
+-- seconds up to MaxPause; the bulb part's Transparency follows the light (the behaviour of the imported Flickering Light model).
+Config.LightBlink = { Tag = "Blink", Off1 = 0.02, On = 0.15, Off2 = 0.02, MaxPause = 4 }
 
 -- Plaza NPCs (Client/NpcMotion.luau): anchored, harmless, animated locally. Routes are offsets from each model's Home attribute, walked in a loop.
 -- R15 uses NPC 1's own animations (idle 742637544, walk 742638842) plus Roblox's R15 wave; R6 uses Roblox's default R6 set.
 Config.Npc = {
+ CagePreview = {Animations={Walk=507777826,Idle=507766666},SpeedPerHeight=.18,MinAnimationSpeed=.45,Pause=.65,HeightFraction=.80,InnerFraction=.80,BodyRadiusFactor=.60,BodyWidthFraction=.95,FloorClearance=.025,PanelFraction=.22,SurfaceBand=.30,RoofInset=.02,RoundRouteFactor=.6},
 	Tag = "Npc", ActiveDistance = 140, CheckSeconds = 0.5,
 	WalkSpeed = 6, AnimRefSpeed = 16, TurnRate = 8, Fade = 0.2, -- studs/s, studs/s of the walk clip at playback 1, turn smoothing per second
 	WaveDistance = 14, WaveSeconds = 2.5, WaveCooldown = 15, IdlePause = { 2, 5 },
@@ -248,6 +289,22 @@ Config.Axes = {
 
 -- Cards ---------------------------------------------------------------
 Config.CardSize = Vector3.new(3, 5, 2)
+Config.UITheme={
+ Background=Color3.fromRGB(249,244,232),Card=Color3.fromRGB(255,253,247),
+ Button=Color3.fromRGB(255,185,65),Accent=Color3.fromRGB(224,125,34),
+ Selected=Color3.fromRGB(49,137,80),Border=Color3.fromRGB(211,193,162),Preview=Color3.fromRGB(237,227,207),
+ Text=Color3.fromRGB(43,37,30),Muted=Color3.fromRGB(105,94,78),
+ Disabled=Color3.fromRGB(222,216,203),HoverScale=1.025,PressScale=.96,
+ MotionSeconds=.14,WindowSeconds=.22,WindowWidth=820,WindowHeight=650,
+ Margin=16,CompactWidth=680,NavWidth=132,NavCompactWidth=100,NavHeight=44,NavGap=8,NavMoreOrder=99,
+ PreviewFPS=24,PreviewTurnSpeed=.42,PreviewBob=.055,PreviewBobSpeed=1.8,
+ Icons={close="rbxassetid://118819271276803",star="rbxassetid://71458718634620",
+ energy="rbxassetid://109772672051925",medal="rbxassetid://97945893037460",
+ mail="rbxassetid://71078899575319",key="rbxassetid://77808432154113",
+ profile="rbxassetid://93837765787009",confirm="rbxassetid://82777339225926"},
+}
+Config.FocusUI={Range=14,ScreenRadius=.16,RefreshSeconds=.1,PanelWidth=340,PanelHeight=94,Bottom=115,ActionWidth=144,ActionHeight=46,ActionBottom=200}
+Config.HotbarUI={MinSlotWidth=54,SlotWidth=74,SlotHeight=72,Gap=7,Bottom=12,MaxSlots=10,RefreshSeconds=.15,Accent=Color3.fromRGB(224,125,34)}
 Config.CardLabels = {Distance=60,HeadClearance=1.6,Width=230,Height=92,RefreshSeconds=0.25,StatusColor=Color3.fromRGB(255,190,90),IncomeColor=Color3.fromRGB(120,255,150)}
 Config.DropPlayer = {Forward=4,RequestCooldown=.4,SafeCargoLimit=30}
 Config.CardRestHeight = 0.6          -- gap between dropped card and floor
@@ -255,7 +312,7 @@ Config.CarryOffset = Vector3.new(0, 3.2, 0) -- above the Head
 Config.PickupHoldSeconds = 0.3
 Config.PickupPromptDistance = 8
 Config.PickupMaxDistance = 20        -- server-side sanity check
-Config.InteractMaxDistance = 25      -- server-side sanity check (slots, lock button)
+Config.InteractMaxDistance = 25      -- server-side sanity check (slots)
 Config.DroppedCardLifetime = 30      -- cards dropped by death/leave despawn after this
 Config.CubeDropLifetime = 30          -- cards from broken cubes; 0 = never despawn
 Config.CarryTrackSeconds = 0.1
@@ -267,15 +324,6 @@ Config.ReservationLabelOffset = Vector3.new(0, 3, 0)
 Config.ReservationLabelMaxDistance = 70
 Config.StealHoldSeconds = 1.5
 Config.StealAlert = "%s is stealing your %s!" -- (thief name, card name)
-
--- Base lock -----------------------------------------------------------
-Config.LockDurationSeconds = 60
-Config.LockCooldownSeconds = 30      -- starts when the lock expires
-Config.LockTickSeconds = 1
-Config.LockBarrierHeight = 36
-Config.LockBarrierTransparency = 0.5
-Config.LockBarrierColor = Color3.fromRGB(80, 170, 255)
-Config.LockExpelInset = 10            -- trespassers are moved this far inside the forecourt
 
 -- Guards (per stage, index = stage number) -------------------------------
 Config.GuardCountPerStage = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
@@ -321,7 +369,7 @@ Config.Environment = {
  StageSignSize = Vector3.new(0.25, 6, 24), StageSignHeight = 10,
  StageSignColor = Color3.fromRGB(30, 47, 30),
  PlotInset = 0.5, PlotSignSize = Vector3.new(0.2, 2, 29), PlotSignHeight = 6,
- PlotLockOffset = 13, SlotThickness = 0.18,
+ SlotThickness = 0.18,
  WillowScale = 0.8, WillowStageInterval = 3, TreeOutsideOffset = 22,
  BambooScale = 0.42, BushScale = 0.27, BushLeafScale = 0.28,
  EdgeInset = 5, TuftsPerStage = 8, TuftScale = 0.6, PlazaTreeOutsideOffset = 60,
@@ -367,7 +415,7 @@ Config.PlotSlots = {
  -- Per slot (templates in ServerStorage.SlotTemplates, scaled to these sizes): pedestal under the character, a collect pad in front
  -- of it (pending cash is paid when the owner steps on it) and an upgrade button stand beside it.
  PedestalDiameter = 3.4, CollectPadSize = 2.4, CollectPadOffset = 4.4, CollectCooldown = 0.5, CollectEffectSeconds = 0.35,
- StandHeight = 3.2, StandSideOffset = 2.5, StandForwardOffset = 1.2, UpgradeButtonColor = Color3.fromRGB(255, 200, 30),
+ StandHeight = 3.2, StandSideOffset = 2.6, StandForwardOffset = 1.2, UpgradeButtonColor = Color3.fromRGB(255, 200, 30),
  CollectSoundId = "rbxassetid://9083627113", CollectLightColor = Color3.fromRGB(40, 220, 70),
  LabelWidth = 200, LabelHeight = 32, LabelDistance = 45,
  PartBudgetPerSlot = 12, -- BaseParts per slot (pedestal, pad, stand, proxy); the builder asserts PartBudgetPerSlot x SlotsPerPlot per plot
@@ -488,9 +536,41 @@ Config.Purchases={LogStore="FootballerPurchaseLog_v1",LogKeyPrefix="U_",MaxLogEv
 -- Collection features (Phase 5). The roster entry fields Id/Name/Tier are required; PortraitImage (an "rbxassetid://..." string) is optional:
 -- the Index uses it when present and falls back to a model preview. VariantOrder lists the paid-for-by-luck materials in a FIXED order
 -- (only ever append): every character has two bits per material (normal and Giant), so saved bitmasks stay valid.
-Config.Index={PerPage=8,VariantOrder={"Gold","Diamond"},
+Config.Index={PerPage=8,VariantOrder={"Gold","Diamond","Ruby","Shadow","Emerald","Fire","Lightning","Void","Rainbow"},
  TierRewards={Common=500,Rare=2500,Epic=12500,Legendary=60000,Mythic=300000,GOAT=2000000}} -- provisional, one-time per tier
 Config.Daily={BaseCash=500,StepCash=250,CapDays=7,ClaimCooldownSeconds=2,RefreshSeconds=60} -- reward = Base + Step*(min(streak,CapDays)-1)
+-- Rebirth: filling the bar (log scale of Speed Points against the next requirement) unlocks it. A rebirth resets ONLY Speed Points; cash,
+-- plot footballers, tools, trails, treadmills and upgrades are kept. Each rebirth adds IncomeStep to the income multiplier and GainStep to
+-- the Speed Points gain multiplier. Requirement for rebirth number n = BaseRequirement * RequirementGrowth^(n-1) (tools/economy/rebirth.py).
+Config.Rebirth={Max=10,Segments=10,BaseRequirement=8e10,RequirementGrowth=1.25,IncomeStep=.5,GainStep=.5,ConfirmSeconds=4,RequestGap=2}
+-- Quests: 3 of the 5 kinds are drawn each UTC day (same for everyone), all 5 each UTC week (Monday start). They pay Quest Tokens.
+-- RULE: Quest Tokens must NEVER be sold for Robux, directly or indirectly (no product, pass, bundle or offer may grant tokens or
+-- token-priced upgrades). Tokens buy cage luck, so selling them would make luck a paid random item.
+-- Target = a fixed number, or for Collect max(MinCollect, plot income per second at assignment * IncomeSeconds). A Steal only counts for a
+-- victim whose account is older than MinAccountAgeDays and only once per victim per UTC day (blocks alt-account farming).
+-- A Play minute counts only if the player moved MinMoveStuds since the last tick or is training on the treadmill.
+Config.Quests={DailyCount=3,MinAccountAgeDays=3,MaxVictims=200,MaxTokens=1e9,SyncSeconds=1,PlayTickSeconds=60,MinMoveStuds=5,MinCollect=1000,RequestGap=.3,
+ Kinds={
+  {Id="Break",Text="Break %s cages",Daily={Target=30,Tokens=10},Weekly={Target=300,Tokens=40}},
+  {Id="Place",Text="Place %s footballers",Daily={Target=5,Tokens=10},Weekly={Target=25,Tokens=25}},
+  {Id="Play",Text="Play for %s minutes",Daily={Target=30,Tokens=15},Weekly={Target=240,Tokens=35}},
+  {Id="Collect",Text="Collect $%s from your pads",Daily={IncomeSeconds=900,Tokens=10},Weekly={IncomeSeconds=7200,Tokens=30}},
+  {Id="Steal",Text="Steal %s footballers",Daily={Target=1,Tokens=20},Weekly={Target=5,Tokens=40}},
+ }}
+Config.Quests.ById={}
+for _,kind in Config.Quests.Kinds do Config.Quests.ById[kind.Id]=kind end
+-- Upgrades shop (docs/Plans.md section 3): permanent, kept on rebirth, saved as profile.Upgrades = {id = level}. Bonus = Step * level.
+-- Scale/Unit only format the value for the UI. RULE: Quest Tokens must NEVER be sold for Robux, directly or indirectly (see Config.Quests).
+-- Luck adds to the rolled luck and the total is clamped at Config.Luck.LuckyMax, so it never lifts a Lucky Cage past that.
+Config.Upgrades={RequestGap=.4,PadPollSeconds=.25,PadBaseReach=3.6, -- PadBaseReach: pad radius plus the character's root height above the pad
+ Defs={
+  {Id="Income",Name="Income",Hint="More cash from every placed footballer.",Step=.025,Scale=100,Unit="%",Currency="Tokens",Costs={20,30,45,65,90,120,160,210,270,350}},
+  {Id="Speed",Name="Speed gain",Hint="More Speed Points from the treadmill.",Step=.05,Scale=100,Unit="%",Currency="Cash",Costs={1e6,4e6,1.5e7,5e7,1.5e8,4e8,1.2e9,4e9,1.2e10,4e10}},
+  {Id="Pad",Name="Collect pad range",Hint="Collect cash from further away.",Step=1.5,Scale=1,Unit=" studs",Currency="Tokens",Costs={15,25,40,60,90}},
+  {Id="Luck",Name="Cage luck",Hint="Added to the luck of every cage you break.",Step=.1,Scale=1,Unit=" luck",Currency="Tokens",Costs={30,50,80,120,180}},
+ }}
+Config.Upgrades.ById={}
+for _,def in Config.Upgrades.Defs do Config.Upgrades.ById[def.Id]=def end
 Config.Announce={Tiers={Mythic=true,GOAT=true},Variants={Diamond=true},Giant=true, -- what counts as a rare hatch
  GlobalGapSeconds=3,MaxPerMinute=6,PlayerGapSeconds=10}
 
