@@ -7,6 +7,7 @@ local Config=require(RS.Shared.Config)
 local Remotes=require(RS.Shared.Remotes)
 local Format=require(RS.Shared.NumberFormat)
 local Keys=require(RS.Shared.IndexKeys)
+local SetBonus=require(RS.Shared.SetBonus)
 local UIKit=require(script.Parent.UIKit)
 local Viewport=require(script.Parent.ModelViewport)
 local label,button=UIKit.Label,UIKit.Button
@@ -21,6 +22,7 @@ function UI.Init()
  for _,name in Config.TierOrder do if Keys.ByTier[name] then tier=tier or name end end
 
  local gui=Instance.new("ScreenGui") gui.Name="IndexBook" gui.ResetOnSpawn=false gui.Parent=player:WaitForChild("PlayerGui")
+ UIKit.Screen(gui)
  local open=UIKit.Nav(gui,"Index","medal",3)
  local dot=Instance.new("Frame") dot.Name="DailyDot" dot.Size=UDim2.fromOffset(14,14) dot.Position=UDim2.new(1,-8,0,-6) dot.BackgroundColor3=Color3.fromRGB(255,70,70) dot.Visible=false dot.Parent=open
  corner(dot,7)
@@ -47,7 +49,7 @@ function UI.Init()
  grid.ScrollBarThickness=6 grid.Parent=chars
  local gridLayout=Instance.new("UIGridLayout") gridLayout.CellSize=UDim2.fromOffset(170,206) gridLayout.CellPadding=UDim2.fromOffset(8,8) gridLayout.HorizontalAlignment=Enum.HorizontalAlignment.Center gridLayout.Parent=grid
  local prev=button(chars,"<",UDim2.fromOffset(60,38),UDim2.new(0,0,1,-42))
- local pageLabel=label(chars,"",UDim2.new(1,-140,0,38),UDim2.new(0,70,1,-42)) pageLabel.TextSize=13
+ local pageLabel=label(chars,"",UDim2.new(1,-140,0,38),UDim2.new(0,70,1,-42)) pageLabel.TextSize=12
  local nextPage=button(chars,">",UDim2.fromOffset(60,38),UDim2.new(1,-60,1,-42))
 
  -- daily page
@@ -94,7 +96,7 @@ function UI.Init()
  local function render()
   local owned,total=0,#Config.PlayerRoster
   for _,entry in Config.PlayerRoster do if have(entry) then owned+=1 end end
-  title.Text=("INDEX  |  %d / %d collected"):format(owned,total)
+  title.Text=("INDEX  |  %d / %d collected  |  Sets +%g%% income"):format(owned,total,SetBonus.Total(state.index)*100)
   for _,child in tierRow:GetChildren() do if child:IsA("TextButton") then
    local got,count=progress(child.Name)
    child.Text=("%s %d/%d%s"):format(child.Name,got,count,state.claimed[child.Name] and " ✓" or "")
@@ -108,7 +110,9 @@ function UI.Init()
   page=math.clamp(page,1,pages)
   for i=(page-1)*perPage+1,math.min(#list,page*perPage) do cell(list[i]) end
   local reward=Config.Index.TierRewards[tier] or 0
-  pageLabel.Text=("%d / %d | Reward $%s%s"):format(page,pages,Format.Compact(reward),state.claimed[tier] and " (claimed)" or "")
+  local gold,diamond,count=SetBonus.Counts(state.index,tier)
+  local goldValue=Config.Sets.Gold[tier] or 0
+  pageLabel.Text=("%d / %d | Reward $%s%s\nGold set %d/%d +%g%% | Diamond star %d/%d +%g%%"):format(page,pages,Format.Compact(reward),state.claimed[tier] and " (claimed)" or "",gold,count,goldValue*100,diamond,count,goldValue*Config.Sets.DiamondFactor*100)
   prev.Active=page>1 prev.BackgroundColor3=page>1 and Config.UITheme.Button or MISSING
   nextPage.Active=page<pages nextPage.BackgroundColor3=page<pages and Config.UITheme.Button or MISSING
  end

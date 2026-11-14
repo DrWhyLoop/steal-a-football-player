@@ -14,7 +14,8 @@ repeat
 until not script.Parent
 
 local gui=Instance.new("ScreenGui")
-gui.Name="ToolHotbar" gui.ResetOnSpawn=false gui.DisplayOrder=10 gui.Parent=playerGui
+gui.Name="ToolHotbar" gui.DisplayOrder=10 gui.Parent=playerGui
+UIKit.Screen(gui)
 local bar=Instance.new("Frame")
 bar.Name="Bar" bar.AnchorPoint=Vector2.new(.5,1)
 bar.Position=UDim2.new(.5,0,1,-settings.Bottom)
@@ -26,13 +27,12 @@ layout.Padding=UDim.new(0,settings.Gap) layout.SortOrder=Enum.SortOrder.LayoutOr
 local inventory=Instance.new("Frame")
 inventory.Name="Inventory" inventory.AnchorPoint=Vector2.new(.5,1)
 inventory.Position=UDim2.new(.5,0,1,-settings.Bottom-settings.SlotHeight-14)
-inventory.Size=UDim2.fromOffset(360,200) inventory.BackgroundColor3=Config.UITheme.Background
+inventory.Size=UDim2.fromOffset(360,200) inventory.BackgroundTransparency=1
 inventory.Visible=false inventory.Parent=gui
-local round=Instance.new("UICorner") round.CornerRadius=UDim.new(0,12) round.Parent=inventory
 local heading=Instance.new("TextLabel")
 heading.Size=UDim2.new(1,-24,0,32) heading.Position=UDim2.fromOffset(12,4)
 heading.BackgroundTransparency=1 heading.Text="BACKPACK" heading.TextSize=15
-heading.Font=Enum.Font.FredokaOne heading.TextColor3=Config.UITheme.Text heading.Parent=inventory
+heading.Parent=inventory UIKit.Text(heading,"gold")
 local list=Instance.new("ScrollingFrame")
 list.Size=UDim2.new(1,-20,1,-45) list.Position=UDim2.fromOffset(10,38)
 list.BackgroundTransparency=1 list.BorderSizePixel=0 list.ScrollBarThickness=4
@@ -95,7 +95,7 @@ local function rank(tool)
  return tool.Name==Config.PickaxeName and 1 or tool.Name==Config.Bat.Name and 2 or 3
 end
 local function refresh()
- gui.Enabled=not playerGui:GetAttribute("MenuOpen")
+ gui.Enabled=UIKit.Visible()
  local current={}
  for _,container in {player:FindFirstChildOfClass("Backpack"),player.Character} do
   if container then

@@ -2,14 +2,17 @@
 local CS=game:GetService("CollectionService")
 local Players=game:GetService("Players")
 local Config=require(game.ReplicatedStorage.Shared.Config)
+local UIKit=require(script.Parent.UIKit)
 local Lucky=Config.LuckyEgg
 local LuckyOdds={}
 function LuckyOdds.Init()
  local player=Players.LocalPlayer
- local gui=Instance.new("ScreenGui") gui.Name="LuckyOdds" gui.ResetOnSpawn=false gui.DisplayOrder=40 gui.Parent=player:WaitForChild("PlayerGui")
- local text=Instance.new("TextLabel") text.AnchorPoint=Vector2.new(.5,0) text.Position=UDim2.fromScale(.5,.62) text.Size=UDim2.fromOffset(420,36)
- text.BackgroundColor3=Color3.fromRGB(20,20,20) text.BackgroundTransparency=.3 text.TextColor3=Lucky.Color text.TextScaled=true text.Font=Enum.Font.GothamBold text.Visible=false text.Parent=gui
- Instance.new("UICorner",text).CornerRadius=UDim.new(0,10)
+ local gui=Instance.new("ScreenGui") gui.Name="LuckyOdds" gui.DisplayOrder=40 gui.Parent=player:WaitForChild("PlayerGui")
+ UIKit.Screen(gui)
+ local text=Instance.new("TextLabel") text.AnchorPoint=Vector2.new(.5,0) text.Position=UDim2.fromScale(.5,.62) text.Size=UDim2.fromScale(.8,.06)
+ text.TextScaled=true text.Visible=false text.Parent=gui
+ Instance.new("UITextSizeConstraint",text).MaxTextSize=22
+ UIKit.Text(text,"gold")
  text.Text=("Lucky Cage: %.1f–%.1fx luck · better size, variant and income rolls"):format(Config.Luck.LuckyMin,Config.Luck.LuckyMax)
  task.spawn(function()
   while true do

@@ -17,11 +17,11 @@ local CashService = {}
 
 local PlotService, SlotService -- injected in Init
 
--- Income multiplier: the 2x Cash pass (attribute set by Purchases) times the permanent rebirth multiplier and the Income upgrade.
+-- Income multiplier: the 2x Cash pass (attribute set by Purchases) times the permanent rebirth multiplier and the Income upgrade and the collection-set bonus.
 function CashService.Boost(player: Player?): number
 	if not player then return 1 end
 	local pass = player:GetAttribute("PassOwned_" .. Config.CashPass.Id) and Config.CashPass.Multiplier or 1
-	return pass * Rebirth.Income(player:GetAttribute("Rebirths") or 0) * (1 + UpgradeShop.Bonus(player, "Income"))
+	return pass * Rebirth.Income(player:GetAttribute("Rebirths") or 0) * (1 + UpgradeShop.Bonus(player, "Income")) * (1 + (player:GetAttribute("SetBonus") or 0))
 end
 
 function CashService.AddCash(player: Player, amount: number)

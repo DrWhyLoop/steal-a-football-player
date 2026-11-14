@@ -10,6 +10,7 @@ local UI={}
 function UI.Init()
  local player=Players.LocalPlayer
  local gui=Instance.new("ScreenGui") gui.Name="ToolShop" gui.ResetOnSpawn=false gui.Parent=player.PlayerGui
+ UIKit.Screen(gui)
  local open=UIKit.Nav(gui,"Tools","key",2)
  local panel,title,scroll=UIKit.Panel(gui,"Shop","TOOLS","Choose your next tool. Compare power, unlock it, then equip.",44)
  local message=UIKit.Label(panel,"",UDim2.new(1,-24,0,32),UDim2.new(0,12,1,-38)) message.TextSize=14

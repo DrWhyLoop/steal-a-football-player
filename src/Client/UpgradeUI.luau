@@ -15,6 +15,7 @@ function UI.Init()
 	gui.Name = "UpgradeMenu"
 	gui.ResetOnSpawn = false
 	gui.Parent = player.PlayerGui
+	Kit.Screen(gui)
 	local open = Kit.Nav(gui, "Upgrades", "energy", 7, true)
 	local panel, title, list = Kit.Panel(gui, "Upgrades", "UPGRADES", "Permanent. Kept when you rebirth.", 30)
 	local status = Kit.Label(panel, "", UDim2.new(1, -32, 0, 24), UDim2.new(0, 16, 1, -28))

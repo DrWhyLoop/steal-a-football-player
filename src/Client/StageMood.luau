@@ -5,7 +5,7 @@ local Lighting = game:GetService("Lighting")
 local TweenService = game:GetService("TweenService")
 local RS = game:GetService("ReplicatedStorage")
 local Config = require(RS.Shared.Config)
-local StageZone = require(script.Parent.StageZone)
+local StageZone = require(RS.Shared.StageZone)
 local M = Config.StageMood
 local Mood = {}
 

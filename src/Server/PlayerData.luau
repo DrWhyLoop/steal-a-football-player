@@ -14,7 +14,7 @@ local store
 local session=game.JobId~="" and game.JobId or HttpService:GenerateGUID(false)
 local PlotService,SlotService,CardService
 local function defaults()
- return {Cash=0,SpeedPoints=0,Hatched=0,Rebirths=0,QuestTokens=0,Upgrades={},Quests={Day=0,Week=0,Daily={},Weekly={},Victims={}},Tools={Default=true},Tool="Default",ArmMode="Right",TrailTier=1,TrailIndex=1,CashTier=1,TreadmillId="Base",Slots={},SafeCargo={},PlaySeconds=0,Visits=0,FirstSeen=os.time(),PurchaseHistory={},Entitlements={},Receipts={},Index={},IndexClaimed={},Daily={LastDay=0,Streak=0}}
+ return {Cash=0,SpeedPoints=0,Hatched=0,Rebirths=0,StagesReached=0,QuestTokens=0,Upgrades={},Quests={Day=0,Week=0,Daily={},Weekly={},Victims={}},Tools={Default=true},Tool="Default",ArmMode="Right",TrailTier=1,TrailIndex=1,CashTier=1,TreadmillId="Base",Slots={},SafeCargo={},PlaySeconds=0,Visits=0,FirstSeen=os.time(),PurchaseHistory={},Entitlements={},Receipts={},Index={},IndexClaimed={},Daily={LastDay=0,Streak=0}}
 end
 local function finite(n,maximum)
  return type(n)=="number" and n==n and n>=0 and n<=maximum
@@ -58,6 +58,7 @@ local function sanitize(d)
   if finite(n,max) then clean[key]=n end
  end
  if finite(d.Rebirths,Config.Rebirth.Max) then clean.Rebirths=math.floor(d.Rebirths) end
+ if finite(d.StagesReached,2^32-1) then clean.StagesReached=bit32.band(math.floor(d.StagesReached),2^Config.StageCount-1) end -- first-arrival bits (kept through rebirths); stray bits are dropped, never the valid ones
  if finite(d.CashTier,#Config.Treadmills.Catalog-1) and d.CashTier>=1 then clean.CashTier=math.floor(d.CashTier) end
  if type(d.TreadmillId)=="string" then clean.TreadmillId=d.TreadmillId end
  if type(d.Slots)=="table" then clean.Slots=d.Slots end

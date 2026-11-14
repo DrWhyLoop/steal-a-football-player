@@ -19,6 +19,7 @@ local Reward=require(script.Parent.PlayerReward)
 local RewardMath=require(ReplicatedStorage.Shared.RewardMath)
 local IndexService=require(script.Parent.IndexService)
 local UpgradeShop=require(script.Parent.UpgradeShop)
+local StageTwists=require(script.Parent.StageTwists)
 local Announcer=require(script.Parent.Announcer)
 local CardService = {}
 local safeBoundary
@@ -278,7 +279,7 @@ function CardService.DropFromCube(tier: string,position: Vector3,breaker: Player
  local entry=Reward.Pick(tier)
  local eggSize=egg:GetAttribute("Size")
  local stage=egg:GetAttribute("Stage")
- local luck=Reward.Luck(lucky,UpgradeShop.Bonus(breaker,"Luck"))
+ local luck=Reward.Luck(lucky,UpgradeShop.Bonus(breaker,"Luck")+StageTwists.TakeLuck(breaker,stage))
  local variant,sizeTier=Reward.Roll(luck,egg:GetAttribute("MinVariant"))
  local roll=Reward.IncomeRoll(entry,luck)
  local duration=RewardMath.Reveal(luck)

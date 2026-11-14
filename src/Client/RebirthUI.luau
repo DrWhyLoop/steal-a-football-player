@@ -14,6 +14,7 @@ function UI.Init()
 	gui.Name = "RebirthMenu"
 	gui.ResetOnSpawn = false
 	gui.Parent = player.PlayerGui
+	Kit.Screen(gui)
 	local open = Kit.Nav(gui, "Rebirth", "confirm", 0)
 	local panel, title, list = Kit.Panel(gui, "Rebirth", "REBIRTH", "Reset your Speed Points for a permanent boost. Cash, footballers, tools, trails, treadmills and upgrades are kept.", 0)
 	local card = Instance.new("Frame")

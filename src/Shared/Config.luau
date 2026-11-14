@@ -230,14 +230,11 @@ Config.StageInfo = {
  { Name = "Ember Works", Difficulty = "Hard", Points = 68500000,
   Look = { Floor = { Material = Enum.Material.Basalt, Color = Color3.fromRGB(38,34,38) }, Walls = { Material = Enum.Material.Basalt, Color = Color3.fromRGB(45,40,45), Top = Color3.fromRGB(120,30,20), Vine = Color3.fromRGB(70,25,20) }, Keep = {},
    Decor = {
-    { Layout = "Scatter", Count = 18, Material = Enum.Material.CrackedLava, Colors = {Color3.fromRGB(255,110,40)}, Shape = "Block", Size = {6, 26} },
-    { Layout = "Long", Count = 2, Material = Enum.Material.CrackedLava, Colors = {Color3.fromRGB(255,90,30)}, Width = 2 },
    } },
   Mood = { Tint = Color3.fromRGB(255,170,150), Saturation = 0.1, Contrast = 0.12, Brightness = -0.04, Decay = Color3.fromRGB(160,60,40), Glare = 0.3, Offset = 0.35, DensityScale = 1.4, HazeScale = 1.5, Bloom = 1.5 } }, -- 8
  { Name = "Frost Terrace", Difficulty = "Insane", Points = 828000000,
   Look = { Floor = { Material = Enum.Material.Snow, Color = Color3.fromRGB(236,244,252) }, Walls = { Material = Enum.Material.Glacier, Color = Color3.fromRGB(170,210,235), Top = Color3.fromRGB(245,250,255) }, Keep = {},
    Decor = {
-    { Layout = "Scatter", Count = 12, Material = Enum.Material.Ice, Colors = {Color3.fromRGB(150,205,235)}, Shape = "Disc", Size = {5, 12} },
     { Layout = "Scatter", Count = 8, Material = Enum.Material.Glacier, Colors = {Color3.fromRGB(190,225,245)}, Shape = "Block", Size = {6, 14} },
    } },
   Mood = { Tint = Color3.fromRGB(190,215,255), Saturation = -0.1, Contrast = 0.05, Brightness = 0.04, Decay = Color3.fromRGB(100,140,190), Glare = 0.1, Offset = 0.25, DensityScale = 1.2, HazeScale = 1.4, Bloom = 1.1 } }, -- 9
@@ -271,6 +268,37 @@ Config.StageMood = { TweenSeconds = 2.5, CheckSeconds = 0.25, FlashSeconds = 0.1
 -- Stage props (tools/PlaceStageProps.luau): templates in ServerStorage.StageProps.StageN are placed along both stage edges (offsets from the centre line).
 -- Props never collide, stay EndClear studs from each stage end and SpawnClear studs from any cage spawn marker, and stop at PartBudget Parts per stage.
 Config.StageProps = { PartBudget = 40, BandInner = 12, BandOuter = 2, EndClear = 24, SpawnClear = 8, MinGap = 8, Seed = 20261114, Attempts = 40, FolderName = "StageProps" }
+
+-- Stage twists (docs/Plans.md part 2, numbers from tools/economy/escape_twists.py). Everything is decided on the server (Server/StageTwists) from the shared
+-- server clock and zone parts built by tools/BuildStageTwists.luau; the client only draws warnings and moving props (Client/StageTwistFX, Shared/StageTwistMath).
+-- Speed effects multiply walking speed (Player attribute TwistSpeed), Detect shrinks a guard's detection radius for that player (TwistDetect).
+-- Zones = {Count, Radius, Material, Color, Transparency?, Height?}: non-colliding discs placed at random inside the stage.
+Config.StageTwists = {
+ Tick = 0.1, EndMargin = 30, ZoneHeight = 0.08, WarnColor = Color3.fromRGB(255,60,60), IdleMarker = Color3.fromRGB(90,70,60),
+ Stages = {
+  { Kind = "Boost", Seconds = 2, Mult = 1.3, Zones = { Count = 8, Radius = 8, Material = Enum.Material.Neon, Color = Color3.fromRGB(120,255,140) } },
+  { Kind = "Clover", Luck = 0.2, Cooldown = 60, Zones = { Count = 6, Radius = 5, Material = Enum.Material.Grass, Color = Color3.fromRGB(30,170,60) } },
+  { Kind = "Gust", Period = 15, Duration = 1.5, Warn = 2, Slow = 0.5 },
+  { Kind = "Cart", Lanes = 3, Period = 12, Crossing = 4, Warn = 2, Stun = 1, Cooldown = 2, Size = Vector3.new(8, 5, 6), Margin = 1.5, Color = Color3.fromRGB(120,90,60) },
+  { Kind = "Blackout", Period = 20, Duration = 5, Warn = 2, Detect = 0.6, Lanterns = 12, LitColor = Color3.fromRGB(255,200,110), DarkColor = Color3.fromRGB(40,35,35) },
+  { Kind = "Mist", Detect = 0.4, Zones = { Count = 8, Radius = 16, Material = Enum.Material.SmoothPlastic, Color = Color3.fromRGB(190,235,205), Transparency = 0.65, Height = 12 } },
+  { Kind = "Container", Count = 4, Period = 25, Move = 6, Warn = 2, Slow = 0.7, Size = Vector3.new(40, 12, 14), Edge = 28, Color = Color3.fromRGB(190,90,50) },
+  { Kind = "Lava", Slow = 0.35, Zones = { Count = 14, Radius = 15, Material = Enum.Material.CrackedLava, Color = Color3.fromRGB(255,110,40) } },
+  { Kind = "Ice", Slow = 0.15, Zones = { Count = 16, Radius = 18, Material = Enum.Material.Ice, Color = Color3.fromRGB(150,205,235) } },
+  { Kind = "Pads", Period = 9, Lit = 3, Stagger = 1.1, Seconds = 2, Mult = 1.3, Zones = { Count = 8, Radius = 8, Material = Enum.Material.Neon, Color = Color3.fromRGB(0,230,255) }, DarkColor = Color3.fromRGB(20,50,70) },
+  { Kind = "Lightning", Period = 8, Warn = 1.5, Radius = 6, Jitter = 12, Knock = 40 },
+  { Kind = "GoldenHour", Period = 120, Duration = 20, Warn = 5, Luck = 0.2 },
+ },
+}
+-- Collection sets: owning every roster footballer of a tier in Gold or better pays Gold[tier] extra plot income; a Diamond-or-better star pays
+-- DiamondFactor of that. The total never exceeds Cap. Progress comes from the Index (Shared/SetBonus), nothing extra is saved.
+Config.Sets = { Cap = 0.25, DiamondFactor = 0.5, GoldVariant = "Gold", DiamondVariant = "Diamond",
+ Gold = { Common = 0.01, Rare = 0.015, Epic = 0.02, Legendary = 0.03, Mythic = 0.04, GOAT = 0.05 } }
+-- Stage gates: an open arch (two pillars and a sign plate above the lanes) at every stage entrance, readable from far away.
+Config.StageGate = { PillarWidth = 6, PillarHeight = 38, PlateHeight = 30, PlateThickness = 2, Inset = 6, Offset = 4, FolderName = "StageGates",
+ PlateColor = Color3.fromRGB(24,34,46), PillarColor = Color3.fromRGB(60,66,76), Canvas = Vector2.new(1800, 300) }
+-- First arrival in a stage (once per account, kept through rebirths): cash = Seconds of that stage's tier income per second.
+Config.StageArrival = { Seconds = 90, BannerSeconds = 2.5, FadeSeconds = 0.5, SlideSeconds = 0.3, SlideOffset = 24, CheckSeconds = 0.5, SoundId = "rbxassetid://9083627113", SoundVolume = 0.7 }
 
 Config.CubeColumnX = { -72, 72, -40, 40 } -- spawn columns (fill order); centre lane stays free
 
@@ -384,6 +412,8 @@ Config.UITheme={
  Selected=Color3.fromRGB(49,137,80),Border=Color3.fromRGB(211,193,162),Preview=Color3.fromRGB(237,227,207),
  Text=Color3.fromRGB(43,37,30),Muted=Color3.fromRGB(105,94,78),
  Disabled=Color3.fromRGB(222,216,203),HoverScale=1.025,PressScale=.96,
+ -- Text on the screen has no box: white, gold for highlights, red for warnings, all with a dark outline so it reads on snow and on the Neon Arcade.
+ TextMain=Color3.new(1,1,1),TextGold=Color3.fromRGB(255,214,80),TextWarn=Color3.fromRGB(255,84,72),Outline=Color3.fromRGB(12,14,20),OutlineThickness=2,
  MotionSeconds=.14,WindowSeconds=.22,WindowWidth=820,WindowHeight=650,
  Margin=16,CompactWidth=680,NavWidth=132,NavCompactWidth=100,NavHeight=44,NavGap=8,NavMoreOrder=99,
  PreviewFPS=24,PreviewTurnSpeed=.42,PreviewBob=.055,PreviewBobSpeed=1.8,
@@ -392,7 +422,13 @@ Config.UITheme={
  mail="rbxassetid://71078899575319",key="rbxassetid://77808432154113",
  profile="rbxassetid://93837765787009",confirm="rbxassetid://82777339225926"},
 }
-Config.FocusUI={Range=14,ScreenRadius=.16,RefreshSeconds=.1,PanelWidth=340,PanelHeight=94,Bottom=115,ActionWidth=144,ActionHeight=46,ActionBottom=200}
+-- Screen layout (Client/UIKit.Screen): every ScreenGui keeps out of Roblox's reserved areas and gets one UIScale = min(width/ReferenceX, height/ReferenceY)
+-- clamped to Min..Max, updated live when the viewport changes. Top rows are the Y offsets (in UI units) of the stacked top-centre texts; EyeKey hides the UI.
+Config.UIScreen={ReferenceX=800,ReferenceY=450,MinScale=.7,MaxScale=1.25,TopStage=6,TopPopup=50,TopAnnounce=122,TopWarning=164,MessageBottom=150,
+ EyeSize=36,EyeMargin=8,CaptureReserve=116, -- pixels left free at the right edge for Roblox capture buttons (CoreUISafeInsets does not cover them)
+ EyeKey=Enum.KeyCode.H,AutoSwingWidth=120,AutoSwingHeight=32,AutoSwingGap=8}
+Config.FocusUI={Range=14,ScreenRadius=.16,RefreshSeconds=.1,PanelWidth=340,PanelHeight=94,Bottom=160,ShortBottom=135, -- above Auto Swing and the hotbar
+ ActionWidth=144,ActionHeight=46,ActionBottom=200}
 Config.HotbarUI={MinSlotWidth=54,SlotWidth=74,SlotHeight=72,Gap=7,Bottom=12,MaxSlots=10,RefreshSeconds=.15,Accent=Color3.fromRGB(224,125,34)}
 Config.CardLabels = {Distance=60,HeadClearance=1.6,Width=230,Height=92,RefreshSeconds=0.25,StatusColor=Color3.fromRGB(255,190,90),IncomeColor=Color3.fromRGB(120,255,150)}
 Config.DropPlayer = {Forward=4,RequestCooldown=.4,SafeCargoLimit=30}

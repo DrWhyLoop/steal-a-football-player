@@ -1,45 +1,85 @@
--- Stage banner: shown when the player walks into a stage. Names the stage with its difficulty and the recommended Speed Points,
--- in red when the player has fewer Speed Points than that.
+-- Stage banner: text only, small, top centre. Shown when the player walks into a stage: the name with its difficulty and the recommended Speed Points
+-- (red when the player has fewer Speed Points than that). The first arrival in a stage (once per account) pops up under it with a sound and the cash
+-- reward: it slides in and fades out after Config.StageArrival.BannerSeconds.
 local Players=game:GetService("Players")
 local TweenService=game:GetService("TweenService")
-local Config=require(game.ReplicatedStorage.Shared.Config)
-local Format=require(game.ReplicatedStorage.Shared.NumberFormat)
+local RS=game:GetService("ReplicatedStorage")
+local Config=require(RS.Shared.Config)
+local Remotes=require(RS.Shared.Remotes)
+local Format=require(RS.Shared.NumberFormat)
+local StageZone=require(RS.Shared.StageZone)
 local UIKit=require(script.Parent.UIKit)
-local StageZone=require(script.Parent.StageZone)
 local Banner={}
+
+-- A transparent top-centre block holding outlined text lines (heights are fractions of the block).
+local function block(gui,row,width,height)
+ local frame=Instance.new("Frame") frame.AnchorPoint=Vector2.new(.5,0) frame.Position=UDim2.new(.5,0,0,row) frame.Size=UDim2.fromScale(width,height)
+ frame.BackgroundTransparency=1 frame.Visible=false frame.Parent=gui
+ return frame
+end
+local function line(frame,kind,y,height,maxSize)
+ local label=Instance.new("TextLabel") label.AnchorPoint=Vector2.new(.5,0) label.Position=UDim2.fromScale(.5,y) label.Size=UDim2.fromScale(1,height)
+ label.TextScaled=true label.Parent=frame
+ Instance.new("UITextSizeConstraint",label).MaxTextSize=maxSize
+ return UIKit.Text(label,kind)
+end
+local function fade(frame,seconds,to)
+ for _,label in frame:GetChildren() do if label:IsA("TextLabel") then UIKit.Fade(label,seconds,to) end end
+end
+
 function Banner.Init()
  local player=Players.LocalPlayer
- local gui=Instance.new("ScreenGui") gui.Name="StageBanner" gui.ResetOnSpawn=false gui.Parent=player.PlayerGui
- local label=Instance.new("TextLabel") label.AnchorPoint=Vector2.new(.5,0) label.Position=UDim2.new(.5,0,0,70) label.Size=UDim2.fromOffset(560,76)
- label.BackgroundColor3=Color3.fromRGB(14,22,32) label.BackgroundTransparency=.25 label.TextColor3=Config.UITheme.Text label.Font=Enum.Font.FredokaOne
- label.TextSize=22 label.RichText=true label.Visible=false label.Parent=gui
- local corner=Instance.new("UICorner") corner.CornerRadius=UDim.new(0,12) corner.Parent=label
- UIKit.Card(label)
- label.TextWrapped=true
- UIKit.OnResize(function(view)
-  label.Size=UDim2.fromOffset(math.min(560,view.X-32),view.X<Config.UITheme.CompactWidth and 100 or 76)
-  label.Position=UDim2.new(.5,0,0,20)
- end)
+ local gui=Instance.new("ScreenGui") gui.Name="StageBanner" gui.Parent=player.PlayerGui
+ UIKit.Screen(gui)
+ local S=Config.UIScreen
+ local stage=block(gui,S.TopStage,.5,.09)
+ local title,advice=line(stage,nil,0,.55,22),line(stage,"gold",.55,.45,17)
  local token=0
- local function show(stage)
-  local info=Config.StageInfo[stage]
+ local function show(number)
+  local info=Config.StageInfo[number]
   local mine=player:GetAttribute("Speed") or 0
-  local color=mine<info.Points and "#AD3429" or "#28733F"
-  label.Text=('STAGE %d  -  %s  (%s)\n<font size="18" color="%s">%s - yours: %s</font>'):format(stage,info.Name,info.Difficulty,color,Format.Recommended(info.Points),Format.Compact(mine))
-  token+=1 local mine_token=token
-  label.TextTransparency=0 label.BackgroundTransparency=.25 label.Visible=true
+  title.Text=("STAGE %d  -  %s  (%s)"):format(number,info.Name,info.Difficulty)
+  advice.Text=("%s - yours: %s"):format(Format.Recommended(info.Points),Format.Compact(mine))
+  advice.TextColor3=mine<info.Points and Config.UITheme.TextWarn or Config.UITheme.TextGold
+  token+=1 local mineToken=token
+  fade(stage,0,0) stage.Visible=true
   task.delay(Config.StageBanner.Seconds,function()
-   if token~=mine_token then return end
-   TweenService:Create(label,TweenInfo.new(.6),{TextTransparency=1,BackgroundTransparency=1}):Play()
-   task.delay(.6,function() if token==mine_token then label.Visible=false end end)
+   if token~=mineToken then return end
+   fade(stage,.6,1)
+   task.delay(.6,function() if token==mineToken then stage.Visible=false end end)
   end)
  end
+
+ local A=Config.StageArrival
+ local arrival=block(gui,S.TopPopup,.5,.15)
+ local heading,name,reward=line(arrival,"gold",0,.4,30),line(arrival,nil,.4,.32,22),line(arrival,"gold",.72,.28,18)
+ heading.Text="NEW STAGE!"
+ local grow=Instance.new("UIScale") grow.Parent=arrival
+ local arrivalToken=0
+ Remotes.StageArrival.OnClientEvent:Connect(function(number,cash)
+  name.Text=Config.StageInfo[number].Name
+  reward.Text="+$"..Format.Compact(cash)
+  arrivalToken+=1 local mine=arrivalToken
+  fade(arrival,0,0)
+  arrival.Position=UDim2.new(.5,0,0,S.TopPopup-A.SlideOffset) grow.Scale=.7 arrival.Visible=true
+  local slide=TweenInfo.new(A.SlideSeconds,Enum.EasingStyle.Back)
+  TweenService:Create(arrival,slide,{Position=UDim2.new(.5,0,0,S.TopPopup)}):Play()
+  TweenService:Create(grow,slide,{Scale=1}):Play()
+  local sound=Instance.new("Sound") sound.SoundId=A.SoundId sound.Volume=A.SoundVolume sound.Parent=gui sound:Play()
+  game:GetService("Debris"):AddItem(sound,6)
+  task.delay(A.BannerSeconds,function()
+   if arrivalToken~=mine then return end
+   fade(arrival,A.FadeSeconds,1)
+   task.delay(A.FadeSeconds,function() if arrivalToken==mine then arrival.Visible=false end end)
+  end)
+ end)
+
  local current
  while gui.Parent do
   task.wait(Config.StageBanner.CheckSeconds)
   local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-  local stage=root and StageZone.At(root.Position)
-  if stage~=current then current=stage if stage then show(stage) end end
+  local number=root and StageZone.At(root.Position)
+  if number~=current then current=number if number then show(number) end end
  end
 end
 return Banner

@@ -26,7 +26,7 @@ Four main buttons (Tools, Quests, Rebirth, Index) plus "More" (Trails, Treadmill
 ## Stage looks (Part 1, approved and built 2026-11-13)
 Per-stage floor/wall materials and colours, decor, kept plants, client lighting mood, empty ServerStorage.StageProps folders and tools/PlaceStageProps.luau. See docs/History.md.
 
-## Part 2 (approved 2026-11-13, NOT built yet; build only after the next OK)
+## Part 2 (approved 2026-11-13, built the same day, see docs/History.md)
 - **Collection sets:** one set per tier (Common 1-2, Rare 3-4, Epic 5-7, Legendary 8-9, Mythic 10-11, GOAT 12): own every roster footballer of the tier in Gold or better. Bonus to plot income: 1 / 1.5 / 2 / 3 / 4 / 5 % (total 16.5%). A Diamond-or-better star per tier pays half of that (total 8.25%). Combined cap +25%. Sim: tools/economy/sets.py (even if all sets were instant, Stage 12 arrives at 3.53 h; the Gold requirement makes the real effect smaller).
 - **Twists (server-validated, phone-safe), checked with tools/economy/escape_twists.py (well-played escape B >= 97%, random-cage escape A >= 60%, recommended speed, 4,000 trips each):**
   - 3 Sandlot gusts: every 15 s, 1.5 s push, 50% slow. A 69.8% / B 98.3%.

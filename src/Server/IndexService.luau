@@ -6,6 +6,7 @@ local RS=game:GetService("ReplicatedStorage")
 local Config=require(RS.Shared.Config)
 local Remotes=require(RS.Shared.Remotes)
 local Keys=require(RS.Shared.IndexKeys)
+local SetBonus=require(RS.Shared.SetBonus)
 local Format=require(RS.Shared.NumberFormat)
 local PlayerData=require(script.Parent.PlayerData)
 local CashService=require(script.Parent.CashService)
@@ -31,7 +32,12 @@ function I.Record(player,card)
  local old=data.Index[entry.Id] or 0
  local new=bit32.bor(old,bit32.lshift(1,bit))
  if new==old then return end
+ local goldBefore,diamondBefore=SetBonus.Bonus(data.Index,entry.Tier)
  data.Index[entry.Id]=new
+ local goldAfter,diamondAfter=SetBonus.Bonus(data.Index,entry.Tier)
+ player:SetAttribute("SetBonus",SetBonus.Total(data.Index))
+ if goldAfter>goldBefore then Remotes.Announcement:FireClient(player,("%s Gold set complete! +%g%% income"):format(entry.Tier,goldAfter*100)) end
+ if diamondAfter>diamondBefore then Remotes.Announcement:FireClient(player,("%s Diamond star complete! +%g%% income"):format(entry.Tier,diamondAfter*100)) end
  Remotes.IndexSync:FireClient(player,{[entry.Id]=new})
  checkTier(player,data,entry.Tier)
  task.spawn(PlayerData.RequestSave,player)
@@ -39,7 +45,9 @@ end
 
 function I.Sync(player)
  local profile=PlayerData.Get(player)
- if profile then Remotes.IndexSync:FireClient(player,profile.data.Index,profile.data.IndexClaimed) end
+ if not profile then return end
+ player:SetAttribute("SetBonus",SetBonus.Total(profile.data.Index))
+ Remotes.IndexSync:FireClient(player,profile.data.Index,profile.data.IndexClaimed)
 end
 
 function I.Init()

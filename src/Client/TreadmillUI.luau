@@ -10,21 +10,20 @@ local UI={}
 function UI.Init()
  local player=Players.LocalPlayer
  local gui=Instance.new("ScreenGui") gui.Name="TreadmillShop" gui.ResetOnSpawn=false gui.Parent=player.PlayerGui
+ UIKit.Screen(gui)
  local open=UIKit.Nav(gui,"Treadmills","energy",4,true)
  local support=UIKit.Nav(gui,"Feedback","mail",5,true)
  local panel,title,scroll=UIKit.Panel(gui,"Shop","TREADMILLS","Train for Speed Points. More Speed Points make you walk faster. One treadmill per plot.",74)
  local hud=Instance.new("Frame") hud.Name="PlayerStats" hud.AnchorPoint=Vector2.new(0,1)
- hud.Position=UDim2.new(0,14,1,-22) hud.Size=UDim2.new(.24,0,0,78) hud.BackgroundColor3=Color3.fromRGB(18,31,45) hud.BackgroundTransparency=.12 hud.Parent=gui
+ hud.Position=UDim2.new(0,14,1,-22) hud.Size=UDim2.new(.24,0,0,78) hud.BackgroundTransparency=1 hud.Parent=gui
  local hudSize=Instance.new("UISizeConstraint") hudSize.MinSize=Vector2.new(175,78) hudSize.MaxSize=Vector2.new(220,78) hudSize.Parent=hud
- local hudCorner=Instance.new("UICorner") hudCorner.CornerRadius=UDim.new(0,12) hudCorner.Parent=hud
  local stats=label(hud,"",UDim2.new(1,-20,1,-12),UDim2.fromOffset(10,6)) stats.TextXAlignment=Enum.TextXAlignment.Left stats.TextSize=16
- UIKit.Card(hud)
  local coin=RS:WaitForChild("UIAssets"):WaitForChild("CoinIcon"):Clone() coin.Name="CoinIcon" coin.Size=UDim2.fromOffset(22,22) coin.Position=UDim2.fromOffset(12,10) coin.BackgroundTransparency=1 coin.Parent=hud
  UIKit.Icon(hud,"energy",UDim2.fromOffset(22,22),UDim2.fromOffset(12,44))
  stats.Position=UDim2.fromOffset(44,5) stats.Size=UDim2.new(1,-52,0,32)
- stats.TextColor3=Config.UITheme.Selected stats.Font=Enum.Font.FredokaOne stats.TextSize=19
+ UIKit.Text(stats,"gold") stats.TextSize=19
  local speedText=label(hud,"",UDim2.new(1,-52,0,30),UDim2.fromOffset(44,38))
- speedText.TextXAlignment=Enum.TextXAlignment.Left speedText.TextSize=15 speedText.TextColor3=Config.UITheme.Muted
+ speedText.TextXAlignment=Enum.TextXAlignment.Left speedText.TextSize=15 UIKit.Text(speedText)
  local counter=Instance.new("NumberValue") local speedCounter=Instance.new("NumberValue")
  counter.Changed:Connect(function(v) stats.Text="$"..Format.Money(v) end)
  speedCounter.Changed:Connect(function(v) speedText.Text=Format.Compact(v).." Speed" end)
@@ -33,7 +32,7 @@ function UI.Init()
  UIKit.OnResize(function(view)
   local compact=view.X<Config.UITheme.CompactWidth
   hud.AnchorPoint=compact and Vector2.new(0,0) or Vector2.new(0,1)
-  hud.Position=compact and UDim2.fromOffset(14,14) or UDim2.new(0,14,1,-22)
+  hud.Position=compact and UDim2.fromOffset(14,Config.UIScreen.EyeSize+Config.UIScreen.EyeMargin*2) or UDim2.new(0,14,1,-22)
  end)
  local rows={}
  local priceLabel=UIKit.PriceLabel
@@ -65,15 +64,16 @@ function UI.Init()
  label(panel,"Walk onto your treadmill to train. Walk off to stop.",UDim2.new(1,-24,0,32),UDim2.new(0,12,1,-70))
  local message=label(panel,"",UDim2.new(1,-24,0,28),UDim2.new(0,12,1,-34)) message.TextSize=14
  local lastCash,lastPoints
- local function gain(text,color,y)
-  local t=label(hud,text,UDim2.fromOffset(180,26),UDim2.fromOffset(8,y)) t.TextColor3=color
-  game:GetService("TweenService"):Create(t,TweenInfo.new(.75),{Position=UDim2.fromOffset(8,y-26),TextTransparency=1}):Play()
+ local function gain(text,kind,y)
+  local t=UIKit.Text(label(hud,text,UDim2.fromOffset(180,26),UDim2.fromOffset(8,y)),kind)
+  game:GetService("TweenService"):Create(t,TweenInfo.new(.75),{Position=UDim2.fromOffset(8,y-26)}):Play()
+  UIKit.Fade(t,.75,1)
   game:GetService("Debris"):AddItem(t,.8)
  end
  local function refresh()
   local cash,points=player:GetAttribute("Cash") or 0,player:GetAttribute("Speed") or 0
-  if lastCash and cash>lastCash then gain("+$"..Format.Compact(cash-lastCash),Config.UITheme.Selected,-26) end
-  if lastPoints and points>lastPoints then gain("+"..Format.Compact(points-lastPoints).." Speed",Config.UITheme.Accent,-54) end
+  if lastCash and cash>lastCash then gain("+$"..Format.Compact(cash-lastCash),"gold",-26) end
+  if lastPoints and points>lastPoints then gain("+"..Format.Compact(points-lastPoints).." Speed",nil,-54) end
   if lastCash~=cash then
    if cashTween then cashTween:Cancel() end
    cashTween=game:GetService("TweenService"):Create(counter,TweenInfo.new(.3,Enum.EasingStyle.Quad),{Value=cash}) cashTween:Play()

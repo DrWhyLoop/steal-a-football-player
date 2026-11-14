@@ -14,26 +14,24 @@ function Labels.Init()
  if comparison then comparison:Destroy() end
  local gui=Instance.new("ScreenGui")
  gui.Name="FocusedDetails" gui.ResetOnSpawn=false gui.DisplayOrder=5 gui.Parent=playerGui
+ UIKit.Screen(gui)
  local panel=Instance.new("Frame")
  panel.Name="Panel" panel.AnchorPoint=Vector2.new(.5,1)
  panel.Position=UDim2.new(.5,0,1,-Config.FocusUI.Bottom)
  panel.Size=UDim2.fromOffset(Config.FocusUI.PanelWidth,Config.FocusUI.PanelHeight)
- panel.BackgroundColor3=Config.UITheme.Background panel.BackgroundTransparency=.08
- panel.Visible=false panel.Parent=gui
- local corner=Instance.new("UICorner") corner.CornerRadius=UDim.new(0,12) corner.Parent=panel
- local stroke=Instance.new("UIStroke") stroke.Color=Config.UITheme.Border stroke.Transparency=.25 stroke.Parent=panel
+ panel.BackgroundTransparency=1 panel.Visible=false panel.Parent=gui
  local width=Instance.new("UISizeConstraint") width.MaxSize=Vector2.new(Config.FocusUI.PanelWidth,Config.FocusUI.PanelHeight) width.Parent=panel
- local function line(name,y,size,color)
+ local function line(name,y,size,kind) -- text only: outlined, no box
   local text=Instance.new("TextLabel")
-  text.Name=name text.BackgroundTransparency=1 text.Position=UDim2.fromOffset(14,y)
-  text.Size=UDim2.new(1,-28,0,size+6) text.Font=Enum.Font.FredokaOne text.TextSize=size
+  text.Name=name text.Position=UDim2.fromOffset(14,y)
+  text.Size=UDim2.new(1,-28,0,size+6) text.TextSize=size
   text.TextXAlignment=Enum.TextXAlignment.Left text.TextTruncate=Enum.TextTruncate.AtEnd
-  text.TextColor3=color text.Parent=panel
-  return text
+  text.Parent=panel
+  return UIKit.Text(text,kind)
  end
- local title=line("Title",8,18,Config.UITheme.Text)
- local subtitle=line("Subtitle",34,13,Config.UITheme.Muted)
- local value=line("Value",57,18,Config.UITheme.Selected)
+ local title=line("Title",8,18)
+ local subtitle=line("Subtitle",34,13)
+ local value=line("Value",57,18,"gold")
  local slots={}
  PlotWatch.Each(function(plot)
   for _,slot in plot.Slots:GetChildren() do table.insert(slots,slot) end
@@ -101,8 +99,8 @@ function Labels.Init()
    local viewport=UIKit.Viewport()
    local short=viewport.Y<500
    panel.Size=UDim2.fromOffset(math.min(Config.FocusUI.PanelWidth,viewport.X-32),short and 84 or Config.FocusUI.PanelHeight)
-   panel.Position=UDim2.new(.5,0,1,-(short and 90 or Config.FocusUI.Bottom))
-   subtitle.TextColor3=Config.UITheme.Muted
+   panel.Position=UDim2.new(.5,0,1,-(short and Config.FocusUI.ShortBottom or Config.FocusUI.Bottom))
+   subtitle.TextColor3=Config.UITheme.TextMain
    if best.kind=="Player" then
     local card=best.card
     title.Text=card:GetAttribute("CardName") or "Footballer"
@@ -112,7 +110,6 @@ function Labels.Init()
     local expiry=card:GetAttribute("WorldExpiresAt")
     local timer=expiry and (" · %ds left"):format(math.max(0,math.ceil(expiry-workspace:GetServerTimeNow()))) or ""
     value.Text="$"..Format.Money(card:GetAttribute("CashPerSecond") or 0).."/second"..timer
-    value.TextColor3=Config.UITheme.Selected
     panel:SetAttribute("FocusedItemId",card:GetAttribute("ItemId"))
    elseif best.kind=="Upgrade" then
     local slot=best.slot
@@ -122,15 +119,13 @@ function Labels.Init()
     subtitle.Text=cost and ("Level %d → %d · Cost $%s"):format(level,level+1,Format.Money(cost)) or ("Level %d · Maximum"):format(level)
     local nextIncome=slot:GetAttribute("NextIncome") or 0
     value.Text=cost and ("$%s/s → $%s/s"):format(Format.Money(nextIncome/Config.PlotSlots.IncomeGrowth),Format.Money(nextIncome)) or "Fully upgraded"
-    subtitle.TextColor3=cost and (player:GetAttribute("Cash") or 0)<cost and Config.PlotSlots.CantAffordColor or Config.UITheme.Muted
-    value.TextColor3=Config.UITheme.Selected
+    subtitle.TextColor3=cost and (player:GetAttribute("Cash") or 0)<cost and Config.UITheme.TextWarn or Config.UITheme.TextMain
     panel:SetAttribute("FocusedSlot",slot.Name)
    else
     title.Text="Collect earnings"
     subtitle.Text=best.slot:GetAttribute("CardName")
     local info=best.target:FindFirstChild("InfoGui")
     value.Text=info and info.Label.Text or "$0"
-    value.TextColor3=Config.UITheme.Selected
     panel:SetAttribute("FocusedSlot",best.slot.Name)
    end
   end

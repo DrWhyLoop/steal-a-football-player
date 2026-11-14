@@ -1,6 +1,6 @@
 -- Shared visuals from the supplied UI packs, with resize-safe motion and menu coordination.
 local Players=game:GetService("Players")
-local GuiService=game:GetService("GuiService")
+local Input=game:GetService("UserInputService")
 local TweenService=game:GetService("TweenService")
 local Config=require(game.ReplicatedStorage.Shared.Config)
 local Theme=Config.UITheme
@@ -10,31 +10,108 @@ local ButtonTemplate=Assets:WaitForChild("ButtonTemplate")
 local Kit={}
 local windows={}
 local nav,navMore
-local viewportSignal
+local screens,kept={},{} -- registered ScreenGuis (with their ViewportScale) and those that stay visible when the UI is hidden
+local view,uiScale,hidden,scheduled,cameraSignal=Vector2.new(1280,720),1,false,false,nil
 local resizeListeners={}
 
-function Kit.Viewport()
+--- Usable screen size in UI units: the real size inside Roblox's reserved areas (top bar, capture buttons) divided by the UI scale.
+function Kit.Viewport() return view end
+
+local function refresh()
+ scheduled=false
+ local probe
+ for gui in screens do if gui.Parent then probe=gui break end end
  local camera=workspace.CurrentCamera
- local viewport=camera and camera.ViewportSize or Vector2.new(1280,720)
- local topLeft,bottomRight=GuiService:GetGuiInset()
- return viewport-topLeft-bottomRight
+ local size=probe and probe.AbsoluteSize or camera and camera.ViewportSize
+ if not size or size.X<=0 or size.Y<=0 then return end
+ local S=Config.UIScreen
+ uiScale=math.clamp(math.min(size.X/S.ReferenceX,size.Y/S.ReferenceY),S.MinScale,S.MaxScale)
+ view=size/uiScale
+ for _,viewportScale in screens do viewportScale.Scale=uiScale end
+ for _,fn in resizeListeners do fn(view) end
+end
+local function queue() if not scheduled then scheduled=true task.defer(refresh) end end -- resize events arrive in bursts: one refresh per frame
+local function bindCamera()
+ if cameraSignal then cameraSignal:Disconnect() end
+ local camera=workspace.CurrentCamera
+ if camera then cameraSignal=camera:GetPropertyChangedSignal("ViewportSize"):Connect(queue) end
+ queue()
 end
 
 function Kit.OnResize(callback)
  table.insert(resizeListeners,callback)
- callback(Kit.Viewport())
- if not viewportSignal then
-  local function bind()
-   if viewportSignal then viewportSignal:Disconnect() end
-   local camera=workspace.CurrentCamera
-   if camera then viewportSignal=camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-    for _,fn in resizeListeners do fn(Kit.Viewport()) end
-   end) end
-   for _,fn in resizeListeners do fn(Kit.Viewport()) end
-  end
-  workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(bind)
-  bind()
+ callback(view)
+end
+
+--- Registers a ScreenGui right after it is parented: it stays out of Roblox's reserved areas (CoreUISafeInsets), follows one live UIScale driven by the
+--- viewport size and is hidden by the hide toggle unless `keepVisible`.
+function Kit.Screen(gui,keepVisible)
+ gui.ResetOnSpawn=false gui.IgnoreGuiInset=false gui.ScreenInsets=Enum.ScreenInsets.CoreUISafeInsets
+ local scale=Instance.new("UIScale") scale.Name="ViewportScale" scale.Parent=gui
+ screens[gui]=scale
+ if keepVisible then kept[gui]=true elseif hidden then gui.Enabled=false end
+ gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(queue)
+ gui.Destroying:Connect(function() screens[gui]=nil kept[gui]=nil end)
+ if not cameraSignal then
+  workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(bindCamera)
+  bindCamera()
  end
+ queue()
+end
+
+--- True when custom UI may be shown: no menu is open and the hide toggle is off (for guis that switch themselves with the menu).
+function Kit.Visible() return not hidden and not Players.LocalPlayer.PlayerGui:GetAttribute("MenuOpen") end
+
+--- Text without a box: white (kind nil), "gold" for highlights or "warn" for warnings, always with the dark outline.
+function Kit.Text(label,kind)
+ label.BackgroundTransparency=1 label.BorderSizePixel=0
+ for _,child in label:GetChildren() do if child:IsA("UICorner") or child:IsA("UIStroke") then child:Destroy() end end
+ label.TextColor3=kind=="gold" and Theme.TextGold or kind=="warn" and Theme.TextWarn or Theme.TextMain
+ label.Font=Enum.Font.FredokaOne label.TextStrokeTransparency=1
+ local stroke=Instance.new("UIStroke") stroke.Name="Outline" stroke.Color=Theme.Outline stroke.Thickness=Theme.OutlineThickness stroke.Parent=label
+ return label
+end
+
+--- Fades a Kit.Text label and its outline to `to` (0 = shown, 1 = gone).
+function Kit.Fade(label,seconds,to)
+ local info=TweenInfo.new(seconds)
+ TweenService:Create(label,info,{TextTransparency=to}):Play()
+ local stroke=label:FindFirstChild("Outline")
+ if stroke then TweenService:Create(stroke,info,{Transparency=to}):Play() end
+end
+
+--- The corner eye button that hides every custom ScreenGui (and H on a keyboard); tap again to bring them back. Never hides itself.
+function Kit.HideToggle()
+ local S=Config.UIScreen
+ local playerGui=Players.LocalPlayer:WaitForChild("PlayerGui")
+ local gui=Instance.new("ScreenGui") gui.Name="UIToggle" gui.DisplayOrder=100 gui.Parent=playerGui
+ Kit.Screen(gui,true)
+ local button=Instance.new("TextButton") button.Name="Eye" button.Text="" button.AutoButtonColor=false button.BackgroundTransparency=1
+ button.Position=UDim2.fromOffset(S.EyeMargin,S.EyeMargin) button.Size=UDim2.fromOffset(S.EyeSize,S.EyeSize) button.Parent=gui
+ Instance.new("UIAspectRatioConstraint",button)
+ local function shape(size,fill,rotation) -- a white shape on a dark outline: the dark stroke is drawn first, the white one on top
+  local outer=Instance.new("Frame") outer.AnchorPoint=Vector2.new(.5,.5) outer.Position=UDim2.fromScale(.5,.5) outer.Size=size outer.Rotation=rotation or 0
+  outer.BackgroundTransparency=fill and 0 or 1 outer.BackgroundColor3=Theme.TextMain outer.BorderSizePixel=0 outer.Parent=button
+  Instance.new("UICorner",outer).CornerRadius=UDim.new(1,0)
+  local dark=Instance.new("UIStroke") dark.Color=Theme.Outline dark.Thickness=fill and 3 or 6 dark.Parent=outer
+  if fill then return outer end
+  local inner=outer:Clone() inner.Parent=button
+  inner.UIStroke.Color=Theme.TextMain inner.UIStroke.Thickness=3
+  return outer
+ end
+ shape(UDim2.fromScale(.92,.54))
+ shape(UDim2.fromScale(.24,.24),true)
+ local slash=shape(UDim2.fromScale(1.05,.1),true,-45) slash.Visible=false
+ local function set(value)
+  hidden=value
+  playerGui:SetAttribute("UIHidden",hidden)
+  for other in screens do if not kept[other] then other.Enabled=not hidden end end
+  slash.Visible=hidden
+ end
+ button.Activated:Connect(function() set(not hidden) end)
+ Input.InputBegan:Connect(function(input,processed)
+  if not processed and input.KeyCode==S.EyeKey and not Input:GetFocusedTextBox() then set(not hidden) end
+ end)
 end
 
 function Kit.Card(frame)
@@ -122,18 +199,21 @@ end
 function Kit.Nav(gui,text,icon,order,more)
  if not nav then
   local root=Instance.new("ScreenGui") root.Name="GameNavigation" root.ResetOnSpawn=false root.DisplayOrder=3 root.Parent=Players.LocalPlayer.PlayerGui
-  local function column(name,x)
-   local f=Instance.new("Frame") f.Name=name f.AnchorPoint=Vector2.new(1,.5) f.Position=UDim2.new(1,x,.5,0)
+  Kit.Screen(root)
+  local function column(name)
+   local f=Instance.new("Frame") f.Name=name f.AnchorPoint=Vector2.new(1,.5) f.Position=UDim2.new(1,0,.5,0)
    f.BackgroundTransparency=1 f.AutomaticSize=Enum.AutomaticSize.Y f.Parent=root
    local layout=Instance.new("UIListLayout") layout.Padding=UDim.new(0,Theme.NavGap) layout.SortOrder=Enum.SortOrder.LayoutOrder layout.Parent=f
    return f
   end
-  nav=column("Dock",-16) navMore=column("MoreMenu",-16-Theme.NavGap) navMore.Visible=false
+  nav=column("Dock") navMore=column("MoreMenu") navMore.Visible=false
   Kit.OnResize(function(view)
    local w=view.X<Theme.CompactWidth and Theme.NavCompactWidth or Theme.NavWidth
    nav.Size=UDim2.fromOffset(w,0) -- the height follows the button count
    navMore.Size=UDim2.fromOffset(w,0)
-   navMore.Position=UDim2.new(1,-16-w-Theme.NavGap,.5,0)
+   local edge=Config.UIScreen.CaptureReserve/uiScale -- Roblox's capture buttons keep their size in pixels, so the reserve is divided by the UI scale
+   nav.Position=UDim2.new(1,-edge,.5,0)
+   navMore.Position=UDim2.new(1,-edge-w-Theme.NavGap,.5,0)
   end)
   local toggle=Kit.Nav(nil,"More","",Theme.NavMoreOrder)
   toggle.Activated:Connect(function() navMore.Visible=not navMore.Visible end)

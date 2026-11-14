@@ -5,6 +5,7 @@
 
 if not game:IsLoaded() then game.Loaded:Wait() end
 
+require(script.Parent.UIKit).HideToggle()
 require(script.Parent.AnnouncementUI).Init()
 require(script.Parent.CarryHud).Init()
 require(script.Parent.PromptFilter).Init()
@@ -14,6 +15,7 @@ require(script.Parent.Knockback).Init()
 require(script.Parent.LandscapeController).Init()
 require(script.Parent.WeatherController).Init()
 task.spawn(require(script.Parent.StageMood).Init)
+task.spawn(require(script.Parent.StageTwistFX).Init)
 require(script.Parent.AnimalMotion).Init()
 require(script.Parent.NpcMotion).Init()
 require(script.Parent.CharacterMotion).Init()

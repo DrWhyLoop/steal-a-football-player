@@ -12,6 +12,7 @@ function UI.Init()
  gui.Name = "TrailShop"
  gui.ResetOnSpawn = false
  gui.Parent = player.PlayerGui
+ Kit.Screen(gui)
  local open = Kit.Nav(gui,"Trails","star",1,true)
  local panel,title,list = Kit.Panel(gui,"Shop","TRAILS","Equip one trail to earn more Speed points on your treadmill.",44)
  local status = Kit.Label(panel,"",UDim2.new(1,-24,0,32),UDim2.new(0,12,1,-38))

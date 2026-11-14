@@ -6,6 +6,7 @@ local RunService=game:GetService("RunService")
 local TweenService=game:GetService("TweenService")
 local Debris=game:GetService("Debris")
 local Config=require(RS.Shared.Config)
+local UIKit=require(script.Parent.UIKit)
 local Math=require(RS.Shared.RewardMath)
 local Fit=require(RS.Shared.CageFit)
 local Occupant=require(RS.Shared.CageOccupant)
@@ -218,11 +219,14 @@ function Effects.Init()
  end)
 
  Remotes.SafeReturn.OnClientEvent:Connect(function(name)
-  local gui=Instance.new("ScreenGui") gui.Name="SafeReturn" gui.ResetOnSpawn=false gui.Parent=Players.LocalPlayer.PlayerGui
-  local text=Instance.new("TextLabel") text.AnchorPoint=Vector2.new(0.5,0.5) text.Position=UDim2.fromScale(0.5,0.27)
-  text.Size=UDim2.fromScale(0.7,0.09) text.BackgroundTransparency=1 text.TextScaled=true text.Font=Enum.Font.GothamBold
-  text.Text="SAFE! "..name text.TextColor3=R.SafeColor text.TextStrokeTransparency=0.3 text.Parent=gui
-  TweenService:Create(text,TweenInfo.new(R.SafeCelebrationSeconds),{Position=UDim2.fromScale(0.5,0.20),TextTransparency=1,TextStrokeTransparency=1}):Play()
+  local gui=Instance.new("ScreenGui") gui.Name="SafeReturn" gui.Parent=Players.LocalPlayer.PlayerGui
+  UIKit.Screen(gui)
+  local text=Instance.new("TextLabel") text.AnchorPoint=Vector2.new(0.5,0) text.Position=UDim2.new(0.5,0,0,Config.UIScreen.TopPopup)
+  text.Size=UDim2.fromScale(0.6,0.07) text.TextScaled=true text.Text="SAFE! "..name text.Parent=gui
+  Instance.new("UITextSizeConstraint",text).MaxTextSize=30
+  UIKit.Text(text,"gold")
+  TweenService:Create(text,TweenInfo.new(R.SafeCelebrationSeconds),{Position=UDim2.new(0.5,0,0,Config.UIScreen.TopPopup-12)}):Play()
+  UIKit.Fade(text,R.SafeCelebrationSeconds,1)
   local char=Players.LocalPlayer.Character
   if char then
    local glow=Instance.new("Highlight") glow.FillColor=R.SafeColor glow.FillTransparency=0.6 glow.OutlineTransparency=1 glow.DepthMode=Enum.HighlightDepthMode.Occluded glow.Parent=char

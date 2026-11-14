@@ -19,6 +19,7 @@ function UI.Init()
 	gui.Name = "QuestMenu"
 	gui.ResetOnSpawn = false
 	gui.Parent = player.PlayerGui
+	Kit.Screen(gui)
 	local open = Kit.Nav(gui, "Quests", "profile", 6)
 	local panel, title, list = Kit.Panel(gui, "Quests", "QUESTS", "", 0)
 	local note -- the hint label under the title (Kit.Panel does not return it)

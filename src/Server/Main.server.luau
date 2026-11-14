@@ -40,6 +40,8 @@ require(script.Parent.QuestService).Init(function(player)
 	return plot and SlotService.Income(plot) * CashService.Boost(player) or 0
 end)
 require(script.Parent.UpgradeShop).Init()
+require(script.Parent.StageTwists).Init(CardService)
+require(script.Parent.StageArrival).Init()
 require(script.Parent.FeedbackService).Init()
 require(script.Parent.Leaderboards).Init()
 

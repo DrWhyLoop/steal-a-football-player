@@ -10,6 +10,7 @@ function UI.Init()
  gui.Name = "FootballLobby"
  gui.ResetOnSpawn = false
  gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+ Kit.Screen(gui)
  local panel,title,list = Kit.Panel(gui,"Lobby","FOOTBALL COURT","Challenge another player at the court.",90)
  local status = Kit.Label(panel,"",UDim2.new(1,-24,0,34),UDim2.new(0,12,1,-82))
  local leave = Kit.Button(panel,"Cancel",UDim2.fromOffset(115,34),UDim2.new(0,12,1,-43))

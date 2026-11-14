@@ -3,6 +3,7 @@
 local TweenService=game:GetService("TweenService")
 local Players=game:GetService("Players")
 local Config=require(game.ReplicatedStorage.Shared.Config)
+local UIKit=require(script.Parent.UIKit)
 local Remotes=require(game.ReplicatedStorage.Shared.Remotes)
 local Format=require(game.ReplicatedStorage.Shared.NumberFormat)
 local PlotWatch=require(script.Parent.PlotWatch)
@@ -54,10 +55,12 @@ function SlotUI.Init()
 
  Remotes.CollectResult.OnClientEvent:Connect(collectEffect)
 
- local gui=Instance.new("ScreenGui") gui.Name="SlotMessages" gui.ResetOnSpawn=false gui.DisplayOrder=50 gui.Parent=player:WaitForChild("PlayerGui")
- local text=Instance.new("TextLabel") text.AnchorPoint=Vector2.new(.5,1) text.Position=UDim2.new(.5,0,1,-225) text.Size=UDim2.fromOffset(280,44)
- text.BackgroundColor3=Color3.fromRGB(20,20,20) text.BackgroundTransparency=.2 text.TextColor3=Color3.new(1,1,1) text.TextScaled=true text.Font=Enum.Font.GothamBold text.Visible=false text.Parent=gui
- Instance.new("UICorner",text).CornerRadius=UDim.new(0,10)
+ local gui=Instance.new("ScreenGui") gui.Name="SlotMessages" gui.DisplayOrder=50 gui.Parent=player:WaitForChild("PlayerGui")
+ UIKit.Screen(gui)
+ local text=Instance.new("TextLabel") text.AnchorPoint=Vector2.new(.5,1) text.Position=UDim2.new(.5,0,1,-Config.UIScreen.MessageBottom) text.Size=UDim2.fromScale(.5,.07)
+ text.TextScaled=true text.Visible=false text.Parent=gui
+ Instance.new("UITextSizeConstraint",text).MaxTextSize=26
+ UIKit.Text(text,"warn")
  local token=0
  Remotes.UpgradeResult.OnClientEvent:Connect(function(reason)
   token+=1 local mine=token

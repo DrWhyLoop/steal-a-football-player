@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 
 local Remotes=require(ReplicatedStorage.Shared.Remotes)
+local Kit=require(script.Parent.UIKit)
 local CarryHud = {}
 
 function CarryHud.Init()
@@ -17,25 +18,19 @@ function CarryHud.Init()
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CarryHudGui"
-	gui.ResetOnSpawn = false
 	gui.Parent = playerGui
+	Kit.Screen(gui)
 
 	local label = Instance.new("TextLabel")
 	label.AnchorPoint = Vector2.new(0.5, 1)
 	label.Position = UDim2.new(0.5, 0, 1, -90)
-	label.Size = UDim2.new(0, 320, 0, 40)
-	label.BackgroundColor3 = Config.UITheme.Background
-	label.BackgroundTransparency = 0.3
-	label.TextColor3 = Config.UITheme.Text
-	label.TextScaled = false
- label.TextSize=16
- label.TextTruncate=Enum.TextTruncate.AtEnd
-	label.Font = Enum.Font.GothamBold
+	label.Size = UDim2.fromScale(0.5, 0.06)
+	label.TextScaled = true
+	label.TextTruncate = Enum.TextTruncate.AtEnd
 	label.Visible = false
 	label.Parent = gui
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
-	corner.Parent = label
+	Instance.new("UITextSizeConstraint", label).MaxTextSize = 20
+	Kit.Text(label, "gold")
 
  local layout=Config.FocusUI
  local drop=Instance.new("TextButton")
@@ -47,22 +42,19 @@ function CarryHud.Init()
  drop.Font=Enum.Font.GothamBold drop.TextSize=16 drop.Visible=false drop.Parent=gui
  local rounding=Instance.new("UICorner") rounding.CornerRadius=UDim.new(0,10) rounding.Parent=drop
 
- local Kit=require(script.Parent.UIKit)
  Kit.Animate(drop)
  Kit.OnResize(function(view)
   drop.Size=UDim2.fromOffset(view.Y<500 and 120 or layout.ActionWidth,layout.ActionHeight)
   drop.Position=UDim2.new(0,16,1,-(view.Y<500 and 110 or 235))
-  label.Size=UDim2.fromOffset(math.min(320,view.X-32),40)
  end)
  drop.Activated:Connect(function() Remotes.DropPlayer:FireServer() end)
  local function refresh()
-  gui.Enabled=not playerGui:GetAttribute("MenuOpen")
+  gui.Enabled=Kit.Visible()
 		drop.Visible=player:GetAttribute("CanDropPlayer")==true
   local name = player:GetAttribute("CarriedCard")
 		local tier = player:GetAttribute("CarriedTier")
 		if name and tier then
 			label.Text = ("%s · %s"):format(name, tier)
-			label.TextColor3 = Config.UITheme.Text
 			label.Visible = true
 		else
 			label.Visible = false
@@ -73,6 +65,7 @@ function CarryHud.Init()
 	player:GetAttributeChangedSignal("CarriedTier"):Connect(refresh)
  player:GetAttributeChangedSignal("CanDropPlayer"):Connect(refresh)
 	playerGui:GetAttributeChangedSignal("MenuOpen"):Connect(refresh)
+	playerGui:GetAttributeChangedSignal("UIHidden"):Connect(refresh)
  refresh()
 end
 

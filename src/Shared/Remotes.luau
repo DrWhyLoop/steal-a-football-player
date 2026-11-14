@@ -15,6 +15,8 @@ local NAMES = {
  "RebirthStatus",  -- server -> client: message text
  "QuestRequest",   -- client -> server: ("Sync") or ("Claim", "Daily"|"Weekly", index)
  "QuestSync",      -- server -> client: {Tokens, DayLeft, WeekLeft, Daily, Weekly} (seconds left until the UTC resets)
+ "TwistEvent",    -- server -> clients in a stage: ("Warn", position, radius, seconds) or ("Strike", position); lightning only, everything else is drawn from the server clock
+ "StageArrival",  -- server -> client: (stage, cash) on the first arrival in a stage (once per account)
  "UpgradeRequest", -- client -> server: ("Buy", upgrade id); levels reach the client as Player attributes Upgrade_<id>
  "UpgradeStatus",  -- server -> client: message text
  "FootballRequest",

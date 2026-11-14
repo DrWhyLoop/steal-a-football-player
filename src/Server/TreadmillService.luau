@@ -32,7 +32,7 @@ function Service.UpdateSpeed(player)
  local char=player.Character local h=char and char:FindFirstChildOfClass("Humanoid")
  if h then
   local card=CardService.GetCarried(player)
-  h.WalkSpeed=speed(player)*(card and Config.Tiers[card:GetAttribute("Tier")].WalkSpeed/Config.BaseWalkSpeed or 1)
+  h.WalkSpeed=speed(player)*(card and Config.Tiers[card:GetAttribute("Tier")].WalkSpeed/Config.BaseWalkSpeed or 1)*(player:GetAttribute("TwistSpeed") or 1)
  end
 end
 local function stop(player)
@@ -97,7 +97,7 @@ local function added(player)
   rebuild(player) Service.UpdateSpeed(player)
  end
  player:GetAttributeChangedSignal("DataReady"):Connect(ready)
- for _,key in {"CarriedCard","Speed"} do player:GetAttributeChangedSignal(key):Connect(function() Service.UpdateSpeed(player) end) end
+ for _,key in {"CarriedCard","Speed","TwistSpeed"} do player:GetAttributeChangedSignal(key):Connect(function() Service.UpdateSpeed(player) end) end
  player.CharacterAdded:Connect(function(char)
   char:WaitForChild("Humanoid") char:WaitForChild("HumanoidRootPart") stop(player) Service.UpdateSpeed(player)
  end)
